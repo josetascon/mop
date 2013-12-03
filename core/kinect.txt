@@ -1,0 +1,15 @@
+% Notes on kinect calibration
+
+Some authors declare a kinect calibration an important issue. like:
+http://www.ros.org/wiki/openni_launch/Tutorials/IntrinsicCalibration?action=show&redirect=openni_camera%2Fcalibration
+
+
+I have calibrated the rgb camera succesfully. Try to generate a pattern visible for depth camera but discontinuities appear in edges.
+
+I try calibration toolbox from Herrera2012 (Joint depth and color camera calibration with distortion correction) and from now no good results
+I did only with kinect, but the autor uses another camera with it.
+
+I think than openni calibration of R and t is enough to work. A further improvement in depth can be viewed with a plane and ransac approach to see depth. 
+But this experiment will depended on my measurement from camera which I consider it is no acurate.
+
+Kinect model error from Nguyen2012 can be added to ICP to camera pose estimation.

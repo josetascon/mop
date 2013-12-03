@@ -1,0 +1,14 @@
+ 
+Run matlab file. Seems easy to use
+
+
+eucsbademo.c has a lot of hits of how to use.
+
+Image projection function 
+calcImgProj or calcDistImgProj are used from imgproj.c
+
+
+Jacobians are computed with functions (e.g img_projsKDRTS_jac_x() ) inside eucsbademo.c. 
+This function call a function from imgproj.c declared in library eucsbademo.h
+
+

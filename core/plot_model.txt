@@ -1,0 +1,62 @@
+%Explanation of camera Model
+% A camera matrix is P = K*[R | t] where K is [3x3] matrix and [R t] is a [3x4] matrix. Then P = [3x4]
+
+If we have a camera P0 at origin C0 then P0 = K*[I 0]
+Then we have a camera P1 at R1, t1 form P0, so we have P1 = K*[R1 t1];
+Another camera P2 at R2, t2 from P1, so from reference C0 we have a camera P2 = K*[R2*R1 R2*t1+t2]
+
+Simple example;
+Camera P0 (*) at origin (x axis toward right and z axis upward), Camera P1 {*} at (1,0.1) from origin rotated 90° in y axis.
+Point p at *P at (-1,0,1) from origin.
+pP1 is the point seen from P1 which is expected to have coordinates (0,0,2).
+
+Now, a third camera is at (0,0,2) with 180° in y axis, so its viewing direction is origin. Then pP2 is expected to have coordinates (1,0,1).
+
+Continuous:
+pP2 also can be found from cumulative rotation and translation. r2_1 = 90° (y axis) is rotation from r1 to r2, then r2_0 = r2_1*r1_0. 
+t2_1 = -r2_1*C2_1 where C2_1 = (1,0,1) and  t2_0 = r2_1*t1_0 + t2_1;
+
+
+*  [*]  *
+*P  *  {*}
+*  (*)  *
+*   *   *
+
+r0 = rotation(0,0,0);
+C0 = [0;0;0];
+t0 = -r0*C0;
+
+r1_0 = rotation(0,90,0);
+C1_0 = [1;0;1];
+t1_0 = -r1_0*C1_0;
+
+r2_0 = rotation(0,180,0);
+C2_0 = [0;0;2];
+t2_0 = -r2_0*C2_0;
+
+p = [-1;0;1]
+pP1 = r1_0*p + t1_0
+pP2 = r2_0*p + t2_0
+
+%continous
+r2_1 = rotation(0,90,0);
+C2_1 = [1;0;1];
+t2_1 = -r2_1*C2_1;
+r2_0n = r2_1*r1_0
+t2_0n = r2_1*t1_0 + t2_1
+
+
+From Essential matrix E we recover t and R. So camera centers need to be recover in openGL
+
+In openGL each time we apply C and then -R, resulting a -RC movement, so in P1 the center is move from C0 to C1 where t1 = -R1*C1 and C1 = -R1'*t1
+So, for each time we just need to add the Rotation and translation from continuos cameras P0 -> P1 -> P2 -> so on.
+Actual model receive the Rotation cum and translation cum.
+
+C1_0n = -r1_0'*t1_0
+C2_0n = -r2_0'*t2_0
+
+Triangulation:
+When I triangulate a point and if it is a feature that is no present in camera 0, then that triangulation is relative to the first cameara appeareance.
+x1 = r1_0*x0 + t1_0; => x0 = r1_0'*(x1 - t1_0);
+
+

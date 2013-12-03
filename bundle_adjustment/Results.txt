@@ -1,0 +1,55 @@
+
+
+
+I think that my test are not good enough because there is no good geometry (redundancy in views)
+
+Remember Degenerancies!!!
+
+// Camera Pose Initializatin
+8 point algorithm
+Constrained choosing R and t
+Then optimization in two Views (similar results with radial distortion but I think the structure is better)
+
+
+structure can be initialized from two view structure in camera pose (sfm.solvePose)
+
+
+// Optimization
+scalefromTranslations bring lesser error than unitary initialization of translation (although the actual structure routine depends on translation)
+( test with images.xml = 6, cost = 3.169710e+03  vs cost(unitary tr) = 3.538568e+03 )
+Basic incrementalBA and runBA has the same reprojection error.
+
+incrementalScale Approach doesn't work!!!
+incrementalScale will go close to 1 one without moving structure
+incrementalScale will go close to 1 too, but when modifing structure brings better results (which is obvious because optimize structure)
+
+
+
+I WANT TO COMPARE REPROJECTION ERROR IN A RECONSTRUCTION WITH REPROJECTION ERROR IN A FUNDAMENTAL MATRIX
+Reconstruction reprojection error in 2 view are ranged from 2 to 11 (images.xml) (I think might depend on base line and then come with lesser values)
+F matrix reprojection error is mentioned as close to 1 (depends on image, e.g with a calibration rig 0.1 can be obtained)
+
+Reconstruction error HZ2004 see pag 320 (using a calibration rig)
+
+
+General:
+Data in bidimensional vector class(c++) is non-continuos (trying to use a pointer).
+
+
+// ICP
+Optimization wit local optimizer don't do much. Reprojection error Depends on scale 
+E.g. If I have data like X1 in meters, then difference with X2 are around 0.2 maximum (mean 0.1). Which means an error of 20cm!!!
+X1=
+-0.340560  -0.751629   1.936000
+  -0.222410  -0.532670   1.759000
+If I use scale in cm, then a reduction in optimize is made, but is not significant.
+
+Find a way to achieve optimal structure too. Investigate kinect error.
+
+Apply BA after pose with 3D range. It works but I need to modify tr initial (actual routine set tr1 norm to 1.0)
+
+
+
+// IDEAS:
+I can try individual Bundle adjustment optimizations with a few parameters
+and then optimize all
