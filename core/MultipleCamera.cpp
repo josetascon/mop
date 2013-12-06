@@ -927,10 +927,10 @@ void GraphPose::runTORO()
     for(int it = 0; it < Qn_global.size(); it++)
     {
         Eigen::Matrix3d rr = Qn_global[it].toRotationMatrix();
-        Eigen::Vector3d tr = tr_global[it];
-//         Eigen::Vector3d tr = ct_global[it]; /// REMOVES
+//         Eigen::Vector3d tr = tr_global[it];
+        Eigen::Vector3d tr = ct_global[it]; // TESTING Center
         Eigen::Vector3d angles;
-        anglesfromRotation( rr, angles );
+        anglesfromRotation( rr, angles, false ); //false for radians units
         
         myfile1 << "VERTEX3 ";
         myfile1 << it << " ";
@@ -941,17 +941,42 @@ void GraphPose::runTORO()
     
     for(int it = 0; it < localPose.size(); it++)
     {
-        Eigen::Matrix3d rot = localPose[it].quaternion.toRotationMatrix();
-        Eigen::Vector3d tr = localPose[it].translation;
-        Eigen::Vector3d angles;
-        anglesfromRotation( rot, angles );
+        int cam1 = localPose[it].cam_id1;
+        int cam2 = localPose[it].cam_id2;
+        Eigen::Matrix<double,6,1> p_j, p_i, dji;
+        Eigen::Matrix3d Ri, rot;
+        Eigen::Vector3d tr, angles;
+        
+        rot = localPose[cam2].quaternion.toRotationMatrix();
+//         tr = localPose[cam2].translation;
+        tr = rot.transpose()*(-localPose[cam2].translation);
+        anglesfromRotation( rot, angles, false );//false for radians units
+        
+        p_j << tr, angles;
+        
+        rot = localPose[cam1].quaternion.toRotationMatrix();
+//         tr = localPose[cam1].translation;
+        tr = rot.transpose()*(-localPose[cam1].translation);
+        anglesfromRotation( rot, angles, false );//false for radians units
+        
+        p_i << tr, angles;
+        
+        Ri = Qn_global[cam1].toRotationMatrix();
+        Eigen::Matrix<double,6,6> R6i = Eigen::Matrix<double,6,6>::Identity();
+        R6i.block(0,0,3,3) = Ri;
+        
+        dji = R6i.transpose()*(p_j - p_i);
         
         myfile1 << "EDGE3 ";
-        myfile1 << localPose[it].cam_id1 << " ";
-        myfile1 << localPose[it].cam_id2 << " ";
-        myfile1 << tr.transpose() << " ";
-        myfile1 << angles.transpose(); 
-        myfile1 << "  1 0 0 0 0 0 1 0 0 0 0 1 0 0 0 1 0 0 1 0 1" << "\n";
+        myfile1 << cam1 << " ";
+        myfile1 << cam2 << " ";
+//         myfile1 << p_j;
+//         myfile1 << p_i;
+        myfile1 << dji.transpose();
+//         myfile1 << tr.transpose() << " ";
+//         myfile1 << angles.transpose(); 
+//         myfile1 << "  1 0 0 0 0 0 1 0 0 0 0 1 0 0 0 1 0 0 1 0 1" << "\n";
+        myfile1 << "\n";
     }
     myfile1.close();
 }

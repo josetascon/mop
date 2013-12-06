@@ -807,7 +807,7 @@ void writeGraph( const char *filename, std::vector< Eigen::Quaternion<double> > 
 //         Eigen::Vector3d tr = tr_global[it];
         Eigen::Vector3d tr = rr.transpose()*(-tr_global[it]); //center of coordinates
         Eigen::Vector3d angles;
-        anglesfromRotation( rr, angles );
+        anglesfromRotation( rr, angles, false );
         
         myfile1 << "VERTEX3 ";
         myfile1 << it << " ";
@@ -821,21 +821,35 @@ void writeGraph( const char *filename, std::vector< Eigen::Quaternion<double> > 
     {
         Eigen::Matrix3d rot1 = Qn_global[it-1].toRotationMatrix();
         Eigen::Matrix3d rot2 = Qn_global[it].toRotationMatrix();
-        Eigen::Vector3d tr1 = tr_global[it-1];
-        Eigen::Vector3d tr2 = tr_global[it];
+//         Eigen::Vector3d tr1 = tr_global[it-1];
+//         Eigen::Vector3d tr2 = tr_global[it];
+        Eigen::Vector3d tr1 = rot1.transpose()*(-tr_global[it-1]);
+        Eigen::Vector3d tr2 = rot2.transpose()*(-tr_global[it]);
+        Eigen::Matrix<double,6,1> p_j, p_i, dji;
+        Eigen::Vector3d angles1, angles2;
         
-        Eigen::Matrix3d rot = rot2*rot1.transpose();		// Due to rot2 = rot*rot1
-        Eigen::Vector3d tr = tr2 - rot*tr1;			// Due to tr2 = rot*tr1 + tr
+        anglesfromRotationZero( rot1, angles1, false );//false for radians units
+        anglesfromRotationZero( rot2, angles2, false );//false for radians units
         
-        Eigen::Vector3d angles;
-        anglesfromRotationZero( rot, angles );
+        p_i << tr1, angles1;
+        p_j << tr2, angles2;
+        
+        Eigen::Matrix<double,6,6> Ri = Eigen::Matrix<double,6,6>::Identity();
+        Ri.block(0,0,3,3) = rot1;
+        
+        dji = Ri.transpose()*(p_j - p_i);
+        
+        // Local angles correction
+        Eigen::Matrix3d rr = rot2*rot1.transpose();
+        anglesfromRotationZero( rr , angles1, false );//false for radians units
+        dji.tail(3) = angles1;
         
         myfile1 << "EDGE3 ";
         myfile1 << it - 1 << " ";
         myfile1 << it << " ";
-        myfile1 << tr.transpose() << " ";
-        myfile1 << angles.transpose(); 
-        myfile1 << "  1 0 0 0 0 0 1 0 0 0 0 1 0 0 0 1 0 0 1 0 1" << "\n";
+        myfile1 << dji.transpose() << " ";
+//         myfile1 << "1 0 0 0 0 0 1 0 0 0 0 1 0 0 0 1 0 0 1 0 1";
+        myfile1 << "\n";
     }
     myfile1.close();
 }

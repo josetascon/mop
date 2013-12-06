@@ -582,7 +582,11 @@ void visualizeCameras(boost::shared_ptr<pcl::visualization::PCLVisualizer> &view
     int num_cameras = quaternion.size();
     // ============================================ PLOT CAMERAS ============================================ 
     Eigen::Vector3f white_color(1.0,1.0,1.0);
-    Eigen::Vector3d color = Eigen::Vector3d::Random();
+    // Color
+    std::random_device rd;
+    std::mt19937_64 gen(rd());
+    std::uniform_real_distribution<double> uniform(0.0,1.0);	// min and max
+    Eigen::Vector3d color = Eigen::Vector3d( uniform(gen), uniform(gen), uniform(gen) );
     std::cout << "Camera color: [ " << color.transpose() << " ]\n";
     for(register int k = 0; k < num_cameras; ++k)
     {

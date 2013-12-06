@@ -28,7 +28,7 @@ include_directories(${CERES_INCLUDES})
 set(THREAD_LIBRARIES "pthread")
 
 # Boost
-find_package(Boost REQUIRED)
+# find_package(Boost REQUIRED)
 set(Boost_LIBRARIES "boost_system" "boost_chrono")
 
 ## ***** Other LIBS *****

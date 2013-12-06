@@ -66,6 +66,7 @@
 #include <iostream>
 #include <utility>			//std::pair
 #include <string>
+#include <random>
 
 // Local libraries
 #include "Common.hpp"

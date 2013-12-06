@@ -209,14 +209,15 @@ int main(int argc, char* argv[])
         my_mmap.solveDB3D( &mydb, &myfeat.keypointsGPU, &imageList_depth, K );
         std::cout << "Elapsed time to solve DB: " << timer1.elapsed_s() << " [s]\n";
         
-//         GraphPose gp;
-//         gp.solvePose( &my_mmap.reliableMatch, &my_mmap.globalMatch, &myfeat.keypointsGPU, &imageList_depth, &K);
-//         gp.solveEdges();
-//         gp.solveGraphContinuous();
-//         num_vertex = gp.GetNumVertex();
-//         num_edges = gp.GetNumEdges();
-//         weights = gp.GetWeights();
-//         edges_pairs = gp.GetEdgesPairs();
+        GraphPose gp;
+        gp.solvePose( &my_mmap.reliableMatch, &my_mmap.globalMatch, &myfeat.keypointsGPU, &imageList_depth, &K);
+        gp.solveEdges();
+        gp.solveGraphContinuous();
+        num_vertex = gp.GetNumVertex();
+        num_edges = gp.GetNumEdges();
+        weights = gp.GetWeights();
+        edges_pairs = gp.GetEdgesPairs();
+        writeGraph( (char*)"gin_opt.graph", gp.Qn_global, gp.tr_global ); 
 //         gp.runTORO();
 //         writeTextFileVQ((char*)"pose_rot.txt", gp.Qn_global);
 //         writeTextFileVT((char*)"pose_tr.txt", gp.tr_global);
@@ -267,7 +268,7 @@ int main(int argc, char* argv[])
     
 //     viewer = visualizeCloudSet( set_cloud );
     
-//     viewer = visualizeCloud(set_cloud[0]);
+    viewer = visualizeCloud(set_cloud[0]);
 //     viewer = visualizeCloud(cloud_join);
     
     visualizeCameras(viewer, imageList_rgb, sr01.Quat_cumulative, sr01.tr_cumulative );

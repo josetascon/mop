@@ -147,7 +147,7 @@ bool readStringList( const std::string& filename, std::vector<std::string>& loca
     return true;
 }
 
-void anglesfromRotation(Eigen::Matrix3d &Rot, Eigen::Vector3d &angles)
+void anglesfromRotation(Eigen::Matrix3d &Rot, Eigen::Vector3d &angles, bool degrees)
 {
     double anglex = 0.0;
     double angley = 0.0;
@@ -160,14 +160,17 @@ void anglesfromRotation(Eigen::Matrix3d &Rot, Eigen::Vector3d &angles)
     anglez = atan2( s1*Rot(2,0) - c1*Rot(1,0) , c1*Rot(1,1) - s1*Rot(2,1) );
     
     // radians to degrees convertion
-    angles(0) = -anglex*180/pi;
-    angles(1) = -angley*180/pi;
-    angles(2) = -anglez*180/pi;
-    
+    if(degrees)
+        angles = Eigen::Vector3d( -anglex*180/pi, -angley*180/pi, -anglez*180/pi );
+    else 
+        angles = Eigen::Vector3d( -anglex, -angley, -anglez );
+//     angles(0) = -anglex*180/pi;
+//     angles(1) = -angley*180/pi;
+//     angles(2) = -anglez*180/pi;
     return;
 }
 
-void anglesfromRotationZero(Eigen::Matrix3d &Rot, Eigen::Vector3d &angles)
+void anglesfromRotationZero(Eigen::Matrix3d &Rot, Eigen::Vector3d &angles, bool degrees)
 {
     double anglex = 0.0;
     double angley = 0.0;
@@ -185,9 +188,11 @@ void anglesfromRotationZero(Eigen::Matrix3d &Rot, Eigen::Vector3d &angles)
     anglez = atan2( s1*RR(2,0) - c1*RR(1,0) , c1*RR(1,1) - s1*RR(2,1) );
     
     // radians to degrees convertion
-    angles(0) = -anglex*180/pi;
-    angles(1) = -angley*180/pi;
-    angles(2) = -anglez*180/pi;
+    if(degrees)
+        angles = Eigen::Vector3d( -anglex*180/pi, -angley*180/pi, -anglez*180/pi );
+    else 
+        angles = Eigen::Vector3d( -anglex, -angley, -anglez );
+    
     
     return;
 }

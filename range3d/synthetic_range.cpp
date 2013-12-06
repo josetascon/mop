@@ -303,14 +303,14 @@ int main(int argc, char* argv[])
 	  
 	  // ============================================ Plot Data ============================================
 	  
-// 	  writeGraph( char *("synthetic_opt.graph"), sr01.Quat_cumulative, sr01.tr_cumulative ); 
+	  writeGraph( (char*)"synthetic_opt.graph", sr01.Quat_cumulative, sr01.tr_cumulative ); 
 // 	  writeGraph( (char*)"synthetic_lin.graph", sr02.Quat_cumulative, sr02.tr_cumulative );
-	  writeTextFileVQ((char*)"syn_rot.txt", qu_synthetic);
-	  writeTextFileVT((char*)"syn_tr.txt", cam_center);
-	  writeTextFileVQ((char*)"syn_rot_opt.txt", sr01.Quat_cumulative);
-	  writeTextFileVT((char*)"syn_tr_opt.txt", sr01.tr_cumulative);
-	  writeTextFileVQ((char*)"syn_rot_lin.txt", sr02.Quat_cumulative);
-	  writeTextFileVT((char*)"syn_tr_lin.txt", sr02.tr_cumulative);
+// 	  writeTextFileVQ((char*)"syn_rot.txt", qu_synthetic);
+// 	  writeTextFileVT((char*)"syn_tr.txt", cam_center);
+// 	  writeTextFileVQ((char*)"syn_rot_opt.txt", sr01.Quat_cumulative);
+// 	  writeTextFileVT((char*)"syn_tr_opt.txt", sr01.tr_cumulative);
+// 	  writeTextFileVQ((char*)"syn_rot_lin.txt", sr02.Quat_cumulative);
+// 	  writeTextFileVT((char*)"syn_tr_lin.txt", sr02.tr_cumulative);
 	  
 	  pcl::PointCloud<pcl::PointXYZ>::Ptr cloud;
 	  Eigen::Vector4d offset = Eigen::Vector4d::Zero();

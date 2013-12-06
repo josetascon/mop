@@ -511,7 +511,6 @@ void convertHomogeneous(Eigen::MatrixXd &data_inhom, Eigen::MatrixXd &data_hom);
 void normalizeHomogeneous(Eigen::MatrixXd &data);
 
 
-
 int countZPositive(Eigen::MatrixXd &data);
 
 /**
@@ -534,9 +533,9 @@ bool readStringList( const std::string& filename, std::vector<std::string>& loca
  * 
  * @date Jul/08/2013
  */
-void anglesfromRotation(Eigen::Matrix3d &Rot, Eigen::Vector3d &angles);
+void anglesfromRotation(Eigen::Matrix3d &Rot, Eigen::Vector3d &angles, bool degrees = true);
 
-void anglesfromRotationZero(Eigen::Matrix3d &Rot, Eigen::Vector3d &angles);
+void anglesfromRotationZero(Eigen::Matrix3d &Rot, Eigen::Vector3d &angles, bool degrees = true);
 
 Eigen::Vector3d radialDistortionCorrection( Eigen::Vector3d &pt2d, Eigen::Matrix3d &kalib, Eigen::VectorXd &distCoeff );
 
