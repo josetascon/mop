@@ -28,13 +28,12 @@
 
 void help()
 { 
-	std::cout << " Usage: ./synthetic -f <#features> -c <#cameras>\n"
+	std::cout << " Usage: ./synthetic_range -f <#features> -c <#cameras>\n"
 				"\tOptions:\n" 
 				"\t[-f]\t Number of features per image to generate (default = 50)\n" 
 				"\t[-c]\t Number of cameras to generate (default = 36)\n"
 				"\t[-w]\t Width of images (default = 640)\n"
 				"\t[-h]\t Height of images (default = 480)\n"
-				"\t[-n]\t Standard Deviation for Gaussian Noise (zero mean) in image points (default = 0.3)\n"
 				"\t[-d]\t Frontal distance of three-dimensional points to cameras (default = 1.5)\n"
 				"\t[-r]\t Ratio of camera circular rigid (default = 1.0)\n"
 				"\t[-a]\t Run statistical analysis\n"
@@ -57,7 +56,7 @@ int main(int argc, char* argv[])
     int num_cameras = 36;
     int image_width = 640;
     int image_height = 480;
-    std::string output_file = "stats_synthetic_ba.txt";
+    std::string output_file = "stats_synthetic_range.txt";
     
     // ================ Check input ==============
     if( argc < 2 )
@@ -91,12 +90,6 @@ int main(int argc, char* argv[])
 	      i++;
 	      image_height = pchar2int(argv[i]);
 	  }
-	  else if( strcmp( s, "-n" ) == 0 )
-	  {
-	      i++;
-	      noise_std = pchar2float(argv[i]);
-	      max_noise = noise_std + 0.1;
-	  }
 	  else if( strcmp( s, "-a" ) == 0 )
 	  {
 	      analysis = true;
@@ -129,39 +122,53 @@ int main(int argc, char* argv[])
         }
         
     }
-    num_features = fxc*num_cameras;
+    
     
     if ( analysis )
     {
         experiments = 21; //nominal 21
-        noise_std = 0.1;
-        max_noise = 1.01; //nominal 1.01
     }
     
-    Eigen::MatrixXd data_residual_initial(experiments,10);
-    Eigen::MatrixXd data_residual_final(experiments,10);
-    Eigen::MatrixXd data_estimation(experiments,10);
-    Eigen::MatrixXd data_time(experiments,10);
-    int count_std = 0;
+    int config = 1; //experiment configuration
+    Eigen::MatrixXd details(config,4); // num_cameras, fxc, num_features, ratio
+    Eigen::MatrixXd data_lin_final(experiments,4);
+    Eigen::MatrixXd data_opt_final(experiments,4);
+    //Drift
+    std::vector< Eigen::MatrixXd > data_drift_lin(experiments);
+    std::vector< Eigen::MatrixXd > data_drift_opt(experiments);
+    
+    int exp = 0;
+//     int count_std = 0;
     
 //     for ( ;noise_std < max_noise; noise_std += 0.1, count_std++)
 //     {
-//         for ( int exp = 0; exp < experiments; exp++ )
-//         {
+        for ( int exp = 0; exp < experiments; exp++ )
+        {
+	  
+	  num_features = fxc*num_cameras;
+	  
+	  // CONFIG DETAILS
+	  details(0,0) = num_cameras;
+	  details(0,1) = fxc;
+	  details(0,2) = num_features;
+	  details(0,3) = ratio;
+	  
 	  timer_wall timer1;
-	  std::vector< Eigen::Quaternion<double> > qu_synthetic(num_cameras);
-	  std::vector< Eigen::Matrix3d > rot_synthetic(num_cameras);
-	  std::vector< Eigen::Vector3d > cam_center(num_cameras);
-	  std::vector< Eigen::Vector3d > tr_synthetic(num_cameras);
-	  std::vector< Eigen::MatrixXd > camera_synthetic(num_cameras);
-	  std::vector< Eigen::MatrixXd > image_synthetic(num_cameras);
+	  std::vector< Eigen::Quaternion<double> > qu_synthetic(num_cameras + 1);
+	  std::vector< Eigen::Matrix3d > rot_synthetic(num_cameras + 1);
+	  std::vector< Eigen::Vector3d > cam_center(num_cameras + 1);
+	  std::vector< Eigen::Vector3d > tr_synthetic(num_cameras + 1);
+	  std::vector< Eigen::MatrixXd > camera_synthetic(num_cameras + 1);
+	  boost::shared_ptr< std::vector< Eigen::MatrixXd > > image_synthetic (new std::vector< Eigen::MatrixXd >(num_cameras + 1));
 	  Eigen::MatrixXd structure(4,num_features);
 	  Eigen::MatrixXd st_synthetic(4,num_features);
 	  Eigen::MatrixXd st_synthetic_noisy(4,num_features);
 	  
-	  Eigen::Matrix<bool,-1,-1> visibility(num_cameras,num_features);
-	  Eigen::Matrix< Eigen::Vector4d,-1,-1> coordinates(num_cameras,num_features);
-	  Eigen::Matrix< Eigen::Vector4d,-1,-1> coordinates_noise(num_cameras,num_features);
+	  boost::shared_ptr< Eigen::Matrix<bool,-1,-1> > visibility (new Eigen::Matrix<bool,-1,-1> (num_cameras + 1,num_features) );
+	  boost::shared_ptr< Eigen::Matrix< Eigen::Vector4d,-1,-1> > coordinates 
+	  (new Eigen::Matrix< Eigen::Vector4d,-1,-1> (num_cameras + 1,num_features) );
+	  boost::shared_ptr< Eigen::Matrix< Eigen::Vector4d,-1,-1> > coordinates_noise 
+	  (new Eigen::Matrix< Eigen::Vector4d,-1,-1> (num_cameras + 1,num_features) );
 	  
 	  Eigen::Matrix3d K;
 	  double wd2 = image_width/2.0;
@@ -188,7 +195,7 @@ int main(int argc, char* argv[])
 	  tr_synthetic[0] = qu_synthetic[0]*(-1.0*cam_center[0]);
 	  camera_synthetic[0] = buildProjectionMatrix( K, rot_synthetic[0], tr_synthetic[0] );
 	  st_synthetic = Eigen::MatrixXd::Ones(4,num_features);
-	  visibility = Eigen::Matrix<bool,-1,-1>::Zero(num_cameras,num_features);
+	  (*visibility) = Eigen::Matrix<bool,-1,-1>::Zero(num_cameras + 1,num_features);
 	  // Generate rotation and translation
 	  for(register int cam = 1; cam < num_cameras; ++cam)
 	  {
@@ -205,6 +212,14 @@ int main(int argc, char* argv[])
 	      tr_synthetic[cam] = -Rtmp*cam_center[cam];
 	      camera_synthetic[cam] = buildProjectionMatrix( K, Rtmp, tr_synthetic[cam] );
 	  }
+	  
+	  // Loop Close Camera  ||  Last camera equal to First
+	  qu_synthetic[num_cameras] = Eigen::Quaternion<double>::Identity();
+	  rot_synthetic[num_cameras] = Eigen::Matrix3d::Identity();;
+	  cam_center[num_cameras] = Eigen::Vector3d(0.0, 0.0, 1.0*ratio);
+	  tr_synthetic[num_cameras] = qu_synthetic[num_cameras]*(-1.0*cam_center[num_cameras]);;
+	  camera_synthetic[num_cameras] = buildProjectionMatrix( K, rot_synthetic[num_cameras], tr_synthetic[num_cameras] );
+	      
 	  std::cout << "[OK]\n";
 	  // ======================================== END Cameras init ========================================
 	  
@@ -237,20 +252,20 @@ int main(int argc, char* argv[])
 	  for(register int cam = 0; cam < num_cameras; ++cam)
 	  {
 	      Eigen::MatrixXd tmp = st_synthetic;//.block( 0, cam*fxc, 4, fxc );
-	      image_synthetic[cam] = camera_synthetic[cam]*tmp;
-	      normalizeHomogeneous( image_synthetic[cam] );
+	      (*image_synthetic)[cam] = camera_synthetic[cam]*tmp;
+	      normalizeHomogeneous( (*image_synthetic)[cam] );
 	      Eigen::MatrixXd W;
 	      Eigen::MatrixXd Xn;
 	      for(register int ft = 0; ft < num_features; ++ft)
 	      {
-		Eigen::Vector3d ff = image_synthetic[cam].col(ft);
+		Eigen::Vector3d ff = (*image_synthetic)[cam].col(ft);
 		if ( (ff(0) < image_width) && (ff(0) > 0.0) && (ff(1) < image_height) && (ff(1) > 0.0) )
 		{
-		    visibility(cam,ft) = true;
+		    (*visibility)(cam,ft) = true;
 		    Eigen::Vector4d vv = st_synthetic.col(ft);
 		    Eigen::Vector3d pp = rot_synthetic[cam]*vv.head(3) + tr_synthetic[cam];
 		    vv.head(3) = pp;
-		    coordinates(cam,ft) = vv;
+		    (*coordinates)(cam,ft) = vv;
 		    
 		    // Noise model
 		    Xn = vv;
@@ -258,32 +273,109 @@ int main(int argc, char* argv[])
 		    vv(0) += std::sqrt(W(0)) * gaussian(gen);
 		    vv(1) += std::sqrt(W(1)) * gaussian(gen);
 		    vv(2) += std::sqrt(W(2)) * gaussian(gen);
-		    coordinates_noise(cam,ft) = vv;
+		    (*coordinates_noise)(cam,ft) = vv;
 		}
 	      }
 	  }
+	  image_synthetic.reset();
+	  
+	  // Loop Close Camera  ||  Last camera equal to First
+	  for(register int ft = 0; ft < num_features; ++ft)
+	  {
+	      (*visibility)(num_cameras,ft) = (*visibility)(0,ft);
+	      (*coordinates)(num_cameras,ft) = (*coordinates)(0,ft);
+	      (*coordinates_noise)(num_cameras,ft) = (*coordinates_noise)(0,ft);
+	  }
+	  
 	  std::cout << "[OK]\n";
-            printf("Visibility Matrix [%d x %d]\n\n",visibility.rows(),visibility.cols());
+            printf("Visibility Matrix [%d x %d]\n\n",visibility->rows(),visibility->cols());
 // 	  std::cout << "Visibility =\n" << visibility << "\n";
 	  // ======================================== END Synthetic Image Data ========================================
 	  
 	  // ========================================== Range Pose ==========================================
-	  SimpleRegistration sr01( num_cameras, num_features, K );
+	  
+	  SimpleRegistration sr01( num_cameras + 1, num_features, K );
 	  timer1.start();
-	  sr01.solvePose( &visibility, &coordinates, true ); // true for optimal
+	  sr01.solvePose( visibility.get(), coordinates.get(), true ); // true for optimal
 	  std::cout << "Elapsed time to solve Pose: " << timer1.elapsed_s() << " [s]\n";
 	  
-	  SimpleRegistration sr02( num_cameras, num_features, K );
+	  SimpleRegistration sr02( num_cameras + 1, num_features, K );
 	  timer1.start();
-	  sr02.solvePose( &visibility, &coordinates_noise, false ); // false for linear
+	  sr02.solvePose( visibility.get(), coordinates_noise.get(), false ); // false for linear
 	  std::cout << "Elapsed time to solve Pose: " << timer1.elapsed_s() << " [s]\n";
 	  
+	  visibility.reset();
+	  coordinates.reset();
+	  coordinates_noise.reset();
 	  
 	  // ======================================== END Range Pose ========================================
 	  
 	  
 	  // ========================================== Error Calculation ==========================================
-// 	  // Residual Error (measured - estimated); Calculated in GloblaOptimizer
+	  // Final error, Final - First camera
+	  Eigen::Vector3d cf, angle_opt, angle_lin;
+	  cf = sr01.Qn_global[num_cameras].conjugate()*(-sr01.tr_global[num_cameras]);	// center final - cinit (0)
+	  double opt_euclidean_error = cf.norm();
+	  cf = sr02.Qn_global[num_cameras].conjugate()*(-sr02.tr_global[num_cameras]);	// center final - cinit (0)
+	  double lin_euclidean_error = cf.norm();
+	  
+	  Eigen::Matrix3d rot = sr01.Qn_global[num_cameras].toRotationMatrix();
+	  anglesfromRotationZero( rot, angle_opt );
+	  rot = sr02.Qn_global[num_cameras].toRotationMatrix();
+	  anglesfromRotationZero( rot, angle_lin );
+	  
+	  std::cout << "\n================================ Error Stats ==================================\n";
+	  std::cout << "Euclidean distance for optimal method = " << opt_euclidean_error << " [m]\n";
+	  std::cout << "Angle difference for optimal method = " << angle_opt.transpose() << " (degrees)\n";
+	  
+	  std::cout << "Euclidean distance for linear method = " << lin_euclidean_error << " [m]\n";
+	  std::cout << "Angle difference for linear method = " << angle_lin.transpose() << " (degrees)\n";
+	  
+	  data_lin_final(exp, 0) = lin_euclidean_error;
+	  data_opt_final(exp, 0) = opt_euclidean_error;
+	  data_lin_final.row(exp).tail(3) = angle_lin.transpose();
+	  data_opt_final.row(exp).tail(3) = angle_opt.transpose();
+	  
+// 	  std::cout << "Matrix for linear method = " << data_lin_final << "\n";
+	  
+	  // Drift every camera, each experiment
+	  data_drift_lin[exp] = Eigen::MatrixXd::Zero(num_cameras+1,4);
+	  data_drift_opt[exp] = Eigen::MatrixXd::Zero(num_cameras+1,4);
+	  
+	  for (register int cam = 0; cam < num_cameras + 1; ++cam)
+	  {
+	      Eigen::Vector3d center = qu_synthetic[cam].conjugate()*(-tr_synthetic[cam]);
+	      Eigen::Vector3d center_opt = sr01.Qn_global[cam].conjugate()*(-sr01.tr_global[cam]);
+	      Eigen::Vector3d center_lin = sr02.Qn_global[cam].conjugate()*(-sr02.tr_global[cam]);
+	      
+	      double drift_dist_opt = (center - center_opt).norm();
+	      double drift_dist_lin = (center - center_lin).norm();
+	      
+	      // Angles calculation
+	      Eigen::Vector3d angle, angle_opt, angle_lin;
+	      Eigen::Matrix3d rot;
+	      
+	      rot = qu_synthetic[cam].toRotationMatrix();
+	      anglesfromRotationZero( rot, angle );
+	      rot = sr01.Qn_global[cam].toRotationMatrix();
+	      anglesfromRotationZero( rot, angle_opt );
+	      rot = sr02.Qn_global[cam].toRotationMatrix();
+	      anglesfromRotationZero( rot, angle_lin );
+	      
+	      // Angle error is just the the substraction
+	      angle_opt -= angle;
+	      angle_lin -= angle;
+	      
+	      // Saving the data
+	      data_drift_opt[exp](cam, 0) = drift_dist_opt;
+	      data_drift_lin[exp](cam, 0) = drift_dist_lin;
+	      data_drift_opt[exp].row(cam).tail(3) = angle_opt.transpose();
+	      data_drift_lin[exp].row(cam).tail(3) = angle_lin.transpose();
+	  }
+	  
+	  
+	  
+	  // Residual Error (measured - estimated); Calculated in GloblaOptimizer
 // // 	  double residual = reprojectionErrorCalculation( &visibility, &coordinates_noise, &intrinsics_param, 
 // // 						&opt01.quaternion, &opt01.translation, &opt01.structure );
 // // 	  std::cout << "Residual error from function: " << residual << "\n";
@@ -303,53 +395,65 @@ int main(int argc, char* argv[])
 	  
 	  // ============================================ Plot Data ============================================
 	  
-	  writeGraph( (char*)"synthetic_opt.graph", sr01.Quat_cumulative, sr01.tr_cumulative ); 
-// 	  writeGraph( (char*)"synthetic_lin.graph", sr02.Quat_cumulative, sr02.tr_cumulative );
+// 	  writeGraph( (char*)"synthetic_opt.graph", sr01.Qn_global, sr01.tr_global ); 
+// 	  writeGraph( (char*)"synthetic_lin.graph", sr02.Qn_global, sr02.tr_global );
 // 	  writeTextFileVQ((char*)"syn_rot.txt", qu_synthetic);
 // 	  writeTextFileVT((char*)"syn_tr.txt", cam_center);
-// 	  writeTextFileVQ((char*)"syn_rot_opt.txt", sr01.Quat_cumulative);
-// 	  writeTextFileVT((char*)"syn_tr_opt.txt", sr01.tr_cumulative);
-// 	  writeTextFileVQ((char*)"syn_rot_lin.txt", sr02.Quat_cumulative);
-// 	  writeTextFileVT((char*)"syn_tr_lin.txt", sr02.tr_cumulative);
+// 	  writeTextFileVQ((char*)"syn_rot_opt.txt", sr01.Qn_global);
+// 	  writeTextFileVT((char*)"syn_tr_opt.txt", sr01.tr_global);
+// 	  writeTextFileVQ((char*)"syn_rot_lin.txt", sr02.Qn_global);
+// 	  writeTextFileVT((char*)"syn_tr_lin.txt", sr02.tr_global);
 	  
-	  pcl::PointCloud<pcl::PointXYZ>::Ptr cloud;
-	  Eigen::Vector4d offset = Eigen::Vector4d::Zero();
-	  offset.head(3) = tr_synthetic[0];
-	  Eigen::MatrixXd WorldPts = st_synthetic.colwise() + offset;
-	  
-	  
-	  eigen2PointCloud( WorldPts, cloud );
-	  
-	  boost::shared_ptr<pcl::visualization::PCLVisualizer> viewer;
-	  viewer = visualizeCloud(cloud);
-	  visualizeCameras(viewer, sr01.Quat_cumulative, sr01.tr_cumulative);
-	  visualizeCameras(viewer, sr02.Quat_cumulative, sr02.tr_cumulative);
-	  
-	  while (!viewer->wasStopped ())
+	  if ( !analysis)
 	  {
-	      viewer->spinOnce (100);
-	      boost::this_thread::sleep (boost::posix_time::microseconds (100000));
+	      pcl::PointCloud<pcl::PointXYZ>::Ptr cloud;
+	      Eigen::Vector4d offset = Eigen::Vector4d::Zero();
+	      offset.head(3) = tr_synthetic[0];
+	      Eigen::MatrixXd WorldPts = st_synthetic.colwise() + offset;
+	      
+	      
+	      eigen2PointCloud( WorldPts, cloud );
+	      
+	      boost::shared_ptr<pcl::visualization::PCLVisualizer> viewer;
+	      viewer = visualizeCloud(cloud);
+	      visualizeCameras(viewer, sr01.Qn_global, sr01.tr_global);
+	      visualizeCameras(viewer, sr02.Qn_global, sr02.tr_global);
+	      
+	      while (!viewer->wasStopped ())
+	      {
+		viewer->spinOnce (100);
+		boost::this_thread::sleep (boost::posix_time::microseconds (100000));
+	      }
 	  }
 	  
 	  // ========================================== END Plot Data ==========================================
-//         }
+        }
 //     }
     
-//     if (analysis)
-//     {
-//         ofstream myfile1;
-//         myfile1.open (output_file.c_str());
-//         myfile1 << "Synthetic Run of a Structure from Motion system\n";
-//         myfile1 << "Set size [num_cameras x num_features] = [" << num_cameras << " x " << num_features << "]\n";
-//         myfile1 << "Camera size = [" << image_width << " x " << image_height << "]\n";
-//         myfile1 << "Evalutation -> #Noise(columns): " << count_std;
-//         myfile1 << ", {std from 0.1 to 1.1}\t #Experiments(rows): " << experiments << "\n\n"; 
-//         myfile1 << "Residual Initial:\n" << data_residual_initial << "\n\n";
-//         myfile1 << "Time:\n" << data_time << "\n\n";
-//         myfile1 << "Residual Final:\n" << data_residual_final << "\n\n";
-//         myfile1 << "Estimation Final:\n" << data_estimation << "\n\n";
-//         myfile1.close();
-//     }
+    if (analysis)
+    {
+        ofstream myfile1;
+        myfile1.open (output_file.c_str());
+        myfile1 << "Synthetic Run of a Structure from Motion system\n";
+        myfile1 << "Details [num_cameras x num_features] = [" << details(0) << " x " << details(1) << "]\n";
+        myfile1 << "Ratio in circle motion = " << details(3) << "\n";
+        myfile1 << "#Experiments(rows): " << experiments << "\n\n";
+        myfile1 << "Final distances with linear method:\n" << data_lin_final << "\n\n";
+        myfile1 << "Final distances with optimal method:\n" << data_opt_final << "\n\n";
+        myfile1 << "Drift linear data:"  << "\n";
+        for (register int exp = 0; exp < data_drift_lin.size(); ++exp)
+        {
+	  myfile1 << "Experiment " << exp << ":\n";
+	  myfile1 << data_drift_lin[exp] << "\n";
+        }
+        myfile1 << "\nDrift optimal data:"  << "\n";
+        for (register int exp = 0; exp < data_drift_opt.size(); ++exp)
+        {
+	  myfile1 << "Experiment " << exp << ":\n";
+	  myfile1 << data_drift_opt[exp] << "\n";
+        }
+        myfile1.close();
+    }
     
     exit(0);
 }    

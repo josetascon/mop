@@ -222,7 +222,7 @@ int main(int argc, char* argv[])
 //     std::vector< double > coefficients(5,0.0);/// active for dinosaur
     /*
     GlobalOptimizer opt01;
-    opt01.setParameters( &featM.visibility, &featM.coordinates, &sfm01.Quat_cumulative, &sfm01.tr_cumulative, &sfm01.Structure );
+    opt01.setParameters( &featM.visibility, &featM.coordinates, &sfm01.Quat_cumulative, &sfm01.tr_global, &sfm01.Structure );
     opt01.setIntrinsics( &intrinsics_param );
     opt01.setDistortion( &coefficients );
     opt01.runBA();// argv[0] );// bundle adjustment to all data
@@ -295,8 +295,8 @@ int main(int argc, char* argv[])
 //     WP.push_back(pts);
 //     
 //     // sfm data
-//     PlotGL::viewer.setRotation( &sfm01.Rot_cumulative );
-//     PlotGL::viewer.setTranslation( &sfm01.tr_cumulative );
+//     PlotGL::viewer.setRotation( &sfm01.Rot_global );
+//     PlotGL::viewer.setTranslation( &sfm01.tr_global );
 //     PlotGL::viewer.setStructure( &WP );
 // //     PlotGL::viewer.setColor( &Color );
     

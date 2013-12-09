@@ -20,16 +20,16 @@ void SfM::solvePose(std::vector< MatchQuery > *globalMatch, std::vector< std::ve
     Quat_relative.resize(num_cameras);
     tr_relative.resize(num_cameras);
     Cameras_RCV.resize(num_cameras);
-    Quat_cumulative.resize(num_cameras);
-    Rot_cumulative.resize(num_cameras);
-    tr_cumulative.resize(num_cameras);
+    Qn_global.resize(num_cameras);
+    Rot_global.resize(num_cameras);
+    tr_global.resize(num_cameras);
     
 //     t12_RCV.resize(num_cameras-1);
 //     t13_RCV.resize(num_cameras-2);
     
-    Quat_relative[0] = Quat_cumulative[0] = Rot_cumulative[0] = Eigen::Quaternion<double>(1.0, 0.0, 0.0, 0.0);
-    tr_relative[0] = tr_cumulative[0] = Eigen::Vector3d::Zero();
-    Cameras_RCV[0] = buildProjectionMatrix( Calibration, Rot_cumulative[0], tr_cumulative[0] );
+    Quat_relative[0] = Qn_global[0] = Rot_global[0] = Eigen::Quaternion<double>(1.0, 0.0, 0.0, 0.0);
+    tr_relative[0] = tr_global[0] = Eigen::Vector3d::Zero();
+    Cameras_RCV[0] = buildProjectionMatrix( Calibration, Rot_global[0], tr_global[0] );
     
     std::vector< cv::DMatch > match_c;
     Eigen::Matrix3d Rot_chosen;
@@ -46,10 +46,10 @@ void SfM::solvePose(std::vector< MatchQuery > *globalMatch, std::vector< std::ve
         Quat_relative[k+1] = Eigen::Quaternion<double>(Rot_chosen);
         tr_relative[k+1] = tr_chosen;
         // comment this in order to use scalefromTranslations
-        Rot_cumulative[k+1] = Rot_chosen*Rot_cumulative[k];
-        Quat_cumulative[k+1] = Quat_relative[k+1]*Quat_cumulative[k];
-        tr_cumulative[k+1] = Rot_chosen*tr_cumulative[k] + tr_chosen;
-        Cameras_RCV[k+1] = buildProjectionMatrix( Calibration, Rot_cumulative[k+1], tr_cumulative[k+1] );
+        Rot_global[k+1] = Rot_chosen*Rot_global[k];
+        Qn_global[k+1] = Quat_relative[k+1]*Qn_global[k];
+        tr_global[k+1] = Rot_chosen*tr_global[k] + tr_chosen;
+        Cameras_RCV[k+1] = buildProjectionMatrix( Calibration, Rot_global[k+1], tr_global[k+1] );
         //Debug
 //         std::cout << "Camera Matrix Recover " <<  cam2 << ":\n" << Cameras_RCV[cam2] << "\n\n";
     }
@@ -64,7 +64,7 @@ void SfM::solvePose(std::vector< MatchQuery > *globalMatch, std::vector< std::ve
 // 			Calibration, Fundamental[kk], Rot_chosen, tr_chosen );
 //         t13_RCV[k] = tr_chosen;
 //     }
-//     scalefromTranslations( Rot_cumulative, t12_RCV, t13_RCV, tr_relative ); ///orig scale (not working properly)
+//     scalefromTranslations( Rot_global, t12_RCV, t13_RCV, tr_relative ); ///orig scale (not working properly)
     return;
 }
 
@@ -76,13 +76,13 @@ void SfM::solvePose(Eigen::Matrix<bool,-1,-1> *visibility,
     Quat_relative.resize(num_cameras);
     tr_relative.resize(num_cameras);
     Cameras_RCV.resize(num_cameras);
-    Quat_cumulative.resize(num_cameras);
-    Rot_cumulative.resize(num_cameras);
-    tr_cumulative.resize(num_cameras);
+    Qn_global.resize(num_cameras);
+    Rot_global.resize(num_cameras);
+    tr_global.resize(num_cameras);
     
-    Quat_relative[0] = Quat_cumulative[0] = Rot_cumulative[0] = Eigen::Quaternion<double>(1.0, 0.0, 0.0, 0.0);
-    tr_relative[0] = tr_cumulative[0] = Eigen::Vector3d::Zero();
-    Cameras_RCV[0] = buildProjectionMatrix( Calibration, Rot_cumulative[0], tr_cumulative[0] );
+    Quat_relative[0] = Qn_global[0] = Rot_global[0] = Eigen::Quaternion<double>(1.0, 0.0, 0.0, 0.0);
+    tr_relative[0] = tr_global[0] = Eigen::Vector3d::Zero();
+    Cameras_RCV[0] = buildProjectionMatrix( Calibration, Rot_global[0], tr_global[0] );
     
     std::vector< cv::Point2d > pts1, pts2;
     Eigen::Matrix3d Rot_chosen;
@@ -112,13 +112,13 @@ void SfM::solvePose(Eigen::Matrix<bool,-1,-1> *visibility,
         Quat_relative[k+1] = Eigen::Quaternion<double>(Rot_chosen);
         tr_relative[k+1] = tr_chosen;
         
-        Rot_cumulative[k+1] = Rot_chosen*Rot_cumulative[k];
-        Quat_cumulative[k+1] = Quat_relative[k+1]*Quat_cumulative[k];
-        tr_cumulative[k+1] = Rot_chosen*tr_cumulative[k] + tr_chosen;
-        Cameras_RCV[k+1] = buildProjectionMatrix( Calibration, Rot_cumulative[k+1], tr_cumulative[k+1] );
+        Rot_global[k+1] = Rot_chosen*Rot_global[k];
+        Qn_global[k+1] = Quat_relative[k+1]*Qn_global[k];
+        tr_global[k+1] = Rot_chosen*tr_global[k] + tr_chosen;
+        Cameras_RCV[k+1] = buildProjectionMatrix( Calibration, Rot_global[k+1], tr_global[k+1] );
         //Debug
-//         anglesfromRotation(Rot_cumulative[cam2], angles_vec1);
-//         std::cout << "Rotation " <<  cam2 << ":\n" << Rot_cumulative[cam2] << "\n";
+//         anglesfromRotation(Rot_global[cam2], angles_vec1);
+//         std::cout << "Rotation " <<  cam2 << ":\n" << Rot_global[cam2] << "\n";
 //         std::cout << "Rotation angles " <<  cam2 << ":\n" << angles_vec1.transpose() << "\n";
 //         std::cout << "Equivalent quaternion Cam " << cam2 << ":\n" << Quat_relative[cam2].w() << " " << Quat_relative[cam2].vec().transpose() << '\n';
 //         std::cout << "Translation " <<  cam2 << ":\n" << tr_relative[cam2].transpose() << "\n";
@@ -172,14 +172,14 @@ void SfM::updateCamera()
     Eigen::Vector3d angles_vec1;
     for (int cam = 0; cam < num_cameras; cam++)
     {
-        Quat_cumulative[cam].normalize();
-        Rot_cumulative[cam] = Quat_cumulative[cam].toRotationMatrix();
-        Cameras_RCV[cam] = buildProjectionMatrix( Calibration, Rot_cumulative[cam], tr_cumulative[cam] );
-        anglesfromRotation(Rot_cumulative[cam], angles_vec1);
-        std::cout << "Rotation " <<  cam << ":\n" << Rot_cumulative[cam] << "\n";
+        Qn_global[cam].normalize();
+        Rot_global[cam] = Qn_global[cam].toRotationMatrix();
+        Cameras_RCV[cam] = buildProjectionMatrix( Calibration, Rot_global[cam], tr_global[cam] );
+        anglesfromRotation(Rot_global[cam], angles_vec1);
+        std::cout << "Rotation " <<  cam << ":\n" << Rot_global[cam] << "\n";
         std::cout << "Rotation angles " <<  cam << ":\n" << angles_vec1.transpose() << "\n";
-        std::cout << "Equivalent quaternion Cam " << cam << ":\n" << Quat_cumulative[cam].w() << " " << Quat_cumulative[cam].vec().transpose() << '\n';
-        std::cout << "Translation " <<  cam << ":\n" << tr_cumulative[cam].transpose() << "\n";
+        std::cout << "Equivalent quaternion Cam " << cam << ":\n" << Qn_global[cam].w() << " " << Qn_global[cam].vec().transpose() << '\n';
+        std::cout << "Translation " <<  cam << ":\n" << tr_global[cam].transpose() << "\n";
         std::cout << "Camera Matrix Recover " <<  cam << ":\n" << Cameras_RCV[cam] << "\n\n";
     } 
 }
@@ -474,15 +474,15 @@ void SimpleRegistration::solvePose(std::vector< MatchQuery > *globalMatch, std::
 {
     // initialization
     Cameras_RCV.resize(num_cameras);
-    Rot_cumulative.resize(num_cameras);
-    Quat_cumulative.resize(num_cameras);
-    tr_cumulative.resize(num_cameras);
+    Rot_global.resize(num_cameras);
+    Qn_global.resize(num_cameras);
+    tr_global.resize(num_cameras);
     StructurePlot.resize(num_cameras-1); // plot TESTING
     
-    Rot_cumulative[0] = Eigen::Matrix3d::Identity();
-    tr_cumulative[0] = Eigen::Vector3d::Zero();
-    Quat_cumulative[0] = Eigen::Quaternion<double>(1.0, 0.0, 0.0, 0.0); //save quaternion
-    Cameras_RCV[0] = buildProjectionMatrix( Calibration, Rot_cumulative[0], tr_cumulative[0] );
+    Rot_global[0] = Eigen::Matrix3d::Identity();
+    tr_global[0] = Eigen::Vector3d::Zero();
+    Qn_global[0] = Eigen::Quaternion<double>(1.0, 0.0, 0.0, 0.0); //save quaternion
+    Cameras_RCV[0] = buildProjectionMatrix( Calibration, Rot_global[0], tr_global[0] );
     cv::Mat KOCV = (cv::Mat_<double>(3,3) << Calibration(0,0), 0.0, Calibration(0,2), 0.0, Calibration(1,1), Calibration(1,2), 0.0, 0.0, 1.0);
     
     std::vector< cv::Point2d > pts1, pts2;
@@ -512,17 +512,17 @@ void SimpleRegistration::solvePose(std::vector< MatchQuery > *globalMatch, std::
 //         opt01.pose3Dto3D();
         // TESTING OPT. **** NOTE: There is nothing to optimize, the basic algorithm has a small cost value
         
-        Rot_cumulative[k+1] = Rot*Rot_cumulative[k]; // Rot;
-        tr_cumulative[k+1] = Rot*tr_cumulative[k] + tr; // tr_cumulative[k+1] = tr;
-        Quat_cumulative[k+1] = Eigen::Quaternion<double>(Rot_cumulative[k+1]); //save quaternion
-        Cameras_RCV[k+1] = buildProjectionMatrix( Calibration, Rot_cumulative[k+1], tr_cumulative[k+1] );
+        Rot_global[k+1] = Rot*Rot_global[k]; // Rot;
+        tr_global[k+1] = Rot*tr_global[k] + tr; // tr_global[k+1] = tr;
+        Qn_global[k+1] = Eigen::Quaternion<double>(Rot_global[k+1]); //save quaternion
+        Cameras_RCV[k+1] = buildProjectionMatrix( Calibration, Rot_global[k+1], tr_global[k+1] );
         StructurePlot[k] = WP1; // plot TESTING
         // Debug:
-        anglesfromRotation( Rot_cumulative[k+1], angles_vec1);
-        std::cout << "Rotation " <<  k+1 << ":\n" << Rot_cumulative[k+1] << "\n";
+        anglesfromRotation( Rot_global[k+1], angles_vec1);
+        std::cout << "Rotation " <<  k+1 << ":\n" << Rot_global[k+1] << "\n";
         std::cout << "Rotation angles " <<  k+1 << ":\n" << angles_vec1.transpose() << "\n";
-//         std::cout << "Equivalent quaternion Cam " << k+1 << ":\n" << Quat_cumulative[k+1].w() << " " << Quat_cumulative[k+1].vec().transpose() << '\n';
-        std::cout << "Translation " <<  k+1 << ":\n" << tr_cumulative[k+1].transpose() << "\n";
+//         std::cout << "Equivalent quaternion Cam " << k+1 << ":\n" << Qn_global[k+1].w() << " " << Qn_global[k+1].vec().transpose() << '\n';
+        std::cout << "Translation " <<  k+1 << ":\n" << tr_global[k+1].transpose() << "\n";
         std::cout << "Camera Matrix Recover " <<  k+1 << ":\n" << Cameras_RCV[k+1] << "\n\n";
     }
     return;
@@ -534,15 +534,15 @@ void SimpleRegistration::solvePose(Eigen::Matrix<bool,-1,-1> *visibility, Eigen:
 {
     // initialization
     Cameras_RCV.resize(num_cameras);
-    Rot_cumulative.resize(num_cameras);
-    Quat_cumulative.resize(num_cameras);
-    tr_cumulative.resize(num_cameras);
+    Rot_global.resize(num_cameras);
+    Qn_global.resize(num_cameras);
+    tr_global.resize(num_cameras);
     Structure = Eigen::MatrixXd::Zero(4,visibility->cols());
     
-    Rot_cumulative[0] = Eigen::Matrix3d::Identity();
-    tr_cumulative[0] = Eigen::Vector3d::Zero();
-    Quat_cumulative[0] = Eigen::Quaternion<double>(1.0, 0.0, 0.0, 0.0); //save quaternion
-    Cameras_RCV[0] = buildProjectionMatrix( Calibration, Rot_cumulative[0], tr_cumulative[0] );
+    Rot_global[0] = Eigen::Matrix3d::Identity();
+    tr_global[0] = Eigen::Vector3d::Zero();
+    Qn_global[0] = Eigen::Quaternion<double>(1.0, 0.0, 0.0, 0.0); //save quaternion
+    Cameras_RCV[0] = buildProjectionMatrix( Calibration, Rot_global[0], tr_global[0] );
     cv::Mat KOCV = (cv::Mat_<double>(3,3) << Calibration(0,0), 0.0, Calibration(0,2), 0.0, Calibration(1,1), Calibration(1,2), 0.0, 0.0, 1.0);
     
     std::vector<int> ft_number;
@@ -595,13 +595,13 @@ void SimpleRegistration::solvePose(Eigen::Matrix<bool,-1,-1> *visibility, Eigen:
 // 	  X2.transposeInPlace();
         // END TEST
        
-        Rot_cumulative[k+1] = Rot*Rot_cumulative[k]; // Rot;
-        tr_cumulative[k+1] = Rot*tr_cumulative[k] + tr; // tr_relative[k+1] = tr;
-        Quat_cumulative[k+1] = Eigen::Quaternion<double>(Rot_cumulative[k+1]); //save quaternion
-        Cameras_RCV[k+1] = buildProjectionMatrix( Calibration, Rot_cumulative[k+1], tr_cumulative[k+1] );
+        Rot_global[k+1] = Rot*Rot_global[k]; // Rot;
+        tr_global[k+1] = Rot*tr_global[k] + tr; // tr_relative[k+1] = tr;
+        Qn_global[k+1] = Eigen::Quaternion<double>(Rot_global[k+1]); //save quaternion
+        Cameras_RCV[k+1] = buildProjectionMatrix( Calibration, Rot_global[k+1], tr_global[k+1] );
         
         // Rudimentary structure computation based on MEAN
-//         Eigen::MatrixXd Xtmp = (Rot_cumulative[k]*X1).colwise() + tr_cumulative[k];
+//         Eigen::MatrixXd Xtmp = (Rot_global[k]*X1).colwise() + tr_global[k];
 // //         std::cout << "Temporal X, cam " << k << ":\n";				//Debug
 //         register int idx = 0;
 //         for (register int i = 0; i < goodpt.size(); ++i)
@@ -619,11 +619,11 @@ void SimpleRegistration::solvePose(Eigen::Matrix<bool,-1,-1> *visibility, Eigen:
 //         }
 
         // Debug:
-        anglesfromRotation( Rot_cumulative[k+1], angles_vec1);
-        std::cout << "Rotation " <<  k+1 << ":\n" << Rot_cumulative[k+1] << "\n";
+        anglesfromRotation( Rot_global[k+1], angles_vec1);
+        std::cout << "Rotation " <<  k+1 << ":\n" << Rot_global[k+1] << "\n";
         std::cout << "Rotation angles " <<  k+1 << ":\n" << angles_vec1.transpose() << "\n";
-//         std::cout << "Equivalent quaternion Cam " << k+1 << ":\n" << Quat_cumulative[k+1].w() << " " << Quat_cumulative[k+1].vec().transpose() << '\n';
-        std::cout << "Translation " <<  k+1 << ":\n" << tr_cumulative[k+1].transpose() << "\n";
+//         std::cout << "Equivalent quaternion Cam " << k+1 << ":\n" << Qn_global[k+1].w() << " " << Qn_global[k+1].vec().transpose() << '\n';
+        std::cout << "Translation " <<  k+1 << ":\n" << tr_global[k+1].transpose() << "\n";
         std::cout << "Camera Matrix Recover " <<  k+1 << ":\n" << Cameras_RCV[k+1] << "\n\n";
     }
     
@@ -635,15 +635,15 @@ void SimpleRegistration::solvePoseOptimal(Eigen::Matrix<bool,-1,-1> *visibility,
 {
     // initialization
     Cameras_RCV.resize(num_cameras);
-    Rot_cumulative.resize(num_cameras);
-    Quat_cumulative.resize(num_cameras);
-    tr_cumulative.resize(num_cameras);
+    Rot_global.resize(num_cameras);
+    Qn_global.resize(num_cameras);
+    tr_global.resize(num_cameras);
     Structure = Eigen::MatrixXd::Zero(4,visibility->cols());
     
-    Rot_cumulative[0] = Eigen::Matrix3d::Identity();
-    tr_cumulative[0] = Eigen::Vector3d::Zero();
-    Quat_cumulative[0] = Eigen::Quaternion<double>(1.0, 0.0, 0.0, 0.0); //save quaternion
-    Cameras_RCV[0] = buildProjectionMatrix( Calibration, Rot_cumulative[0], tr_cumulative[0] );
+    Rot_global[0] = Eigen::Matrix3d::Identity();
+    tr_global[0] = Eigen::Vector3d::Zero();
+    Qn_global[0] = Eigen::Quaternion<double>(1.0, 0.0, 0.0, 0.0); //save quaternion
+    Cameras_RCV[0] = buildProjectionMatrix( Calibration, Rot_global[0], tr_global[0] );
     cv::Mat KOCV = (cv::Mat_<double>(3,3) << Calibration(0,0), 0.0, Calibration(0,2), 0.0, Calibration(1,1), Calibration(1,2), 0.0, 0.0, 1.0);
     
     std::vector<int> ft_number;
@@ -697,17 +697,17 @@ void SimpleRegistration::solvePoseOptimal(Eigen::Matrix<bool,-1,-1> *visibility,
         Variance.push_back(variance2);
         // TESTING OPT.
        
-        Rot_cumulative[k+1] = Rot*Rot_cumulative[k]; // Rot;
-        tr_cumulative[k+1] = Rot*tr_cumulative[k] + tr; // tr_relative[k+1] = tr;
-        Quat_cumulative[k+1] = Eigen::Quaternion<double>(Rot_cumulative[k+1]); //save quaternion
-        Cameras_RCV[k+1] = buildProjectionMatrix( Calibration, Rot_cumulative[k+1], tr_cumulative[k+1] );
+        Rot_global[k+1] = Rot*Rot_global[k]; // Rot;
+        tr_global[k+1] = Rot*tr_global[k] + tr; // tr_relative[k+1] = tr;
+        Qn_global[k+1] = Eigen::Quaternion<double>(Rot_global[k+1]); //save quaternion
+        Cameras_RCV[k+1] = buildProjectionMatrix( Calibration, Rot_global[k+1], tr_global[k+1] );
 
         // Debug:
-        anglesfromRotation( Rot_cumulative[k+1], angles_vec1);
-        std::cout << "Rotation " <<  k+1 << ":\n" << Rot_cumulative[k+1] << "\n";
+        anglesfromRotation( Rot_global[k+1], angles_vec1);
+        std::cout << "Rotation " <<  k+1 << ":\n" << Rot_global[k+1] << "\n";
         std::cout << "Rotation angles " <<  k+1 << ":\n" << angles_vec1.transpose() << "\n";
-//         std::cout << "Equivalent quaternion Cam " << k+1 << ":\n" << Quat_cumulative[k+1].w() << " " << Quat_cumulative[k+1].vec().transpose() << '\n';
-        std::cout << "Translation " <<  k+1 << ":\n" << tr_cumulative[k+1].transpose() << "\n";
+//         std::cout << "Equivalent quaternion Cam " << k+1 << ":\n" << Qn_global[k+1].w() << " " << Qn_global[k+1].vec().transpose() << '\n';
+        std::cout << "Translation " <<  k+1 << ":\n" << tr_global[k+1].transpose() << "\n";
         std::cout << "Camera Matrix Recover " <<  k+1 << ":\n" << Cameras_RCV[k+1] << "\n\n";
     }
     
@@ -718,15 +718,15 @@ void SimpleRegistration::solvePose(Eigen::Matrix<bool,-1,-1> *visibility, Eigen:
 {
     // initialization
     Cameras_RCV.resize(num_cameras);
-    Rot_cumulative.resize(num_cameras);
-    Quat_cumulative.resize(num_cameras);
-    tr_cumulative.resize(num_cameras);
+    Rot_global.resize(num_cameras);
+    Qn_global.resize(num_cameras);
+    tr_global.resize(num_cameras);
     Structure = Eigen::MatrixXd::Zero(4,visibility->cols());
     
-    Rot_cumulative[0] = Eigen::Matrix3d::Identity();
-    tr_cumulative[0] = Eigen::Vector3d::Zero();
-    Quat_cumulative[0] = Eigen::Quaternion<double>(1.0, 0.0, 0.0, 0.0); //save quaternion
-    Cameras_RCV[0] = buildProjectionMatrix( Calibration, Rot_cumulative[0], tr_cumulative[0] );
+    Rot_global[0] = Eigen::Matrix3d::Identity();
+    tr_global[0] = Eigen::Vector3d::Zero();
+    Qn_global[0] = Eigen::Quaternion<double>(1.0, 0.0, 0.0, 0.0); //save quaternion
+    Cameras_RCV[0] = buildProjectionMatrix( Calibration, Rot_global[0], tr_global[0] );
     
     Eigen::MatrixXd X1, X2, Xtmp1, Xtmp2, variance1, variance2;
     Eigen::Matrix3d Rot;
@@ -769,17 +769,17 @@ void SimpleRegistration::solvePose(Eigen::Matrix<bool,-1,-1> *visibility, Eigen:
         Variance.push_back(variance1);
         Variance.push_back(variance2);
        
-        Rot_cumulative[k+1] = Rot*Rot_cumulative[k]; // Rot;
-        tr_cumulative[k+1] = Rot*tr_cumulative[k] + tr; // tr_relative[k+1] = tr;
-        Quat_cumulative[k+1] = Eigen::Quaternion<double>(Rot_cumulative[k+1]); //save quaternion
-        Cameras_RCV[k+1] = buildProjectionMatrix( Calibration, Rot_cumulative[k+1], tr_cumulative[k+1] );
+        Rot_global[k+1] = Rot*Rot_global[k]; // Rot;
+        tr_global[k+1] = Rot*tr_global[k] + tr; // tr_relative[k+1] = tr;
+        Qn_global[k+1] = Eigen::Quaternion<double>(Rot_global[k+1]); //save quaternion
+        Cameras_RCV[k+1] = buildProjectionMatrix( Calibration, Rot_global[k+1], tr_global[k+1] );
 
         // Debug:
-        anglesfromRotation( Rot_cumulative[k+1], angles_vec1);
-        std::cout << "Rotation " <<  k+1 << ":\n" << Rot_cumulative[k+1] << "\n";
+        anglesfromRotation( Rot_global[k+1], angles_vec1);
+        std::cout << "Rotation " <<  k+1 << ":\n" << Rot_global[k+1] << "\n";
         std::cout << "Rotation angles " <<  k+1 << ":\n" << angles_vec1.transpose() << "\n";
-//         std::cout << "Equivalent quaternion Cam " << k+1 << ":\n" << Quat_cumulative[k+1].w() << " " << Quat_cumulative[k+1].vec().transpose() << '\n';
-        std::cout << "Translation " <<  k+1 << ":\n" << tr_cumulative[k+1].transpose() << "\n";
+//         std::cout << "Equivalent quaternion Cam " << k+1 << ":\n" << Qn_global[k+1].w() << " " << Qn_global[k+1].vec().transpose() << '\n';
+        std::cout << "Translation " <<  k+1 << ":\n" << tr_global[k+1].transpose() << "\n";
         std::cout << "Camera Matrix Recover " <<  k+1 << ":\n" << Cameras_RCV[k+1] << "\n\n";
     }
 }
@@ -789,14 +789,14 @@ void SimpleRegistration::updateCamera()
     Eigen::Vector3d angles_vec1;
     for (int cam = 0; cam < num_cameras; cam++)
     {
-        Quat_cumulative[cam].normalize();
-        Rot_cumulative[cam] = Quat_cumulative[cam].toRotationMatrix();
-        Cameras_RCV[cam] = buildProjectionMatrix( Calibration, Rot_cumulative[cam], tr_cumulative[cam] );
-        anglesfromRotation(Rot_cumulative[cam], angles_vec1);
-        std::cout << "Rotation " <<  cam << ":\n" << Rot_cumulative[cam] << "\n";
+        Qn_global[cam].normalize();
+        Rot_global[cam] = Qn_global[cam].toRotationMatrix();
+        Cameras_RCV[cam] = buildProjectionMatrix( Calibration, Rot_global[cam], tr_global[cam] );
+        anglesfromRotation(Rot_global[cam], angles_vec1);
+        std::cout << "Rotation " <<  cam << ":\n" << Rot_global[cam] << "\n";
         std::cout << "Rotation angles " <<  cam << ":\n" << angles_vec1.transpose() << "\n";
-        std::cout << "Equivalent quaternion Cam " << cam << ":\n" << Quat_cumulative[cam].w() << " " << Quat_cumulative[cam].vec().transpose() << '\n';
-        std::cout << "Translation " <<  cam << ":\n" << tr_cumulative[cam].transpose() << "\n";
+        std::cout << "Equivalent quaternion Cam " << cam << ":\n" << Qn_global[cam].w() << " " << Qn_global[cam].vec().transpose() << '\n';
+        std::cout << "Translation " <<  cam << ":\n" << tr_global[cam].transpose() << "\n";
         std::cout << "Camera Matrix Recover " <<  cam << ":\n" << Cameras_RCV[cam] << "\n\n";
     } 
 }
@@ -1195,18 +1195,18 @@ void solveStructureInitial(const Eigen::Matrix<bool,-1,-1> &visibility,
     return;
 }
 
-void scalefromTranslations( std::vector< Eigen::Matrix3d > &Rot_cumulative, std::vector< Eigen::Vector3d > &t12_RCV,
-		        std::vector< Eigen::Vector3d > &t13_RCV, std::vector< Eigen::Vector3d > &tr_cumulative )
+void scalefromTranslations( std::vector< Eigen::Matrix3d > &Rot_global, std::vector< Eigen::Vector3d > &t12_RCV,
+		        std::vector< Eigen::Vector3d > &t13_RCV, std::vector< Eigen::Vector3d > &tr_global )
 {
-    int num_cameras = Rot_cumulative.size();
-    // size of tr_cumulative = num_cameras
+    int num_cameras = Rot_global.size();
+    // size of tr_global = num_cameras
     // size of t12_RCV = num_cameras - 1, size of t13_RCV = num_cameras - 2
-    tr_cumulative[0] = Eigen::Vector3d::Zero();
-    tr_cumulative[1] = t12_RCV[0];
+    tr_global[0] = Eigen::Vector3d::Zero();
+    tr_global[1] = t12_RCV[0];
     
     for (int cam = 0; cam < num_cameras-2; cam++)
     {
-        Eigen::Matrix3d R23 = Rot_cumulative[cam+2]*(Rot_cumulative[cam+1].transpose());
+        Eigen::Matrix3d R23 = Rot_global[cam+2]*(Rot_global[cam+1].transpose());
         // Minimize the ratio ||a2vn - lambda*a2vd||
         Eigen::Vector3d a2vn = -t13_RCV[cam].cross(R23*t12_RCV[cam]);
         Eigen::Vector3d a2vd = t13_RCV[cam].cross(t12_RCV[cam+1]);
@@ -1227,7 +1227,7 @@ void scalefromTranslations( std::vector< Eigen::Matrix3d > &Rot_cumulative, std:
         // Update
         t13_RCV[cam] = a1*t13_RCV[cam];
         t12_RCV[cam+1] = a2*t12_RCV[cam+1];
-        tr_cumulative[cam+2] = R23*tr_cumulative[cam+1] + t12_RCV[cam+1];
+        tr_global[cam+2] = R23*tr_global[cam+1] + t12_RCV[cam+1];
 //         std::cout << "t13_RCV" << t13_RCV[cam].transpose() << "\n";
 //         std::cout << "t12_RCV" << t12_RCV[cam+1].transpose() << "\n\n";
     }

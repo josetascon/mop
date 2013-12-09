@@ -39,7 +39,7 @@
 // */
 void help()
 { 
-	std::cout << "\033[1;33m Usage: ./test_initBA -i <rgb_list.xml> -d <depth_list.xml> -o <output.txt>\033[0m\n"
+	std::cout << "\033[1;33m Usage: ./test_cloud -i <rgb_list.xml> -d <depth_list.xml> -o <output.txt>\033[0m\n"
 				"\tOptions:\n" 
 				"\t[-i]\t XML input file name with rgb images\n" 
 				"\t[-d]\t XML input file name with depth images\n" 
@@ -233,7 +233,7 @@ int main(int argc, char* argv[])
 //     std::cout << "Recover structure matrix:\n" << sr01.Structure.transpose() << "\n";
 
     std::vector< pcl::PointCloud<pcl::PointXYZRGBA>::Ptr > set_cloud;
-    cv2PointCloudSet(images, images_depth, K, sr01.Quat_cumulative, sr01.tr_cumulative, set_cloud);
+    cv2PointCloudSet(images, images_depth, K, sr01.Qn_global, sr01.tr_global, set_cloud);
     pcl::PointCloud<pcl::PointXYZRGBA>::Ptr model;
     set2Unique( set_cloud, model );
     

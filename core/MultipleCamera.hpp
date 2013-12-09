@@ -48,9 +48,9 @@ public:
     std::vector< Eigen::Quaternion<double> > Quat_relative;
     std::vector< Eigen::Vector3d > tr_relative;
     std::vector< Eigen::MatrixXd > Cameras_RCV;
-    std::vector< Eigen::Quaternion<double> > Quat_cumulative;
-    std::vector< Eigen::Matrix3d > Rot_cumulative;
-    std::vector< Eigen::Vector3d > tr_cumulative;
+    std::vector< Eigen::Quaternion<double> > Qn_global;
+    std::vector< Eigen::Matrix3d > Rot_global;
+    std::vector< Eigen::Vector3d > tr_global;
     Eigen::MatrixXd Structure;
     Eigen::VectorXi plotSt; // plot TESTING
     
@@ -111,9 +111,9 @@ private:
     
 public:
     std::vector< Eigen::MatrixXd > Cameras_RCV;
-    std::vector< Eigen::Matrix3d > Rot_cumulative;
-    std::vector< Eigen::Quaternion<double> > Quat_cumulative;
-    std::vector< Eigen::Vector3d > tr_cumulative;
+    std::vector< Eigen::Matrix3d > Rot_global;
+    std::vector< Eigen::Quaternion<double> > Qn_global;
+    std::vector< Eigen::Vector3d > tr_global;
     std::vector< Eigen::MatrixXd > Xmodel;
     std::vector< Eigen::MatrixXd > Variance;
     Eigen::MatrixXd Structure; //from now recover pose only
@@ -237,8 +237,8 @@ void solveStructureInitial(const Eigen::Matrix<bool,-1,-1> &visibility,
 		        const Eigen::Matrix<Eigen::Vector3d,-1,-1> &coordinates, 
 		        Eigen::MatrixXd &Structure, std::vector< Eigen::MatrixXd > &Cameras_RCV, int cam_range1, int cam_range2 );
 
-void scalefromTranslations( std::vector< Eigen::Matrix3d > &Rot_cumulative, std::vector< Eigen::Vector3d > &t12_RCV,
-		        std::vector< Eigen::Vector3d > &t13_RCV, std::vector< Eigen::Vector3d > &tr_cumulative );
+void scalefromTranslations( std::vector< Eigen::Matrix3d > &Rot_global, std::vector< Eigen::Vector3d > &t12_RCV,
+		        std::vector< Eigen::Vector3d > &t13_RCV, std::vector< Eigen::Vector3d > &tr_global );
 
 
 

@@ -41,7 +41,7 @@
 */
 void help()
 { 
-	std::cout << "\033[1;33m Usage: ./test_initBA -i <rgb_list.xml> -d <depth_list.xml> -o <output.txt>\033[0m\n"
+	std::cout << "\033[1;33m Usage: ./range_model -i <rgb_list.xml> -d <depth_list.xml> -o <output.txt>\033[0m\n"
 				"\tOptions:\n" 
 				"\t[-i]\t XML input file name with rgb images\n" 
 				"\t[-d]\t XML input file name with depth images\n" 
@@ -241,14 +241,14 @@ int main(int argc, char* argv[])
 //     sr02.solvePose( &featM.visibility, &featM.coordinates3D, false ); // true for optimal
 //     std::cout << "Elapsed time to solve Pose: " << timer1.elapsed_s() << " [s]\n";
 //     
-//     writeTextFileVQ((char*)"gin_rot_opt.txt", sr01.Quat_cumulative);
-//     writeTextFileVT((char*)"gin_tr_opt.txt", sr01.tr_cumulative);
-//     writeTextFileVQ((char*)"gin_rot_lin.txt", sr02.Quat_cumulative);
-//     writeTextFileVT((char*)"gin_tr_lin.txt", sr02.tr_cumulative);
+//     writeTextFileVQ((char*)"gin_rot_opt.txt", sr01.Qn_global);
+//     writeTextFileVT((char*)"gin_tr_opt.txt", sr01.tr_global);
+//     writeTextFileVQ((char*)"gin_rot_lin.txt", sr02.Qn_global);
+//     writeTextFileVT((char*)"gin_tr_lin.txt", sr02.tr_global);
     
     std::vector< pcl::PointCloud<pcl::PointXYZRGBA>::Ptr > set_cloud;
     std::vector< boost::shared_ptr< Eigen::MatrixXd > > set_covariance;
-    cv2PointCloudSet(imageList_rgb, imageList_depth, K, sr01.Quat_cumulative, sr01.tr_cumulative, set_cloud, set_covariance);
+    cv2PointCloudSet(imageList_rgb, imageList_depth, K, sr01.Qn_global, sr01.tr_global, set_cloud, set_covariance);
     
 //     pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloud_join;
 //     mergeCloudSet( set_cloud, set_covariance, cloud_join );
@@ -271,9 +271,9 @@ int main(int argc, char* argv[])
     viewer = visualizeCloud(set_cloud[0]);
 //     viewer = visualizeCloud(cloud_join);
     
-    visualizeCameras(viewer, imageList_rgb, sr01.Quat_cumulative, sr01.tr_cumulative );
+    visualizeCameras(viewer, imageList_rgb, sr01.Qn_global, sr01.tr_global );
     
-//     visualizeNoise(viewer, sr01.Xmodel, sr01.Variance, sr01.Quat_cumulative, sr01.tr_cumulative, 500 );
+//     visualizeNoise(viewer, sr01.Xmodel, sr01.Variance, sr01.Qn_global, sr01.tr_global, 500 );
     
 //     visualizeGraph( num_vertex, num_edges, weights, edges_pairs );
     
