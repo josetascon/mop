@@ -19,7 +19,7 @@
 #include "Interface.hpp"
 #include "InterfacePCL.hpp"
 #include "DepthProjection.hpp"
-#include "MultipleCamera.hpp"
+#include "Registration.hpp"
 #include "Optimizer.hpp"
 #include "Plot.hpp"
 

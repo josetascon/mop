@@ -55,6 +55,7 @@ set(SRCS
     "core/FeaturesEDM.cpp"
     "core/MultipleCamera.cpp"
     "core/Optimizer.cpp"
+    "core/Registration.cpp"
     "core/Plot.cpp"
 )
 
