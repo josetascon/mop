@@ -94,13 +94,15 @@ struct PoseQuery
     typedef std::vector< PoseQuery > vector;
 };
 
+int find_id_pair(std::vector< std::pair <int,int> > edges, int v1, int v2);
+
 // ================================================================================================
 // ======================================== CLASS GraphPose =======================================
 // ================================================================================================
 class GraphPose
 {
 private:
-    int vertex;
+    int vertices;
     int edges;
     std::vector< float > weights;
     std::vector< std::pair <int,int> > edges_pairs;
@@ -109,7 +111,6 @@ public:
     PoseQuery::vector localPose;
     std::vector< Eigen::Quaternion<double> > Qn_global;
     std::vector< Eigen::Vector3d > tr_global;
-    std::vector< Eigen::Vector3d > ct_global;
     
     //Constructor
     GraphPose() { };
@@ -121,12 +122,12 @@ public:
 		    std::vector< std::string > *list_depth, Eigen::Matrix3d *Calibration);
     
     void solveEdges();
-    int GetNumVertex() { return vertex; }
-    int GetNumEdges() { return edges; }
-    std::vector< float > GetWeights() { return weights; }
-    std::vector< std::pair <int,int> > GetEdgesPairs() { return edges_pairs; }
+    int getNumVertex() { return vertices; }
+    int getNumEdges() { return edges; }
+    std::vector< float > getWeights() { return weights; }
+    std::vector< std::pair <int,int> > getEdgesPairs() { return edges_pairs; }
     
-    void solveGraph();
+    void solveGraph(std::vector< int > &discover, std::vector< int > &parent);
     void solveGraphContinuous();
     void runTORO();
 };

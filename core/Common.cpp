@@ -81,6 +81,15 @@ float pchar2float(char* number)
     return value;
 }
 
+std::string baseFileName (const std::string& str)
+{
+//   std::cout << "Splitting: " << str << '\n';
+  unsigned found = str.find_last_of("/\\");
+//   std::cout << " path: " << str.substr(0,found) << '\n';
+//   std::cout << " file: " << str.substr(found+1) << '\n';
+  return str.substr(found+1);
+}
+
 int factorial(int x)
 {
     return (x == 1 ? x : x * factorial(x - 1));

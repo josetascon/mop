@@ -29,7 +29,7 @@ set(THREAD_LIBRARIES "pthread")
 
 # Boost
 # find_package(Boost REQUIRED)
-set(Boost_LIBRARIES "boost_system" "boost_chrono")
+set(Boost_LIBRARIES "boost_system" "boost_chrono" "boost_graph")
 # set(Boost_LIBRARIES "boost_chrono")
 
 ## ***** Other LIBS *****
@@ -72,10 +72,10 @@ ADD_DEFINITIONS(-std=c++11)
 # target_link_libraries( test_cloud ${OpenCV_LIBS} ${Eigen3_LIBS} ${CERES_LIBRARIES} ${OPENGL_USED_LIBRARIES} ${Boost_LIBRARIES}
 # 			      ${SiftGPU_LIBRARIES} ${THREAD_LIBRARIES} ${SQLITE3_LIBRARIES} ${PCL_LIBRARIES})
 
-# add_executable (range_model range_model.cpp ${INCS} ${SRCS})
-# target_link_libraries (range_model ${PCL_LIBRARIES} ${VTK_LIBRARIES} ${OpenCV_LIBS} ${Eigen3_LIBS} ${CERES_LIBRARIES} ${OPENGL_USED_LIBRARIES} 
-# 			      ${Boost_LIBRARIES} ${SiftGPU_LIBRARIES} ${THREAD_LIBRARIES} ${SQLITE3_LIBRARIES} )
+add_executable (range_model range_model.cpp ${INCS} ${SRCS})
+target_link_libraries (range_model ${PCL_LIBRARIES} ${VTK_LIBRARIES} ${OpenCV_LIBS} ${Eigen3_LIBS} ${CERES_LIBRARIES} ${OPENGL_USED_LIBRARIES} 
+			      ${Boost_LIBRARIES} ${SiftGPU_LIBRARIES} ${THREAD_LIBRARIES} ${SQLITE3_LIBRARIES} )
 
-add_executable (synthetic_range synthetic_range.cpp ${INCS} ${SRCS})
-target_link_libraries (synthetic_range ${PCL_LIBRARIES} ${VTK_LIBRARIES} ${OpenCV_LIBS} ${Eigen3_LIBS} ${CERES_LIBRARIES} ${OPENGL_USED_LIBRARIES} 
-			      ${Boost_LIBRARIES} ${SiftGPU_LIBRARIES} ${THREAD_LIBRARIES} ${SQLITE3_LIBRARIES})
+# add_executable (synthetic_range synthetic_range.cpp ${INCS} ${SRCS})
+# target_link_libraries (synthetic_range ${PCL_LIBRARIES} ${VTK_LIBRARIES} ${OpenCV_LIBS} ${Eigen3_LIBS} ${CERES_LIBRARIES} ${OPENGL_USED_LIBRARIES} 
+# 			      ${Boost_LIBRARIES} ${SiftGPU_LIBRARIES} ${THREAD_LIBRARIES} ${SQLITE3_LIBRARIES})

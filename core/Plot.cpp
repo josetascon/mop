@@ -1039,8 +1039,10 @@ vtkSmartPointer<vtkActor> plotText( const std::string text,  const Eigen::Vector
     t->Identity (); 
     t->Translate (center(0), center(1), center(2));
     t->Scale( fontsize*0.005, fontsize*0.005, fontsize*0.005 );
-    t->RotateZ(orientation(2));
-    t->RotateY(orientation(1) - 180);
+//     t->RotateZ(orientation(2));		// Rotate the text in the Z	 axis
+    t->RotateZ(orientation(2) - 180);
+//     t->RotateY(orientation(1));
+    t->RotateY(orientation(1) - 180); 		// Rotate the text in the Y axis
     t->RotateX(orientation(0));
     
     vtkSmartPointer<vtkTransformPolyDataFilter> tf = vtkSmartPointer<vtkTransformPolyDataFilter>::New ();

@@ -84,6 +84,8 @@ std::string int2string(int number);
 int pchar2int(char* number);
 float pchar2float(char* number);
 
+std::string baseFileName (const std::string& str);
+
 template <typename Tf>
 Tf printVector(std::vector<Tf> data)
 {

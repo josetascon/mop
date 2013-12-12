@@ -720,7 +720,7 @@ void BALProblem::read(Eigen::Matrix<bool,-1,-1> &visibility, Eigen::Matrix<Eigen
 // ====================================================================================================================================
 // =======================================================  FUNCTIONS  ================================================================
 // ====================================================================================================================================
-void writePMVS(const char *output_path, std::vector<std::string> nameImages, 
+void writePMVS(const char *output_path, std::vector<std::string> &nameImages, 
 	     std::vector< Eigen::MatrixXd > &Cameras, Eigen::Matrix3d Calibration, std::vector< double > distortion)
 {
     int num_cameras = Cameras.size();
@@ -792,6 +792,64 @@ void writePMVS(const char *output_path, std::vector<std::string> nameImages,
     return;
 }
 
+void undistortImages( const char * output_path, std::vector< std::string > &files_input,
+		  Eigen::Matrix3d &Calibration, Eigen::MatrixXd &distortion,
+		  const char * file_xml, std::vector< std::string > &undistort_files )
+{
+    // output_path is the folder
+    undistort_files.clear();
+    
+    // parameters to imwrite PNG format
+    std::vector<int> compression_params;
+    compression_params.push_back(CV_IMWRITE_PNG_COMPRESSION);
+    compression_params.push_back(5); // PNG is lossless compression, compression 0 to 9, 
+    
+    char buf[256];
+    char *cmd = &buf[0];
+    printf("Creating undistort directories\n");
+    sprintf(cmd, "rm -rf %s\n", output_path);		// Delete previous data pmvs
+    system(cmd);
+    sprintf(cmd, "mkdir -p %s/\n", output_path);
+    system(cmd);
+    
+    cv::Mat K, coeff; 
+    eigen2cv( Calibration, K );
+    eigen2cv( distortion, coeff );
+    
+    for(std::vector< std::string >::iterator it = files_input.begin() ; it != files_input.end(); ++it)
+    {
+        // Loading Images
+        
+        cv::Mat image = cv::imread( *it, -1);
+        cv::Mat und_img;
+        undistort(image, und_img, K, coeff);
+        
+        std::stringstream ss;
+        std::string basename = baseFileName( *it );
+        ss << output_path << basename;
+        std::string cmd = ss.str();
+        imwrite(cmd, und_img, compression_params);
+        undistort_files.push_back(cmd);
+    }
+    
+    exportImageList2XML( file_xml, undistort_files );
+}
+
+void exportImageList2XML( const char * file_xml, std::vector< std::string > &files_names )
+{
+    std::ofstream myfile1;
+    myfile1.open (file_xml);
+    myfile1 << "<?xml version=\"1.0\"?>" << "\n";
+    myfile1 << "<opencv_storage>" << "\n";
+    myfile1 << "<images>" << "\n";
+    for (std::vector< std::string >::iterator it = files_names.begin() ; it != files_names.end(); ++it)
+    {
+        myfile1 << *it << "\n";
+    }
+    myfile1 << "</images>" << "\n"; 
+    myfile1 << "</opencv_storage>" << "\n";
+    myfile1.close();
+}
 
 void writeGraph( const char *filename, std::vector< Eigen::Quaternion<double> > &Qn_global, 
 	       std::vector< Eigen::Vector3d > &tr_global )

@@ -27,7 +27,6 @@
 #include "CameraPose.hpp"
 #include "Triangulation.hpp"
 #include "Optimizer.hpp"
-// #include "DepthProjection.hpp"
 
 // ================================================================================================
 // ============================================ CLASS SfM =========================================

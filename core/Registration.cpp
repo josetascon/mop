@@ -347,7 +347,7 @@ void GraphPose::solvePose( std::vector<bool> *reliableMatch, std::vector< MatchQ
 		    std::vector< std::string > *list_depth, Eigen::Matrix3d *Calibration)
 {
     edges = 0;
-    vertex = list_depth->size();
+    vertices = list_depth->size();
     localPose.clear();
     cv::Mat KOCV = (cv::Mat_<double>(3,3) << (*Calibration)(0,0), 0.0, (*Calibration)(0,2), 0.0, (*Calibration)(1,1), (*Calibration)(1,2), 0.0, 0.0, 1.0);
     std::cout << "\n================================ GRAPH POSE Estimation ==================================\n";
@@ -404,19 +404,60 @@ void GraphPose::solveEdges()
 {
     weights.clear();
     edges_pairs.clear();
-    weights.resize(edges);
-    edges_pairs.resize(edges);
+//     weights.resize(edges);
+//     edges_pairs.resize(edges);
+    std::cout << "Edges:\n";
     
     for(register int it = 0; it < edges; ++it)
-    {   
-        weights[it] = float( localPose[it].num_matches );
-        edges_pairs[it] = std::make_pair( localPose[it].cam_id1, localPose[it].cam_id2);
+    {
+        weights.push_back( float( localPose[it].num_matches ) );
+        edges_pairs.push_back( std::make_pair( localPose[it].cam_id1, localPose[it].cam_id2) );
+        
+        // Debug
+        std::cout << it << ": " << localPose[it].cam_id1 << " -> " << localPose[it].cam_id2 << "\n";
+        
+//         weights[it] = float( localPose[it].num_matches );
+//         edges_pairs[it] = std::make_pair( localPose[it].cam_id1, localPose[it].cam_id2);
     }
 }
 
-void GraphPose::solveGraph()
+/// SOLVE Qn_global and tr_global with GRAPH (min distance)
+
+void GraphPose::solveGraph(std::vector< int > &discover, std::vector< int > &parent)
 {
-    ;
+    Qn_global.clear();
+    tr_global.clear();
+    Qn_global.resize(vertices);
+    tr_global.resize(vertices);
+    
+    Qn_global[ discover[0] ] = Eigen::Quaternion<double>::Identity();
+    tr_global[ discover[0] ] = Eigen::Vector3d::Zero();
+    
+    for (register int k = 1; k < discover.size(); ++k)
+    {
+        int v2 = discover[k];
+        int v1 = parent[ discover[k] ];
+        bool reverse = (v1 > v2);
+        
+        if (reverse) // Check for inversion of local pose
+        {
+	  int idp = find_id_pair( edges_pairs, v2, v1 );
+	  // Debug
+	  std::cout << "Find: " << v1 << " -> " << v2 << "\t||\tat: "<< idp <<"\n";
+	  
+	  Qn_global[v2] = localPose[idp].quaternion.conjugate()*Qn_global[v1];
+	  tr_global[v2] = localPose[idp].quaternion.conjugate()*(tr_global[v1] - localPose[idp].translation);
+        }
+        else
+        {
+	  int idp = find_id_pair( edges_pairs, v1, v2 );
+	  // Debug
+	  std::cout << "Find: " << v1 << " -> " << v2 << "\t||\tat: "<< idp <<"\n";
+	  
+	  Qn_global[v2] = localPose[idp].quaternion*Qn_global[v1];
+	  tr_global[v2] = localPose[idp].quaternion*tr_global[v1] + localPose[idp].translation;
+        }
+    }
 }
 
 int find_id_pair(std::vector< std::pair <int,int> > edges, int v1, int v2)
@@ -430,26 +471,22 @@ void GraphPose::solveGraphContinuous()
 {
     Qn_global.clear();
     tr_global.clear();
-    Qn_global.resize(vertex);
-    tr_global.resize(vertex);
+    Qn_global.resize(vertices);
+    tr_global.resize(vertices);
     
     Qn_global[0] = Eigen::Quaternion<double>::Identity();
     tr_global[0] = Eigen::Vector3d::Zero();
-    
-    ct_global.clear();
-    ct_global.resize(vertex);
-    ct_global[0] = Eigen::Vector3d::Zero();
+
 //     std::cout << "Global Vertex Pose " << "\n";
-//     std::cout << "Vertex size: " << vertex << "\n";
+//     std::cout << "Vertex size: " << vertices << "\n";
 //     std::cout << "local pose #: " << localPose.size() << "\n";    
-    for(register int k = 0; k < vertex-1; ++k)
+    for(register int k = 0; k < vertices-1; ++k)
     {
         int idx = find_id_pair(edges_pairs, k, k+1 );
 //         std::cout << "idx: " << idx << "\n";
 //         std::cout << "k: " << k << "\n";
         Qn_global[k+1] = localPose[idx].quaternion*Qn_global[k];
         tr_global[k+1] = localPose[idx].quaternion*tr_global[k] + localPose[idx].translation;
-        ct_global[k+1] = Qn_global[k+1].conjugate()*(-tr_global[k+1]);
     }
 //     std::cout << "End | Global Vertex Pose " << "\n";
 }
@@ -465,8 +502,7 @@ void GraphPose::runTORO()
     for(int it = 0; it < Qn_global.size(); it++)
     {
         Eigen::Matrix3d rr = Qn_global[it].toRotationMatrix();
-//         Eigen::Vector3d tr = tr_global[it];
-        Eigen::Vector3d tr = ct_global[it]; // TESTING Center
+        Eigen::Vector3d tr = rr.transpose()*(-tr_global[it]);
         Eigen::Vector3d angles;
         anglesfromRotation( rr, angles, false ); //false for radians units
         
@@ -481,35 +517,18 @@ void GraphPose::runTORO()
     {
         int cam1 = localPose[it].cam_id1;
         int cam2 = localPose[it].cam_id2;
+        
+        Eigen::Matrix3d rot1 = localPose[it].quaternion.toRotationMatrix();
+        Eigen::Vector3d tr1 = rot1.transpose()*(-localPose[it].translation);
         Eigen::Matrix<double,6,1> p_j, p_i, dji;
-        Eigen::Matrix3d Ri, rot;
-        Eigen::Vector3d tr, angles;
+        Eigen::Vector3d angles1, angles2;
         
-        rot = localPose[cam2].quaternion.toRotationMatrix();
-//         tr = localPose[cam2].translation;
-        tr = rot.transpose()*(-localPose[cam2].translation);
-        anglesfromRotation( rot, angles, false );//false for radians units
-        
-        p_j << tr, angles;
-        
-        rot = localPose[cam1].quaternion.toRotationMatrix();
-//         tr = localPose[cam1].translation;
-        tr = rot.transpose()*(-localPose[cam1].translation);
-        anglesfromRotation( rot, angles, false );//false for radians units
-        
-        p_i << tr, angles;
-        
-        Ri = Qn_global[cam1].toRotationMatrix();
-        Eigen::Matrix<double,6,6> R6i = Eigen::Matrix<double,6,6>::Identity();
-        R6i.block(0,0,3,3) = Ri;
-        
-        dji = R6i.transpose()*(p_j - p_i);
+        anglesfromRotationZero( rot1, angles1, false );//false for radians units
+        dji << tr1, angles1;
         
         myfile1 << "EDGE3 ";
         myfile1 << cam1 << " ";
         myfile1 << cam2 << " ";
-//         myfile1 << p_j;
-//         myfile1 << p_i;
         myfile1 << dji.transpose();
 //         myfile1 << tr.transpose() << " ";
 //         myfile1 << angles.transpose(); 

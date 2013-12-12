@@ -31,6 +31,9 @@
 #include "Optimizer.hpp"
 #include "Plot.hpp"
 
+#include "DotWriter.hpp"
+#include "GraphBFS.hpp"
+
 // using namespace cv;
 // using namespace std;
 // using namespace Eigen;
@@ -45,10 +48,12 @@ void help()
 				"\tOptions:\n" 
 				"\t[-i]\t XML input file name with rgb images\n" 
 				"\t[-d]\t XML input file name with depth images\n" 
-				"\t[-v]\t Enable verbose mode\n"
+				"\t[-v]\t Enable verbose mode\n"				
 				"\t[-o]\t Output text filename\n"
 				"\t[-k]\t .TXT input file name with calibration matrix\n"
+				"\t[-df]\t Valid matches in Depth Filter\n"
 				"\t[-db]\t .DB input file name with database\n"
+				
 	<< std::endl;
 	
 }
@@ -61,7 +66,10 @@ int main(int argc, char* argv[])
     bool verbose = false;
     bool load_k = false;
     bool save_ply = false;
+    bool undis = false;
+    int num_depth_filter = 3;		// Minimal valid match
     const char* filename_calib;
+    const char* filename_undis_coeff;
     const char* inputFilename_rgb;
     const char* inputFilename_depth;
     const char* outputFilename;
@@ -98,21 +106,32 @@ int main(int argc, char* argv[])
 	      outputFilename = argv[i];
 	      save_ply = true;
 	  }
-	  else if( strcmp( s, "-db" ) == 0 )
-	  {
-	      i++;
-	      filename_db = argv[i];
-	      ram_db = false;
-	  }
 	  else if( strcmp( s, "-k" ) == 0 )
 	  {
 	      i++;
 	      filename_calib = argv[i];
 	      load_k = true;
 	  }
+	  else if( strcmp( s, "-u" ) == 0 )
+	  {
+	      i++;
+	      filename_undis_coeff = argv[i];
+	      undis = true;
+	  }
 	  else if( strcmp( s, "-v" ) == 0 )
 	  {
 	      verbose = true;
+	  }
+	  else if( strcmp( s, "-df" ) == 0 )
+	  {
+	      i++;
+	      num_depth_filter = pchar2int( argv[i] );
+	  }
+	  else if( strcmp( s, "-db" ) == 0 )
+	  {
+	      i++;
+	      filename_db = argv[i];
+	      ram_db = false;
 	  }
 	  else
 	  {
@@ -175,6 +194,19 @@ int main(int argc, char* argv[])
     }
     if (verbose) std::cout << "\nCalibration Matrix:\n" << K << "\n";
     
+    Eigen::MatrixXd coeff = Eigen::MatrixXd::Zero(5,1);
+    std::vector< std::string > undistort_files;
+    if (undis)
+    {
+        readTextFileEigen(filename_undis_coeff, coeff);
+        
+        undistortImages( (const char *)"undistort/rgb/", imageList_rgb, K, coeff, (const char *)"rgb_undis.xml", undistort_files );
+        imageList_rgb = undistort_files;
+        undistortImages( (const char *)"undistort/depth/", imageList_depth, K, coeff, (const char *)"depth_undis.xml", undistort_files );
+        imageList_depth = undistort_files;
+    }
+    if (verbose) std::cout << "\nDistortion Coefficients:\n" << coeff.transpose() << "\n";
+    
     // Graph Variables
     int num_vertex;
     int num_edges;
@@ -195,8 +227,8 @@ int main(int argc, char* argv[])
     }
     if (!mydb.isOpen()) exit(0);
     
-    if ( ram_db )						// If database is in ram, solve features map and store in db
-    {
+//     if ( ram_db )						// If database is in ram, solve features map and store in db
+//     {
         SiftED myfeat(imageList_rgb);
         myfeat.solveSift();
         
@@ -204,7 +236,7 @@ int main(int argc, char* argv[])
         my_mmap.solveMatches(&myfeat.descriptorsGPU);
 //         my_mmap.solveMatchesContinuous(&myfeat.descriptorsGPU);
         my_mmap.robustifyMatches(&myfeat.keypointsGPU);
-        my_mmap.depthFilter(&myfeat.keypointsGPU, &imageList_depth, 3);
+        my_mmap.depthFilter(&myfeat.keypointsGPU, &imageList_depth, num_depth_filter);
         timer1.start();
         my_mmap.solveDB3D( &mydb, &myfeat.keypointsGPU, &imageList_depth, K );
         std::cout << "Elapsed time to solve DB: " << timer1.elapsed_s() << " [s]\n";
@@ -212,28 +244,43 @@ int main(int argc, char* argv[])
         GraphPose gp;
         gp.solvePose( &my_mmap.reliableMatch, &my_mmap.globalMatch, &myfeat.keypointsGPU, &imageList_depth, &K);
         gp.solveEdges();
-        gp.solveGraphContinuous();
-        num_vertex = gp.GetNumVertex();
-        num_edges = gp.GetNumEdges();
-        weights = gp.GetWeights();
-        edges_pairs = gp.GetEdgesPairs();
-        writeGraph( (char*)"gin_opt.graph", gp.Qn_global, gp.tr_global ); 
+        
+        num_vertex = gp.getNumVertex();
+        num_edges = gp.getNumEdges();
+        weights = gp.getWeights();
+        edges_pairs = gp.getEdgesPairs();
+        
+        std::vector< int > discover;
+        std::vector< int > parent;
+        GraphBFS bfs( num_vertex, num_edges, edges_pairs, weights );
+        int initbfs = 4;
+        bfs.setInitBFS( initbfs );
+        bfs.solveBFS( discover, parent );
+        
+        gp.solveGraph( discover, parent );
+        
+//         DOTWriter dotw("graph");
+//         dotw.writeFile( (const char *)"figs/test.dot", &edges_pairs );
+//         dotw.writeDOT( (const char *)"figs/test.dot", &edges_pairs, NULL, &weights );
+        
+//         gp.solveGraphContinuous();
+//         writeGraph( (char*)"gin_opt.graph", gp.Qn_global, gp.tr_global ); 
 //         gp.runTORO();
 //         writeTextFileVQ((char*)"pose_rot.txt", gp.Qn_global);
 //         writeTextFileVT((char*)"pose_tr.txt", gp.tr_global);
-    }
+//     }
     
-    FeaturesMap featM;
-    featM.solveVisibility3D( &mydb );
-    printf("Visibility Matrix [%d x %d]\n",featM.visibility.rows(),featM.visibility.cols());
-    num_cameras = featM.cameras();
-    num_features = featM.features();
-    mydb.closeDB();
-    
-    SimpleRegistration sr01( num_cameras, num_features, K );
-    timer1.start();
-    sr01.solvePose( &featM.visibility, &featM.coordinates3D, true ); // true for optimal
-    std::cout << "Elapsed time to solve Pose: " << timer1.elapsed_s() << " [s]\n";
+//     FeaturesMap featM;
+//     featM.solveVisibility3D( &mydb );
+//     printf("Visibility Matrix [%d x %d]\n",featM.visibility.rows(),featM.visibility.cols());
+//     num_cameras = featM.cameras();
+//     num_features = featM.features();
+//     mydb.closeDB();
+//     
+//     SimpleRegistration sr01( num_cameras, num_features, K );
+//     timer1.start();
+//     sr01.solvePose( &featM.visibility, &featM.coordinates3D, true ); // true for optimal
+//     std::cout << "Elapsed time to solve Pose: " << timer1.elapsed_s() << " [s]\n";
     
 //     // Print lin and opt
 //     SimpleRegistration sr02( num_cameras, num_features, K );
@@ -248,7 +295,8 @@ int main(int argc, char* argv[])
     
     std::vector< pcl::PointCloud<pcl::PointXYZRGBA>::Ptr > set_cloud;
     std::vector< boost::shared_ptr< Eigen::MatrixXd > > set_covariance;
-    cv2PointCloudSet(imageList_rgb, imageList_depth, K, sr01.Qn_global, sr01.tr_global, set_cloud, set_covariance);
+//     cv2PointCloudSet(imageList_rgb, imageList_depth, K, sr01.Qn_global, sr01.tr_global, set_cloud, set_covariance);
+    cv2PointCloudSet(imageList_rgb, imageList_depth, K, gp.Qn_global, gp.tr_global, set_cloud, set_covariance);
     
 //     pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloud_join;
 //     mergeCloudSet( set_cloud, set_covariance, cloud_join );
@@ -266,16 +314,21 @@ int main(int argc, char* argv[])
     
     boost::shared_ptr<pcl::visualization::PCLVisualizer> viewer;
     
-//     viewer = visualizeCloudSet( set_cloud );
+//     std::cout << "set cloud size:" << set_cloud.size() << "\n";
+    viewer = visualizeCloudSet( set_cloud );
     
-    viewer = visualizeCloud(set_cloud[0]);
+//     viewer = visualizeCloud(set_cloud[0]);
 //     viewer = visualizeCloud(cloud_join);
     
-    visualizeCameras(viewer, imageList_rgb, sr01.Qn_global, sr01.tr_global );
+    
+//     visualizeCameras( viewer, sr01.Qn_global, sr01.tr_global );
+    visualizeCameras( viewer, gp.Qn_global, gp.tr_global );
+    
+//     visualizeCameras(viewer, imageList_rgb, sr01.Qn_global, sr01.tr_global );
     
 //     visualizeNoise(viewer, sr01.Xmodel, sr01.Variance, sr01.Qn_global, sr01.tr_global, 500 );
     
-//     visualizeGraph( num_vertex, num_edges, weights, edges_pairs );
+    visualizeGraph( num_vertex, num_edges, weights, edges_pairs );
     
     while (!viewer->wasStopped ())
     {

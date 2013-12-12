@@ -152,14 +152,19 @@ public:
     
     void read(Eigen::Matrix<bool,-1,-1> &visibility, Eigen::Matrix<Eigen::Vector3d,-1,-1> &coordinates,
 	    std::vector< Eigen::Quaternion<double> > &quaternion, Eigen::MatrixXd &translation_and_intrinsics, Eigen::MatrixXd &structure);
-
 };
 
 // ====================================================================================================================================
 // =======================================================  FUNCTIONS  ================================================================
 // ====================================================================================================================================
-void writePMVS(const char *output_path, std::vector<std::string> nameImages, 
+void writePMVS(const char *output_path, std::vector<std::string> &nameImages, 
 	     std::vector< Eigen::MatrixXd > &Cameras, Eigen::Matrix3d Calibration, std::vector< double > distortion);
+
+void undistortImages( const char * output_path, std::vector< std::string > &files_input,
+		  Eigen::Matrix3d &Calibration, Eigen::MatrixXd &distortion,
+		  const char * file_xml, std::vector< std::string > &undistort_files );
+
+void exportImageList2XML( const char * file_xml, std::vector< std::string > &files_names );
 
 void writeGraph( const char *filename, std::vector< Eigen::Quaternion<double> > &Qn_global, 
 	       std::vector< Eigen::Vector3d > &tr_global );
