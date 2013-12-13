@@ -171,7 +171,7 @@ void PlotGL::drawNumberCamera(int value)
     glRotatef(180, 1.0f, 0.0f, 0.0f);
     glScalef(scale, scale, scale);
     glLineWidth(2.0f);
-    std::string s1 = int2string(value);
+    std::string s1 = number2string(value);
     const char *ps1 = s1.c_str();
     for(register int i = 0; i < s1.length(); ++i) glutStrokeCharacter(GLUT_STROKE_ROMAN, (int)ps1[i] );
     glPopMatrix();

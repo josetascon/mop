@@ -135,7 +135,7 @@ int main(int argc, char* argv[])
         std::cout << "Reading Files:\t" << inputFilename_rgb << "\n";
         std::cout << "File list...\t\t\t";
     }
-    readStringList(inputFilename_rgb, imageList_rgb);		//Reading list of images from XML list
+    importXMLImageList(inputFilename_rgb, imageList_rgb);		//Reading list of images from XML list
     
     if (verbose)
     {
@@ -159,7 +159,7 @@ int main(int argc, char* argv[])
     if (load_k)						// If Calibration matrix is taken from txt file
     {
         Eigen::MatrixXd K_load;
-        readTextFileEigen(filename_calib, K_load);
+        importTXTEigen(filename_calib, K_load);
         K << K_load;
     }
     else

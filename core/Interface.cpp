@@ -248,7 +248,7 @@ int HandleDB::callback_searchFeature(void *data, int argc, char **argv, char **a
     if ( (argc > 0) && (argv[0] != NULL) )
     {
         
-        pdata->value = pchar2int(argv[0]);
+        pdata->value = pchar2number<int>(argv[0]);
         pdata->found = true;
     }
     else pdata->found = false;
@@ -292,7 +292,7 @@ int HandleDB::callback_searchVector(void *data, int argc, char **argv, char **az
     //for(int i=0; i<argc; i++)
     if (argc > 0)
     {
-        (*pdata).push_back(pchar2int(argv[0]));
+        (*pdata).push_back(pchar2number<int>(argv[0]));
     }
     return 0;
 }
@@ -359,11 +359,11 @@ int HandleDB::callback_searchRow(void *data, int argc, char **argv, char **azCol
     rowDB single;
     for(int i=0; i<argc; i+=5)
     {
-        single.feature = pchar2int(argv[i]);
-        single.camera = pchar2int(argv[i+1]);
-        single.idx = pchar2int(argv[i+2]);
-        single.coordx = pchar2float(argv[i+3]);
-        single.coordy = pchar2float(argv[i+4]);    
+        single.feature = pchar2number<int>(argv[i]);
+        single.camera = pchar2number<int>(argv[i+1]);
+        single.idx = pchar2number<int>(argv[i+2]);
+        single.coordx = pchar2number<float>(argv[i+3]);
+        single.coordy = pchar2number<float>(argv[i+4]);    
     }
     pdata->push_back(single);
     return 0;
@@ -432,12 +432,12 @@ int HandleDB::callback_searchRow3D(void *data, int argc, char **argv, char **azC
     rowDB_3D single;
     for(int i=0; i<argc; i+=6)
     {
-        single.feature = pchar2int(argv[i]);
-        single.camera = pchar2int(argv[i+1]);
-        single.idx = pchar2int(argv[i+2]);
-        single.x3d = pchar2float(argv[i+3]);
-        single.y3d = pchar2float(argv[i+4]);
-        single.z3d = pchar2float(argv[i+5]);
+        single.feature = pchar2number<int>(argv[i]);
+        single.camera = pchar2number<int>(argv[i+1]);
+        single.idx = pchar2number<int>(argv[i+2]);
+        single.x3d = pchar2number<float>(argv[i+3]);
+        single.y3d = pchar2number<float>(argv[i+4]);
+        single.z3d = pchar2number<float>(argv[i+5]);
     }
     pdata->push_back(single);
     return 0;
@@ -507,7 +507,7 @@ int HandleDB::callback_max(void *data, int argc, char **argv, char **azColName)
     {
         if (argv[0] != NULL) //std::cout << "\nmaxFeature update;\n" ;
         {
-	  *value = pchar2int(argv[0]);
+	  *value = pchar2number<int>(argv[0]);
         }
     }
     return 0;
@@ -832,23 +832,7 @@ void undistortImages( const char * output_path, std::vector< std::string > &file
         undistort_files.push_back(cmd);
     }
     
-    exportImageList2XML( file_xml, undistort_files );
-}
-
-void exportImageList2XML( const char * file_xml, std::vector< std::string > &files_names )
-{
-    std::ofstream myfile1;
-    myfile1.open (file_xml);
-    myfile1 << "<?xml version=\"1.0\"?>" << "\n";
-    myfile1 << "<opencv_storage>" << "\n";
-    myfile1 << "<images>" << "\n";
-    for (std::vector< std::string >::iterator it = files_names.begin() ; it != files_names.end(); ++it)
-    {
-        myfile1 << *it << "\n";
-    }
-    myfile1 << "</images>" << "\n"; 
-    myfile1 << "</opencv_storage>" << "\n";
-    myfile1.close();
+    exportXMLImageList( file_xml, undistort_files );
 }
 
 void writeGraph( const char *filename, std::vector< Eigen::Quaternion<double> > &Qn_global, 

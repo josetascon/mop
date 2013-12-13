@@ -73,22 +73,22 @@ int main(int argc, char* argv[])
 	  if( strcmp( s, "-c" ) == 0 )
 	  {
 	      i++;
-	      num_cameras = pchar2int(argv[i]);
+	      num_cameras = pchar2number<int>(argv[i]);
 	  }
 	  else if( strcmp( s, "-f" ) == 0 )
 	  {
 	      i++;
-	      fxc = pchar2int(argv[i]);
+	      fxc = pchar2number<int>(argv[i]);
 	  }
 	  else if( strcmp( s, "-w" ) == 0 )
 	  {
 	      i++;
-	      image_width = pchar2int(argv[i]);
+	      image_width = pchar2number<int>(argv[i]);
 	  }
 	  else if( strcmp( s, "-h" ) == 0 )
 	  {
 	      i++;
-	      image_height = pchar2int(argv[i]);
+	      image_height = pchar2number<int>(argv[i]);
 	  }
 	  else if( strcmp( s, "-a" ) == 0 )
 	  {
@@ -102,12 +102,12 @@ int main(int argc, char* argv[])
 	  else if( strcmp( s, "-d" ) == 0 )
 	  {
 	      i++;
-	      frontal_distance = pchar2float(argv[i]);
+	      frontal_distance = pchar2number<double>(argv[i]);
 	  }
 	  else if( strcmp( s, "-r" ) == 0 )
 	  {
 	      i++;
-	      ratio = pchar2float(argv[i]);
+	      ratio = pchar2number<double>(argv[i]);
 	  }
 	  else if( strcmp( s, "-h" ) == 0 )
 	  {
@@ -372,37 +372,19 @@ int main(int argc, char* argv[])
 	      data_drift_opt[exp].row(cam).tail(3) = angle_opt.transpose();
 	      data_drift_lin[exp].row(cam).tail(3) = angle_lin.transpose();
 	  }
-	  
-	  
-	  
-	  // Residual Error (measured - estimated); Calculated in GloblaOptimizer
-// // 	  double residual = reprojectionErrorCalculation( &visibility, &coordinates_noise, &intrinsics_param, 
-// // 						&opt01.quaternion, &opt01.translation, &opt01.structure );
-// // 	  std::cout << "Residual error from function: " << residual << "\n";
-// 	  double residual_initial, residual_final, time;
-// 	  opt02.stats(residual_initial, residual_final, time);
-// 	  
-// 	  // Estimation Error (true - estimated)
-// 	  double estimation = reprojectionErrorCalculation( &visibility, &coordinates, &intrinsics_param, 
-// 						  &opt01.quaternion, &opt01.translation, &opt01.structure );
-// 	  std::cout << "Estimation error: " << estimation << "\n";
-// 	  
-// 	  data_residual_initial(exp, count_std) = residual_initial;
-// 	  data_residual_final(exp, count_std) = residual_final;
-// 	  data_estimation(exp, count_std) = estimation;
-// 	  data_time(exp, count_std) = time;
+
 	  // ======================================== END Error Calculation ========================================
 	  
 	  // ============================================ Plot Data ============================================
 	  
 // 	  writeGraph( (char*)"synthetic_opt.graph", sr01.Qn_global, sr01.tr_global ); 
 // 	  writeGraph( (char*)"synthetic_lin.graph", sr02.Qn_global, sr02.tr_global );
-// 	  writeTextFileVQ((char*)"syn_rot.txt", qu_synthetic);
-// 	  writeTextFileVT((char*)"syn_tr.txt", cam_center);
-// 	  writeTextFileVQ((char*)"syn_rot_opt.txt", sr01.Qn_global);
-// 	  writeTextFileVT((char*)"syn_tr_opt.txt", sr01.tr_global);
-// 	  writeTextFileVQ((char*)"syn_rot_lin.txt", sr02.Qn_global);
-// 	  writeTextFileVT((char*)"syn_tr_lin.txt", sr02.tr_global);
+// 	  exportTXTQuaternionVector((char*)"syn_rot.txt", qu_synthetic);
+// 	  exportTXTTranslationVector((char*)"syn_tr.txt", cam_center);
+// 	  exportTXTQuaternionVector((char*)"syn_rot_opt.txt", sr01.Qn_global);
+// 	  exportTXTTranslationVector((char*)"syn_tr_opt.txt", sr01.tr_global);
+// 	  exportTXTQuaternionVector((char*)"syn_rot_lin.txt", sr02.Qn_global);
+// 	  exportTXTTranslationVector((char*)"syn_tr_lin.txt", sr02.tr_global);
 	  
 	  if ( !analysis)
 	  {

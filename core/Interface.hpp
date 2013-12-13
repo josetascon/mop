@@ -164,8 +164,6 @@ void undistortImages( const char * output_path, std::vector< std::string > &file
 		  Eigen::Matrix3d &Calibration, Eigen::MatrixXd &distortion,
 		  const char * file_xml, std::vector< std::string > &undistort_files );
 
-void exportImageList2XML( const char * file_xml, std::vector< std::string > &files_names );
-
 void writeGraph( const char *filename, std::vector< Eigen::Quaternion<double> > &Qn_global, 
 	       std::vector< Eigen::Vector3d > &tr_global );
 

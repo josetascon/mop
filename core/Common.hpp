@@ -80,23 +80,43 @@ T sign(T value)
 }
 
 // @date July/22/2013
-std::string int2string(int number);
-int pchar2int(char* number);
-float pchar2float(char* number);
+// template Dec/11/2013
+template< typename Tp >
+Tp pchar2number(char* text)
+{
+    Tp value;
+    std::stringstream ss;	//create a stringstream
+    ss << text;		//add number to the stream
+    ss >> value;
+    return value;		//return a string with the contents of the stream
+}
+
+template< typename Tp >
+Tp string2number(std::string text)
+{
+    Tp value;
+    std::stringstream ss;	//create a stringstream
+    ss << text;		//add number to the stream
+    ss >> value;
+    return value;		//return a string with the contents of the stream
+}
+
+template< typename Tp >
+std::string number2string(Tp number)
+{
+    std::stringstream ss;	//create a stringstream
+    ss << number;		//add number to the stream
+    return ss.str();	//return a string with the contents of the stream
+}
+
 
 std::string baseFileName (const std::string& str);
 
 template <typename Tf>
-Tf printVector(std::vector<Tf> data)
+void printVector(std::vector<Tf> data)
 {
-    Tf sum = 0;
-    for (register int j = 0; j < data.size(); ++j) 
-    {
-        std::cout << data[j] << " ";
-        sum += data[j];
-    }
-    std::cout << "\nTotal: " << sum << "\n";
-    return sum;
+    for (register int j = 0; j < data.size(); ++j) std::cout << data[j] << " ";
+    std::cout << "\n";
 }
 
 template <typename Tf>
@@ -110,7 +130,7 @@ Tf sumVector(std::vector<Tf> data)
 
 // @date Sep/16/2013
 template <typename T_eig>
-void readTextFileEigen(const char *filename,Eigen::Matrix<T_eig,-1,-1> &M)
+void importTXTEigen(const char *filename, Eigen::Matrix<T_eig,-1,-1> &M)
 {
     std::string str1;
     int nrow, ncol;
@@ -139,7 +159,7 @@ void readTextFileEigen(const char *filename,Eigen::Matrix<T_eig,-1,-1> &M)
 }
 
 template <typename T_eig>
-void writeTextFileEigen(const char *filename, Eigen::Matrix<T_eig,-1,-1> &M)
+void exportTXTEigen(const char *filename, Eigen::Matrix<T_eig,-1,-1> &M)
 {
     int nrow = M.rows();
     int ncol = M.cols();
@@ -166,7 +186,7 @@ void writeTextFileEigen(const char *filename, Eigen::Matrix<T_eig,-1,-1> &M)
 }
 
 template <typename T_eig>
-void writeTextFileVQ(const char *filename, std::vector< Eigen::Quaternion<T_eig> > &Qn_global)
+void exportTXTQuaternionVector(const char *filename, std::vector< Eigen::Quaternion<T_eig> > &Qn_global)
 {
 //     char *filename = (char*)"pose_rot.txt";
     std::ofstream myfile1;
@@ -182,7 +202,7 @@ void writeTextFileVQ(const char *filename, std::vector< Eigen::Quaternion<T_eig>
 }
 
 template <typename T_eig>
-void writeTextFileVT(const char *filename, std::vector< Eigen::Matrix<T_eig,3,1> > &tr_global)
+void exportTXTTranslationVector(const char *filename, std::vector< Eigen::Matrix<T_eig,3,1> > &tr_global)
 {
 //     char *filename = (char*)"pose_tr.txt";
     std::ofstream myfile1;
@@ -196,6 +216,20 @@ void writeTextFileVT(const char *filename, std::vector< Eigen::Matrix<T_eig,3,1>
     }
     myfile1.close();
 }
+
+/**
+ * ******************************************************************
+ * @brief Read XML File given by filename. The XML file contains a list of images to read. Return the location of images files.
+ * 
+ * @param filename	 	(input) XML file that contains the list of images
+ * @param location		(output) Directory route where are located the images files
+ * 
+ * @date Jul/12/2013
+ */
+bool importXMLImageList(const char *file_xml, std::vector< std::string > &files_names);
+
+void exportXMLImageList(const char *file_xml, std::vector< std::string > &files_names);
+
 
 
 
@@ -514,17 +548,6 @@ void normalizeHomogeneous(Eigen::MatrixXd &data);
 
 
 int countZPositive(Eigen::MatrixXd &data);
-
-/**
- * ******************************************************************
- * @brief Read XML File given by filename. The XML file contains a list of images to read. Return the location of images files.
- * 
- * @param filename	 	(input) XML file that contains the list of images
- * @param location		(output) Directory route where are located the images files
- * 
- * @date Jul/12/2013
- */
-bool readStringList( const std::string& filename, std::vector<std::string>& location );
 
 /**
  * ******************************************************************

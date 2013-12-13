@@ -125,7 +125,7 @@ int main(int argc, char* argv[])
 	  else if( strcmp( s, "-df" ) == 0 )
 	  {
 	      i++;
-	      num_depth_filter = pchar2int( argv[i] );
+	      num_depth_filter = pchar2number<int>( argv[i] );
 	  }
 	  else if( strcmp( s, "-db" ) == 0 )
 	  {
@@ -157,8 +157,8 @@ int main(int argc, char* argv[])
         std::cout << "Reading Files:\t" << inputFilename_rgb << " & " << inputFilename_depth << '\n';
         std::cout << "File list...\t\t\t";
     }
-    readStringList(inputFilename_rgb, imageList_rgb);		//Reading list of images from XML list
-    readStringList(inputFilename_depth, imageList_depth);
+    importXMLImageList(inputFilename_rgb, imageList_rgb);		//Reading list of images from XML list
+    importXMLImageList(inputFilename_depth, imageList_depth);
     
     if (verbose)
     {
@@ -181,7 +181,7 @@ int main(int argc, char* argv[])
     if (load_k)						// If Calibration matrix is taken from txt file
     {
         Eigen::MatrixXd K_load;
-        readTextFileEigen(filename_calib, K_load);
+        importTXTEigen(filename_calib, K_load);
         K << K_load;
     }
     else
@@ -198,7 +198,7 @@ int main(int argc, char* argv[])
     std::vector< std::string > undistort_files;
     if (undis)
     {
-        readTextFileEigen(filename_undis_coeff, coeff);
+        importTXTEigen(filename_undis_coeff, coeff);
         
         undistortImages( (const char *)"undistort/rgb/", imageList_rgb, K, coeff, (const char *)"rgb_undis.xml", undistort_files );
         imageList_rgb = undistort_files;
@@ -266,8 +266,8 @@ int main(int argc, char* argv[])
 //         gp.solveGraphContinuous();
 //         writeGraph( (char*)"gin_opt.graph", gp.Qn_global, gp.tr_global ); 
 //         gp.runTORO();
-//         writeTextFileVQ((char*)"pose_rot.txt", gp.Qn_global);
-//         writeTextFileVT((char*)"pose_tr.txt", gp.tr_global);
+//         exportTXTQuaternionVector((char*)"pose_rot.txt", gp.Qn_global);
+//         exportTXTTranslationVector((char*)"pose_tr.txt", gp.tr_global);
     }
     
     FeaturesMap featM;
@@ -289,10 +289,10 @@ int main(int argc, char* argv[])
     std::cout << "Elapsed time to solve Pose: " << timer1.elapsed_s() << " [s]\n";
     
     // Write files of global quaternion and translation
-//     writeTextFileVQ((char*)"liv_rot_opt.txt", sr01.Qn_global);
-//     writeTextFileVT((char*)"liv_tr_opt.txt", sr01.tr_global);
-//     writeTextFileVQ((char*)"liv_rot_lin.txt", sr02.Qn_global);
-//     writeTextFileVT((char*)"liv_tr_lin.txt", sr02.tr_global);
+//     exportTXTQuaternionVector((char*)"liv_rot_opt.txt", sr01.Qn_global);
+//     exportTXTTranslationVector((char*)"liv_tr_opt.txt", sr01.tr_global);
+//     exportTXTQuaternionVector((char*)"liv_rot_lin.txt", sr02.Qn_global);
+//     exportTXTTranslationVector((char*)"liv_tr_lin.txt", sr02.tr_global);
     
     std::vector< pcl::PointCloud<pcl::PointXYZRGBA>::Ptr > set_cloud;
     std::vector< boost::shared_ptr< Eigen::MatrixXd > > set_covariance;

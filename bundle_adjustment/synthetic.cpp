@@ -67,27 +67,27 @@ int main(int argc, char* argv[])
 	  if( strcmp( s, "-c" ) == 0 )
 	  {
 	      i++;
-	      num_cameras = pchar2int(argv[i]);
+	      num_cameras = pchar2number<int>(argv[i]);
 	  }
 	  else if( strcmp( s, "-f" ) == 0 )
 	  {
 	      i++;
-	      fxc = pchar2int(argv[i]);
+	      fxc = pchar2number<int>(argv[i]);
 	  }
 	  else if( strcmp( s, "-w" ) == 0 )
 	  {
 	      i++;
-	      image_width = pchar2int(argv[i]);
+	      image_width = pchar2number<int>(argv[i]);
 	  }
 	  else if( strcmp( s, "-h" ) == 0 )
 	  {
 	      i++;
-	      image_height = pchar2int(argv[i]);
+	      image_height = pchar2number<int>(argv[i]);
 	  }
 	  else if( strcmp( s, "-n" ) == 0 )
 	  {
 	      i++;
-	      noise_std = pchar2float(argv[i]);
+	      noise_std = pchar2number<double>(argv[i]);
 	      max_noise = noise_std + 0.1;
 	  }
 	  else if( strcmp( s, "-a" ) == 0 )
@@ -102,12 +102,12 @@ int main(int argc, char* argv[])
 	  else if( strcmp( s, "-d" ) == 0 )
 	  {
 	      i++;
-	      frontal_distance = pchar2float(argv[i]);
+	      frontal_distance = pchar2number<double>(argv[i]);
 	  }
 	  else if( strcmp( s, "-r" ) == 0 )
 	  {
 	      i++;
-	      ratio = pchar2float(argv[i]);
+	      ratio = pchar2number<double>(argv[i]);
 	  }
 	  else
 	  {

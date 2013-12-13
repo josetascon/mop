@@ -56,31 +56,6 @@ double timer_wall::elapsed_s()
 // =======================================================  FUNCTIONS  ================================================================
 // ====================================================================================================================================
 
-std::string int2string(int number)
-{
-    std::stringstream ss;	//create a stringstream
-    ss << number;		//add number to the stream
-    return ss.str();	//return a string with the contents of the stream
-}
-
-int pchar2int(char* number)
-{
-    int value;
-    std::stringstream ss;	//create a stringstream
-    ss << number;		//add number to the stream
-    ss >> value;
-    return value;		//return a string with the contents of the stream
-}
-
-float pchar2float(char* number)
-{
-    float value;
-    std::stringstream ss;	//create a stringstream
-    ss << number;		//add number to the stream
-    ss >> value;
-    return value;
-}
-
 std::string baseFileName (const std::string& str)
 {
 //   std::cout << "Splitting: " << str << '\n';
@@ -141,10 +116,26 @@ int countZPositive(Eigen::MatrixXd &data)
     return count;
 }
 
-bool readStringList( const std::string& filename, std::vector<std::string>& location )		//Read XML Files
+void exportXMLImageList(const char *file_xml, std::vector< std::string > &files_names)
 {
-    location.resize(0);
-    cv::FileStorage fs(filename, cv::FileStorage::READ);
+    std::ofstream myfile1;
+    myfile1.open (file_xml);
+    myfile1 << "<?xml version=\"1.0\"?>" << "\n";
+    myfile1 << "<opencv_storage>" << "\n";
+    myfile1 << "<images>" << "\n";
+    for (std::vector< std::string >::iterator it = files_names.begin() ; it != files_names.end(); ++it)
+    {
+        myfile1 << *it << "\n";
+    }
+    myfile1 << "</images>" << "\n"; 
+    myfile1 << "</opencv_storage>" << "\n";
+    myfile1.close();
+}
+
+bool importXMLImageList(const char *file_xml, std::vector< std::string > &files_names)		//Read XML Files
+{
+    files_names.clear();
+    cv::FileStorage fs(file_xml, cv::FileStorage::READ);
     if( !fs.isOpened() )
         return false;
     cv::FileNode n = fs.getFirstTopLevelNode();
@@ -152,10 +143,11 @@ bool readStringList( const std::string& filename, std::vector<std::string>& loca
         return false;
     cv::FileNodeIterator it = n.begin(), it_end = n.end();
     for( ; it != it_end; ++it )
-        location.push_back((std::string)*it);
+        files_names.push_back((std::string)*it);
     return true;
 }
 
+/// TODO Change name rotation2angles
 void anglesfromRotation(Eigen::Matrix3d &Rot, Eigen::Vector3d &angles, bool degrees)
 {
     double anglex = 0.0;
