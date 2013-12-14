@@ -19,13 +19,14 @@
 
 // Std Libraries
 #include <iostream>
+#include <fstream>		// ofstream and/or ifstream 
 
 // SiftGPU Library
 #include <SiftGPU.h>
 
 // Local Libraries
 #include "Common.hpp"
-#include "Interface.hpp"
+#include "HandleDB.hpp"
 #include "CameraPose.hpp"
 #include "DepthProjection.hpp"
 
@@ -117,7 +118,7 @@ public:
     void solveDB( HandleDB *mydb, std::vector< std::vector<SiftGPU::SiftKeypoint> > *keypointsGPU );
     void solveDB3D( HandleDB *mydb, std::vector< std::vector<SiftGPU::SiftKeypoint> > *keypointsGPU, 
 		 std::vector< std::string > *depth_list, Eigen::Matrix3d &calibration );
-    void txt( char *file_txt, std::vector< std::vector<SiftGPU::SiftKeypoint> > *keypointsGPU );
+    void exportTXT( const char *file_txt, std::vector< std::vector<SiftGPU::SiftKeypoint> > *keypointsGPU );
     void plot( std::vector< cv::Mat > *images, std::vector< std::vector< cv::KeyPoint > > *set_of_keypoints );
     
     std::vector<cv::DMatch> match(int nmatch);

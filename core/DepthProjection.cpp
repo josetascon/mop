@@ -151,19 +151,12 @@ Eigen::Matrix<int,-1, 1> removeBadPointsDual(std::vector< Eigen::Vector3d > &ima
 
 cv::Point3d projection(cv::Point2d &image_point, cv::Mat &measurez, double &cx, double &cy, double &fx, double &fy)
 {
-    double u = image_point.x;
-    double v = image_point.y;
-    double factor = 5000.0; 			// for the 16-bit PNG files 5000 equivalent to 1m. Use 50.0 to change scale to cm
-    cv::Point3d world_point;
-    
-    // ====================================        World Point Calculation      ====================================
-//     world_point.z = measurez.at<short>((int) round(v),(int) round(u)) / factor;
-    world_point.z = measurez.at<short>((int) (v),(int) (u)) / factor;
-    world_point.x = (u - cx) * world_point.z / fx;
-    world_point.y = (v - cy) * world_point.z / fy; 			//I DON'T Change the world Y-axis
-    // Debug
-    //std::cout << ": 2D_Point = " << image_point <<  " \t||\t3D_Point = " << world_point << '\n';
-    return world_point;
+    double uv[2] = {image_point.x, image_point.y };
+    double intrinsic[4] = {cx, cy, fx, fy };
+    double xyz[3];
+    double depth = measurez.at<short>((int) round(uv[1]),(int) round(uv[0]));
+    projectiongeneral(uv, depth , intrinsic, xyz);
+    return cv::Point3d( xyz[0], xyz[1], xyz[2] );
 }
 
 cv::Point3f colorExtraction(cv::Point2d &image_point, cv::Mat &color_image)

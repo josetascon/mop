@@ -538,7 +538,7 @@ void MatchesMap::solveDB3D( HandleDB *mydb, std::vector< std::vector<SiftGPU::Si
 	      {
 		int u = (int) round( (*keypointsGPU)[cam2][idft_c2].x );
 		int v = (int) round( (*keypointsGPU)[cam2][idft_c2].y );
-		Eigen::Vector3f vv = projectionEigenSimple<float>( u, v, depth2, calibration);
+		Eigen::Vector3f vv = projection<int,double,float>( u, v, depth2, calibration);
 		mydb->insertRow3D( sf1, cam2, idft_c2, vv(0), vv(1), vv(2) );
 // 		continue;
 	      }
@@ -546,7 +546,7 @@ void MatchesMap::solveDB3D( HandleDB *mydb, std::vector< std::vector<SiftGPU::Si
 	      {
 		int u = (int) round( (*keypointsGPU)[cam1][idft_c1].x );
 		int v = (int) round( (*keypointsGPU)[cam1][idft_c1].y );
-		Eigen::Vector3f vv = projectionEigenSimple<float>( u, v, depth1, calibration);
+		Eigen::Vector3f vv = projection<int,double,float>( u, v, depth1, calibration);
 		mydb->insertRow3D( sf2, cam1, idft_c1, vv(0), vv(1), vv(2) );
 // 		continue;
 	      }
@@ -554,10 +554,10 @@ void MatchesMap::solveDB3D( HandleDB *mydb, std::vector< std::vector<SiftGPU::Si
 	      {
 		int u1 = (int) round( (*keypointsGPU)[cam1][idft_c1].x );
 		int v1 = (int) round( (*keypointsGPU)[cam1][idft_c1].y );
-		Eigen::Vector3f vv1 = projectionEigenSimple<float>( u1, v1, depth1, calibration);
+		Eigen::Vector3f vv1 = projection<int,double,float>( u1, v1, depth1, calibration);
 		int u2 = (int) round( (*keypointsGPU)[cam2][idft_c2].x );
 		int v2 = (int) round( (*keypointsGPU)[cam2][idft_c2].y );
-		Eigen::Vector3f vv2 = projectionEigenSimple<float>( u2, v2, depth2, calibration);
+		Eigen::Vector3f vv2 = projection<int,double,float>( u2, v2, depth2, calibration);
 		mydb->insertRow3D( actualfeature, cam1, idft_c1, vv1(0), vv1(1), vv1(2) );
 		mydb->insertRow3D( actualfeature, cam2, idft_c2, vv2(0), vv2(1), vv2(2) );
 		actualfeature++; // A new feature is added
@@ -582,7 +582,7 @@ void MatchesMap::solveDB3D( HandleDB *mydb, std::vector< std::vector<SiftGPU::Si
 }
 
 
-void MatchesMap::txt(char *file_txt, std::vector< std::vector<SiftGPU::SiftKeypoint> > *keypointsGPU)
+void MatchesMap::exportTXT(const char *file_txt, std::vector< std::vector<SiftGPU::SiftKeypoint> > *keypointsGPU)
 {
     std::ofstream myfile1;
     myfile1.open (file_txt);

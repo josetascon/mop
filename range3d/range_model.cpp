@@ -24,6 +24,8 @@
 // Local libraries
 #include "DepthProjection.hpp"
 #include "Common.hpp"
+#include "FeaturesMap.hpp"
+#include "HandleDB.hpp"
 #include "Interface.hpp"
 #include "InterfacePCL.hpp"
 #include "FeaturesEDM.hpp"
@@ -31,7 +33,7 @@
 #include "Optimizer.hpp"
 #include "Plot.hpp"
 
-#include "DotWriter.hpp"
+#include "DOTWriter.hpp"
 #include "GraphBFS.hpp"
 
 // using namespace cv;
@@ -227,8 +229,8 @@ int main(int argc, char* argv[])
     }
     if (!mydb.isOpen()) exit(0);
     
-    if ( ram_db )						// If database is in ram, solve features map and store in db
-    {
+//     if ( ram_db )						// If database is in ram, solve features map and store in db
+//     {
         SiftED myfeat(imageList_rgb);
         myfeat.solveSift();
         
@@ -241,52 +243,54 @@ int main(int argc, char* argv[])
         my_mmap.solveDB3D( &mydb, &myfeat.keypointsGPU, &imageList_depth, K );
         std::cout << "Elapsed time to solve DB: " << timer1.elapsed_s() << " [s]\n";
         
-//         GraphPose gp;
-//         gp.solvePose( &my_mmap.reliableMatch, &my_mmap.globalMatch, &myfeat.keypointsGPU, &imageList_depth, &K);
-//         gp.solveEdges();
-//         
-//         num_vertex = gp.getNumVertex();
-//         num_edges = gp.getNumEdges();
-//         weights = gp.getWeights();
-//         edges_pairs = gp.getEdgesPairs();
-//         
-//         std::vector< int > discover;
-//         std::vector< int > parent;
-//         GraphBFS bfs( num_vertex, num_edges, edges_pairs, weights );
-//         int initbfs = 0;
-//         bfs.setInitBFS( initbfs );
-//         bfs.solveBFS( discover, parent );
-//         
-//         gp.solveGraph( discover, parent );
+        GraphPose gp;
+        gp.solvePose( &my_mmap.reliableMatch, &my_mmap.globalMatch, &myfeat.keypointsGPU, &imageList_depth, &K);
+        gp.solveEdges();
         
-//         DOTWriter dotw("graph");
-//         dotw.writeFile( (const char *)"figs/test.dot", &edges_pairs );
-//         dotw.writeDOT( (const char *)"figs/test.dot", &edges_pairs, NULL, &weights );
+        num_vertex = gp.getNumVertex();
+        num_edges = gp.getNumEdges();
+        weights = gp.getWeights();
+        edges_pairs = gp.getEdgesPairs();
+        
+        DOTWriter dotw("graph");
+//         dotw.exportDOT( (const char *)"figs/test.dot", &edges_pairs );
+        dotw.exportDOT( (const char *)"figs/gin_std.dot", &edges_pairs, NULL, &weights );
+        
+        std::vector< int > discover;
+        std::vector< int > parent;
+        GraphBFS bfs( num_vertex, num_edges, edges_pairs, weights );
+        int initbfs = 0;
+        bfs.setInitBFS( initbfs );
+        bfs.solveBFS( discover, parent );
+        
+        gp.solveGraph( discover, parent );
+        
+
         
 //         gp.solveGraphContinuous();
-//         writeGraph( (char*)"gin_opt.graph", gp.Qn_global, gp.tr_global ); 
+//         exportGRAPH( (char*)"gin_opt.graph", gp.Qn_global, gp.tr_global ); 
 //         gp.runTORO();
 //         exportTXTQuaternionVector((char*)"pose_rot.txt", gp.Qn_global);
 //         exportTXTTranslationVector((char*)"pose_tr.txt", gp.tr_global);
-    }
+//     }
     
-    FeaturesMap featM;
-    featM.solveVisibility3D( &mydb );
-    printf("Visibility Matrix [%d x %d]\n",featM.visibility.rows(),featM.visibility.cols());
-    num_cameras = featM.cameras();
-    num_features = featM.features();
-    mydb.closeDB();
-    
-    SimpleRegistration sr01( num_cameras, num_features, K );
-    timer1.start();
-    sr01.solvePose( &featM.visibility, &featM.coordinates3D, true ); // true for optimal
-    std::cout << "Elapsed time to solve Pose: " << timer1.elapsed_s() << " [s]\n";
-    
+//     FeaturesMap featM;
+//     featM.solveVisibility3D( &mydb );
+//     printf("Visibility Matrix [%d x %d]\n",featM.visibility.rows(),featM.visibility.cols());
+//     num_cameras = featM.cameras();
+//     num_features = featM.features();
+//     mydb.closeDB();
+//     
+//     SimpleRegistration sr01( num_cameras, num_features, K );
+//     timer1.start();
+//     sr01.solvePose( &featM.visibility, &featM.coordinates3D, true ); // true for optimal
+//     std::cout << "Elapsed time to solve Pose: " << timer1.elapsed_s() << " [s]\n";
+/*    
     // Print lin and opt
     SimpleRegistration sr02( num_cameras, num_features, K );
     timer1.start();
     sr02.solvePose( &featM.visibility, &featM.coordinates3D, false ); // true for optimal
-    std::cout << "Elapsed time to solve Pose: " << timer1.elapsed_s() << " [s]\n";
+    std::cout << "Elapsed time to solve Pose: " << timer1.elapsed_s() << " [s]\n";*/
     
     // Write files of global quaternion and translation
 //     exportTXTQuaternionVector((char*)"liv_rot_opt.txt", sr01.Qn_global);
@@ -296,8 +300,8 @@ int main(int argc, char* argv[])
     
     std::vector< pcl::PointCloud<pcl::PointXYZRGBA>::Ptr > set_cloud;
     std::vector< boost::shared_ptr< Eigen::MatrixXd > > set_covariance;
-    cv2PointCloudSet(imageList_rgb, imageList_depth, K, sr01.Qn_global, sr01.tr_global, set_cloud, set_covariance);
-//     cv2PointCloudSet(imageList_rgb, imageList_depth, K, gp.Qn_global, gp.tr_global, set_cloud, set_covariance);
+//     cv2PointCloudSet(imageList_rgb, imageList_depth, K, sr01.Qn_global, sr01.tr_global, set_cloud, set_covariance);
+    cv2PointCloudSet(imageList_rgb, imageList_depth, K, gp.Qn_global, gp.tr_global, set_cloud, set_covariance);
     
 //     pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloud_join;
 //     mergeCloudSet( set_cloud, set_covariance, cloud_join );
@@ -322,8 +326,8 @@ int main(int argc, char* argv[])
 //     viewer = visualizeCloud(cloud_join);
     
     
-    visualizeCameras( viewer, sr01.Qn_global, sr01.tr_global );
-//     visualizeCameras( viewer, gp.Qn_global, gp.tr_global );
+//     visualizeCameras( viewer, sr01.Qn_global, sr01.tr_global );
+    visualizeCameras( viewer, gp.Qn_global, gp.tr_global );
     
 //     visualizeCameras(viewer, imageList_rgb, sr01.Qn_global, sr01.tr_global );
     

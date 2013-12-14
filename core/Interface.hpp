@@ -1,6 +1,6 @@
 /**
  * @file Interface.hpp
- * @brief This file has all functions related with CMVS and PMVS
+ * @brief This file has all functions related with import and export in TXT, XML, GRAPH, or files for PMVS
  *
  * @author José David Tascón Vidarte
  * @date Sep/04/2013
@@ -19,152 +19,127 @@
 
 // Std Libraries
 #include <iostream>
+#include <fstream>		// ofstream and/or ifstream
 #include <string>
 #include <vector>
-
-// sqlite3 Library
-#include <sqlite3.h>
 
 // Local Libraries
 #include "Common.hpp"
 
-// ================================================================================================
-// ========================================== struc rowDB =========================================
-// ================================================================================================
-struct rowDB
-{
-    int feature;
-    int camera;
-    int idx;
-    float coordx;
-    float coordy;
-};
-
-struct rowDB_3D
-{
-    int feature;
-    int camera;
-    int idx;
-    float x3d;
-    float y3d;
-    float z3d;
-};
-
-/**
- * ******************************************************************
- * @brief This class has all functions related with database creation/insertion/update for features
- * @author José David Tascón Vidarte
- * @date Jul/15/2013
- */
-// ================================================================================================
-// ======================================== CLASS HandleDB ========================================
-// ================================================================================================
-class HandleDB 
-{
-private:
-    char* name_db;
-    sqlite3 *db;
-    bool db_isopen;
-    
-public:
-    //Constructor
-    HandleDB();
-    HandleDB( char* nameDB );
-    //Destructor
-    ~HandleDB();
-    
-    void openDB();
-    void closeDB();
-    void createFeaturesTable();
-    void createFeaturesTable3D();
-    void createIndex1();
-    bool isOpen(){ return db_isopen; };
-    
-    void insertRow(int feature, int camera, int idx, float coordx, float coordy);	//tested
-    bool insertUnique(int feature, int camera, int idx, float coordx, float coordy);	//tested
-    
-    void insertRow3D(int feature, int camera, int idx, float x3d, float y3d, float z3d);
-    bool insertUnique3D(int feature, int camera, int idx, float x3d, float y3d, float z3d);
-    
-    bool searchFeature(int camera, int idx, int *feature);				//tested
-    void searchFeature(int camera, std::vector<int> *feature);			//tested
-    void searchCamera(int feature, std::vector<int> *camera);			//tested
-    void searchRowbyCamera(int camera, std::vector< rowDB > *row_vector);		//tested
-    void searchRowbyFeature(int feature, std::vector< rowDB > *row_vector);
-    
-    void searchRowbyCamera3D(int camera, std::vector< rowDB_3D > *row_vector);
-    void searchRowbyFeature3D(int feature, std::vector< rowDB_3D > *row_vector);
-    
-    int maxFeature();							//tested
-    int maxCamera();							//tested
-    
-    static int callback(void *data, int argc, char **argv, char **azColName);
-    static int callback_searchFeature(void *data, int argc, char **argv, char **azColName);
-    static int callback_searchVector(void *data, int argc, char **argv, char **azColName);
-    static int callback_searchRow(void *data, int argc, char **argv, char **azColName);
-    static int callback_max(void *data, int argc, char **argv, char **azColName);
-    static int callback_searchRow3D(void *data, int argc, char **argv, char **azColName);
-    //     static int callback_search(void *data, int argc, char **argv, char **azColName);
-};
-
-// ================================================================================================
-// ======================================= CLASS FeaturesMap ======================================
-// ================================================================================================
-class FeaturesMap
-{
-private:
-    int num_cameras;
-    int num_features;
-    
-public:
-    Eigen::Matrix<bool,-1,-1> visibility;
-    Eigen::Matrix<Eigen::Vector3d,-1,-1> coordinates;
-    Eigen::Matrix<Eigen::Vector4d,-1,-1> coordinates3D;
-    
-    //Constructor
-    FeaturesMap() { };
-    //Destructor
-    ~FeaturesMap() { };
-    
-    void solveVisibility( HandleDB *mydb );
-    void solveVisibility3D( HandleDB *mydb );
-    void txt(char *file_txt);
-    int cameras() { return num_cameras; };
-    int features() { return num_features; };
-};
-
-// ================================================================================================
-// ======================================== CLASS BALProblem ======================================
-// ================================================================================================
-class BALProblem
-{
-private:
-    int num_cameras;
-    int num_features;
-    int num_observations;
-    const char * file_BAL;
-    
-public:
-    //Constructor
-    BALProblem(const char * file_BAL ): file_BAL(file_BAL) { };
-    //Destructor
-    ~BALProblem() { ; };
-    
-    void read(Eigen::Matrix<bool,-1,-1> &visibility, Eigen::Matrix<Eigen::Vector3d,-1,-1> &coordinates,
-	    std::vector< Eigen::Quaternion<double> > &quaternion, Eigen::MatrixXd &translation_and_intrinsics, Eigen::MatrixXd &structure);
-};
-
 // ====================================================================================================================================
 // =======================================================  FUNCTIONS  ================================================================
 // ====================================================================================================================================
-void writePMVS(const char *output_path, std::vector<std::string> &nameImages, 
+// @date Sep/16/2013
+template <typename T_eig>
+void importTXTEigen(const char *filename, Eigen::Matrix<T_eig,-1,-1> &M)
+{
+    std::string str1;
+    int nrow, ncol;
+    
+    std::ifstream myfile1;
+    myfile1.open(filename);
+    if (!myfile1.is_open())
+    {
+        std::cerr << "Error: unable to open file " << filename << "\n";
+        exit(0);
+    }
+    
+    myfile1 >> str1;
+    myfile1 >> nrow;
+    myfile1 >> ncol;
+    M = Eigen::Matrix<T_eig,-1,-1>::Zero(nrow,ncol);
+    for (register int i = 0; i < nrow; ++i)
+    {
+        for(register int j = 0; j < ncol; ++j)
+        {
+	  myfile1 >> M(i,j);
+        }
+    }
+    myfile1.close();
+    return;
+}
+
+template <typename T_eig>
+void exportTXTEigen(const char *filename, Eigen::Matrix<T_eig,-1,-1> &M)
+{
+    int nrow = M.rows();
+    int ncol = M.cols();
+    char buf[256];
+    // Creating txt file with cameras
+    sprintf(buf, "./%s.txt", filename);
+    FILE *f = fopen(buf, "w");
+    assert(f);
+    
+    fprintf(f, "%s\n", filename);
+    fprintf(f, "%d ", nrow);
+    fprintf(f, "%d\n", ncol);
+    for (register int i = 0; i < nrow; ++i)
+    {
+        for(register int j = 0; j < ncol; ++j)
+        {
+	  fprintf(f, "%0.16e ", M(i,j));
+        }
+        fprintf(f, "\n");
+    }
+    
+    fclose(f);
+    return;
+}
+
+template <typename T_eig>
+void exportTXTQuaternionVector(const char *filename, std::vector< Eigen::Quaternion<T_eig> > &Qn_global)
+{
+//     char *filename = (char*)"pose_rot.txt";
+    std::ofstream myfile1;
+    myfile1.open (filename);
+    myfile1.precision(12);
+
+    for(int it = 0; it < Qn_global.size(); it++)
+    {
+        Eigen::Matrix<T_eig,3,3> rr = Qn_global[it].toRotationMatrix();
+        myfile1 << rr << "\n";
+    }
+    myfile1.close();
+}
+
+template <typename T_eig>
+void exportTXTTranslationVector(const char *filename, std::vector< Eigen::Matrix<T_eig,3,1> > &tr_global)
+{
+//     char *filename = (char*)"pose_tr.txt";
+    std::ofstream myfile1;
+    myfile1.open (filename);
+    myfile1.precision(12);
+
+    for(int it = 0; it < tr_global.size(); it++)
+    {
+        Eigen::Matrix<T_eig,3,1> tr = tr_global[it];
+        myfile1 << tr.transpose() << "\n";
+    }
+    myfile1.close();
+}
+
+/**
+ * ******************************************************************
+ * @brief Read XML File given by filename. The XML file contains a list of images to read. Return the location of images files.
+ * 
+ * @param filename	 	(input) XML file that contains the list of images
+ * @param location		(output) Directory route where are located the images files
+ * 
+ * @date Jul/12/2013
+ */
+bool importXMLImageList(const char *file_xml, std::vector< std::string > &files_names);
+
+void exportXMLImageList(const char *file_xml, std::vector< std::string > &files_names);
+
+
+void exportPMVS(const char *output_path, std::vector<std::string> &nameImages, 
 	     std::vector< Eigen::MatrixXd > &Cameras, Eigen::Matrix3d Calibration, std::vector< double > distortion);
 
 void undistortImages( const char * output_path, std::vector< std::string > &files_input,
 		  Eigen::Matrix3d &Calibration, Eigen::MatrixXd &distortion,
 		  const char * file_xml, std::vector< std::string > &undistort_files );
 
-void writeGraph( const char *filename, std::vector< Eigen::Quaternion<double> > &Qn_global, 
+void exportGRAPH( const char *filename, std::vector< Eigen::Quaternion<double> > &Qn_global, 
 	       std::vector< Eigen::Vector3d > &tr_global );
 
 #endif

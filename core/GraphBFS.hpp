@@ -90,15 +90,14 @@ public:
         std::vector< bool > visited(num_vertices(g), false);
         
         // Init of BFS
-        visited[0] = true;
-        
         /// TODO select origin as vertex with major connectivity        
         if ( init_bfs == -1 ) 
         {
 	  init_bfs = 0;
 	  path[0] = 0;
         }
-        else path[0] = init_bfs;
+        else path[init_bfs] = init_bfs;
+        visited[init_bfs] = true;
         
         bfs_parent_visitor< int > vis( &path, &dtime, &visited);		// created visitor to save path and discover order
         boost::breadth_first_search(g, vertex(init_bfs, g), visitor(vis));	// Solve breath first search
@@ -107,7 +106,8 @@ public:
         std::cout << "Discovered order:\n";
         for (int k = 0; k < path.size(); ++k)
         {
-	  std::cout << dtime[k] << ":\t" << "parent: " << path[ dtime[k] ] << "\n";
+	  std::cout << dtime[k] << ":\t";
+	  std::cout << "parent: " << path[ dtime[k] ] << "\n";
         }
         
         parent = path;

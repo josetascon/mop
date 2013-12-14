@@ -116,37 +116,6 @@ int countZPositive(Eigen::MatrixXd &data)
     return count;
 }
 
-void exportXMLImageList(const char *file_xml, std::vector< std::string > &files_names)
-{
-    std::ofstream myfile1;
-    myfile1.open (file_xml);
-    myfile1 << "<?xml version=\"1.0\"?>" << "\n";
-    myfile1 << "<opencv_storage>" << "\n";
-    myfile1 << "<images>" << "\n";
-    for (std::vector< std::string >::iterator it = files_names.begin() ; it != files_names.end(); ++it)
-    {
-        myfile1 << *it << "\n";
-    }
-    myfile1 << "</images>" << "\n"; 
-    myfile1 << "</opencv_storage>" << "\n";
-    myfile1.close();
-}
-
-bool importXMLImageList(const char *file_xml, std::vector< std::string > &files_names)		//Read XML Files
-{
-    files_names.clear();
-    cv::FileStorage fs(file_xml, cv::FileStorage::READ);
-    if( !fs.isOpened() )
-        return false;
-    cv::FileNode n = fs.getFirstTopLevelNode();
-    if( n.type() != cv::FileNode::SEQ )
-        return false;
-    cv::FileNodeIterator it = n.begin(), it_end = n.end();
-    for( ; it != it_end; ++it )
-        files_names.push_back((std::string)*it);
-    return true;
-}
-
 /// TODO Change name rotation2angles
 void anglesfromRotation(Eigen::Matrix3d &Rot, Eigen::Vector3d &angles, bool degrees)
 {

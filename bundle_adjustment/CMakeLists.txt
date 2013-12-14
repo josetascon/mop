@@ -44,18 +44,7 @@ set(LOCAL_DIR "./core/")
 include_directories(${LOCAL_DIR})
 
 file(GLOB_RECURSE INCS "*.hpp")
-set(SRCS 
-    "core/Common.cpp"
-    "core/CameraPose.cpp"
-    "core/Triangulation.cpp"
-    "core/DepthProjection.cpp"
-    "core/Interface.cpp"
-    "core/InterfacePCL.cpp"
-    "core/FeaturesEDM.cpp"
-    "core/MultipleCamera.cpp"
-    "core/Optimizer.cpp"
-    "core/Plot.cpp"
-)
+file(GLOB_RECURSE SRCS "core/*.cpp")
 
 # Compilation flags
 ADD_DEFINITIONS(-std=c++11)

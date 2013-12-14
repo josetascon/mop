@@ -18,6 +18,7 @@
 
 // Std Libraries
 #include <iostream>
+#include <fstream>		// ofstream and/or ifstream
 #include <vector>
 #include <utility>		// std::pair
 

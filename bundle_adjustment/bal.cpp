@@ -13,7 +13,7 @@
 
 // Classes
 #include "Common.hpp"
-#include "Interface.hpp"
+#include "BALReader.hpp"
 #include "InterfacePCL.hpp"
 #include "Optimizer.hpp"
 #include "Plot.hpp"
@@ -94,7 +94,7 @@ int main(int argc, char* argv[])
     int num_cameras;
     timer_wall timer1;
     
-    BALProblem bal(input_filename);
+    BALReader bal(input_filename);
     
     Eigen::Matrix<bool,-1,-1> visibility;
     Eigen::Matrix<Eigen::Vector3d,-1,-1> coordinates;
@@ -114,7 +114,7 @@ int main(int argc, char* argv[])
         std::cout << "File data...\t\t\t";
     }
     
-    bal.read(visibility,coordinates,quaternion,tr_and_int,structure); 
+    bal.importBAL(visibility,coordinates,quaternion,tr_and_int,structure); 
     
     if (verbose) std::cout << "[OK]\n";
     

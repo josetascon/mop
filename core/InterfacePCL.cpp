@@ -8,25 +8,36 @@
 // =====================================================  FUNCTIONS PCL ===============================================================
 // ====================================================================================================================================
 
+template< typename Tpoint >
+void projection( int &u, int &v, float &depth, float intrinsic[4], Tpoint &structure )
+{
+    float xyz[3];
+    int uv[2] = { u, v };
+    projectiongeneral( uv, depth, intrinsic, xyz);
+    structure.x = xyz[0];  structure.y = xyz[1];  structure.z = xyz[2];
+}
+
+uint32_t extractColor( int &u, int &v, uchar *p_rgb, int &columns )
+{
+    RGBValue color;
+    color.Alpha = 0;
+    
+    int image_idx = v*columns*3 + u*3;
+    color.Blue  = p_rgb[image_idx];
+    color.Green = p_rgb[image_idx + 1];
+    color.Red   = p_rgb[image_idx + 2];
+    return color.long_value;
+}
+
 void cv2PointCloud(cv::Mat &depth, Eigen::Matrix3d &calibration, pcl::PointCloud<pcl::PointXYZ>::Ptr &cloud_xyz)
 {
-    float factor = 5000.0f; // Normalization of depth image to meters
-    
     pcl::PointCloud<pcl::PointXYZ>::Ptr cloud (new pcl::PointCloud <pcl::PointXYZ>);
     cloud->height = depth.size().height;
     cloud->width = depth.size().width;
-    cloud->is_dense = false;
     cloud->points.resize (cloud->height * cloud->width);
-    //Debug
-    //     printf("Depth size %i x %i\n",depth.size().width,depth.size().height);
-    //     printf("Image size %i x %i\n",image.size().width,image.size().height);
-    register float constant_x = 1.0/calibration(0,0);
-    register float constant_y = 1.0/calibration(1,1);
-    register float centerX = calibration(0,2);
-    register float centerY = calibration(1,2);
     
+    float intrinsic[4] = { (float)calibration(0,2), (float)calibration(1,2), (float)calibration(0,0), (float)calibration(1,1) };
     float bad_point = std::numeric_limits<float>::quiet_NaN ();
-    
     register int depth_idx = 0;
     
     for (int v = 0; v < cloud->height; ++v)
@@ -34,47 +45,28 @@ void cv2PointCloud(cv::Mat &depth, Eigen::Matrix3d &calibration, pcl::PointCloud
         for (register int u = 0; u < cloud->width; ++u, ++depth_idx)
         {
 	  pcl::PointXYZ& pt = cloud->points[depth_idx];
-	  // Check for invalid measurements
-	  if (depth.at<short>(v,u) == 0 || depth.at<short>(v,u) < 0.4*factor)//||
-	      // 	      depth[depth_idx] == depth_image->getShadowValue ())
-	  {
-	      // not valid
-	      pt.x = pt.y = pt.z = bad_point;
-	      continue;
-	  }
-	  pt.z = depth.at<short>(v,u)/factor;//ptr_d[depth_idx*2];
-	  pt.x = (static_cast<float> (u) - centerX) * pt.z * constant_x;
-	  pt.y = (static_cast<float> (v) - centerY) * pt.z * constant_y;
+	  float measurez = depth.at<short>(v,u);
+	  if( !boundarykinect( measurez ) ) pt.x = pt.y = pt.z = bad_point; 	// Invalid measurement, outside the boundaries
+	  else projection( u, v, measurez, intrinsic, pt );		// Valid point projected
 	  // 	  printf("Depth (%i,%i): %f\n", u, v, pt.z);
         }
     }
     cloud->sensor_origin_.setZero ();
-    cloud->sensor_orientation_.w () = 1.0f;
-    cloud->sensor_orientation_.x () = 0.0f;
-    cloud->sensor_orientation_.y () = 0.0f;
-    cloud->sensor_orientation_.z () = 0.0f;  
+    cloud->sensor_orientation_.setIdentity ();
+    cloud->is_dense = false;
     cloud_xyz = cloud;
 }
 
 void cv2PointCloud(cv::Mat &image, cv::Mat &depth, Eigen::Matrix3d &calibration, pcl::PointCloud<pcl::PointXYZRGBA>::Ptr &cloud_out)
 {
-    float factor = 5000.0f; // Normalization of depth image to meters
-    
     pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloud (new pcl::PointCloud <pcl::PointXYZRGBA>);
     cloud->height = depth.size().height;
     cloud->width = depth.size().width;
-    cloud->is_dense = false;
     cloud->points.resize (cloud->height * cloud->width);
     
-    register float constant_x = 1.0/calibration(0,0);
-    register float constant_y = 1.0/calibration(1,1);
-    register float centerX = calibration(0,2);
-    register float centerY = calibration(1,2);
-    
+    float intrinsic[4] = { (float)calibration(0,2), (float)calibration(1,2), (float)calibration(0,0), (float)calibration(1,1) };
     float bad_point = std::numeric_limits<float>::quiet_NaN ();
     
-    RGBValue color;
-    color.Alpha = 0;
     uchar *p_rgb = image.data;
     int image_cols = image.size().width;
     register int depth_idx = 0;
@@ -84,84 +76,47 @@ void cv2PointCloud(cv::Mat &image, cv::Mat &depth, Eigen::Matrix3d &calibration,
         for (register int u = 0; u < cloud->width; ++u, ++depth_idx)
         {
 	  pcl::PointXYZRGBA& pt = cloud->points[depth_idx];
-	  // Check for invalid measurements
-	  if (depth.at<short>(v,u) == 0 || depth.at<short>(v,u) < 0.35*factor || depth.at<short>(v,u) > 3.0*factor)//||
+	  float measurez = depth.at<short>(v,u);
+	  if( !boundarykinect( measurez ) ) pt.x = pt.y = pt.z = bad_point; 	// Invalid measurement, outside the boundaries
+	  else 
 	  {
-	      // not valid
-	      pt.x = pt.y = pt.z = bad_point;
-	      continue;
+	      projection( u, v, measurez, intrinsic, pt );
+	      pt.rgba = extractColor( u, v, p_rgb, image_cols );
 	  }
-	  pt.z = depth.at<short>(v,u)/factor;
-	  pt.x = (static_cast<float> (u) - centerX) * pt.z * constant_x;
-	  pt.y = (static_cast<float> (v) - centerY) * pt.z * constant_y;
-	  int image_idx = v*image_cols*3 + u*3;
-	  color.Blue  = p_rgb[image_idx];
-	  color.Green = p_rgb[image_idx + 1];
-	  color.Red   = p_rgb[image_idx + 2];
-	  pt.rgba = color.long_value;
         }
     }
     cloud->sensor_origin_.setZero ();
-    cloud->sensor_orientation_.w () = 1.0f;
-    cloud->sensor_orientation_.x () = 0.0f;
-    cloud->sensor_orientation_.y () = 0.0f;
-    cloud->sensor_orientation_.z () = 0.0f;  
+    cloud->sensor_orientation_.setIdentity ();
+    cloud->is_dense = false;
     cloud_out = cloud;
 }
 
 void cv2PointCloudDense(cv::Mat &image, cv::Mat &depth, Eigen::Matrix3d &calibration, pcl::PointCloud<pcl::PointXYZRGBA>::Ptr &cloud_out)
 {
-    float factor = 5000.0f; // Normalization of depth image to meters
-    
     pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloud (new pcl::PointCloud <pcl::PointXYZRGBA>);
-    //     cloud->height = depth.size().height;
-    //     cloud->width = depth.size().width;
-    //     cloud->is_dense = false;
-    //     cloud->points.resize (cloud->height * cloud->width);
     
-    register float constant_x = 1.0/calibration(0,0);
-    register float constant_y = 1.0/calibration(1,1);
-    register float centerX = calibration(0,2);
-    register float centerY = calibration(1,2);
-    
+    float intrinsic[4] = { (float)calibration(0,2), (float)calibration(1,2), (float)calibration(0,0), (float)calibration(1,1) };
     float bad_point = std::numeric_limits<float>::quiet_NaN ();
     
-    RGBValue color;
-    color.Alpha = 0;
     uchar *p_rgb = image.data;
     int image_cols = image.size().width;
-    //     register int depth_idx = 0;
     
     for (register int v = 0; v < depth.size().height; ++v)
     {
         for (register int u = 0; u < depth.size().width; ++u)
         {
-	  pcl::PointXYZRGBA pt;// = cloud->points[depth_idx];
-	  // Check for invalid measurements
-	  if (depth.at<short>(v,u) == 0 || depth.at<short>(v,u) < 0.35*factor || depth.at<short>(v,u) > 3.0*factor)//||
+	  pcl::PointXYZRGBA pt;
+	  float measurez = depth.at<short>(v,u);
+	  if ( boundarykinect( measurez ) )			// Check for invalid measurements
 	  {
-	      // not valid
-	      // 	      pt.x = pt.y = pt.z = bad_point;
-	      continue;
+	      projection( u, v, measurez, intrinsic, pt );
+	      pt.rgba = extractColor( u, v, p_rgb, image_cols );
+	      cloud->push_back(pt);
 	  }
-	  pt.z = depth.at<short>(v,u)/factor;
-	  pt.x = (static_cast<float> (u) - centerX) * pt.z * constant_x;
-	  pt.y = (static_cast<float> (v) - centerY) * pt.z * constant_y;
-	  int image_idx = v*image_cols*3 + u*3;
-	  color.Blue  = p_rgb[image_idx];
-	  color.Green = p_rgb[image_idx + 1];
-	  color.Red   = p_rgb[image_idx + 2];
-	  pt.rgba = color.long_value;
-	  cloud->push_back(pt);
-	  // 	  ++depth_idx;
         }
     }
     cloud->sensor_origin_.setZero ();
-    cloud->sensor_orientation_.w () = 1.0f;
-    cloud->sensor_orientation_.x () = 0.0f;
-    cloud->sensor_orientation_.y () = 0.0f;
-    cloud->sensor_orientation_.z () = 0.0f;
-    
+    cloud->sensor_orientation_.setIdentity ();
     cloud->is_dense = true;
     std::cout << "Cloud size = " << cloud->width*cloud->height << "\n";
     cloud_out = cloud;
@@ -272,7 +227,7 @@ void cv2PointCloudSet(std::vector<std::string> &image_list, std::vector<std::str
     }
 }
 
-void sparse2Dense( pcl::PointCloud<pcl::PointXYZRGBA>::Ptr &cloud_sparse, pcl::PointCloud<pcl::PointXYZRGBA>::Ptr &cloud_dense)
+void sparse2dense( pcl::PointCloud<pcl::PointXYZRGBA>::Ptr &cloud_sparse, pcl::PointCloud<pcl::PointXYZRGBA>::Ptr &cloud_dense)
 {
     pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloud;
     if (!cloud_sparse->is_dense)
@@ -308,7 +263,7 @@ void sparse2Dense( pcl::PointCloud<pcl::PointXYZRGBA>::Ptr &cloud_sparse, pcl::P
     cloud_dense = cloud;
 }
 
-void set2Unique( std::vector< pcl::PointCloud<pcl::PointXYZRGBA>::Ptr > &data, pcl::PointCloud<pcl::PointXYZRGBA>::Ptr &cloud_out)
+void set2unique( std::vector< pcl::PointCloud<pcl::PointXYZRGBA>::Ptr > &data, pcl::PointCloud<pcl::PointXYZRGBA>::Ptr &cloud_out)
 {
     pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloud (new pcl::PointCloud <pcl::PointXYZRGBA>);
     int num_pc = data.size();

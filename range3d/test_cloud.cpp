@@ -22,6 +22,8 @@
 
 // Local libraries
 #include "Common.hpp"
+#include "FeaturesMap.hpp"
+#include "HandleDB.hpp"
 #include "Interface.hpp"
 #include "InterfacePCL.hpp"
 #include "FeaturesEDM.hpp"

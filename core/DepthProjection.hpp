@@ -61,6 +61,30 @@ Eigen::Matrix<int,-1, 1> removeBadPointsDual(std::vector< Eigen::Vector3d > &ima
 				        cv::Mat &measurez1, cv::Mat &measurez2, Eigen::MatrixXd &x1, Eigen::MatrixXd &x2, 
 				        bool close_range = true);
 
+
+template< typename Tp1, typename Tp2 >
+void projectiongeneral(Tp1 image_point[2], Tp2 &measurez, Tp2 intrinsic[4], Tp2 structure[3], Tp2 factor = 5000.0)
+{
+    // image point = u & v coordinates
+    // measurez = depth from range sensor image
+    // intrinsic = calibration param as cx, cy, fx, fy;
+    // structure = 3d point output
+//     Tp2 factor = 5000.0;		// Global scale factor. For the 16-bit PNG files 5000 equivalent to 1m. Use 50.0 to change scale to cm
+    // ====================================        World Point Calculation      ====================================
+    structure[2] = measurez / factor;
+    structure[0] = (static_cast<Tp2> (image_point[0]) - intrinsic[0]) * structure[2] / intrinsic[2];
+    structure[1] = (static_cast<Tp2> (image_point[1]) - intrinsic[1]) * structure[2] / intrinsic[3];
+}
+
+template < typename Tp>
+bool boundarykinect( Tp &measurez, Tp factor = 5000.0 )
+{
+    if (measurez == 0 || measurez < 0.40*factor || measurez > 3.0*factor) 
+        return false;
+    else return true;
+}
+
+
 /**
  * ******************************************************************
  * @brief Description: Projects a 2d point to a 3d point from depth measurements and calibration parameters.
@@ -79,23 +103,36 @@ Eigen::Matrix<int,-1, 1> removeBadPointsDual(std::vector< Eigen::Vector3d > &ima
  */
 cv::Point3d projection(cv::Point2d &image_point, cv::Mat &measurez, double &cx, double &cy, double &fx, double &fy);
 
-template <typename Teig>
-Eigen::Matrix<Teig, 3, 1> projectionEigenSimple(int x, int y, cv::Mat &depth, Eigen::Matrix3d &calibration)
+template < typename Tp, typename Teig1, typename Teig2 >
+Eigen::Matrix<Teig2, 3, 1> projection(Tp x, Tp y, cv::Mat &measurez, Eigen::Matrix<Teig1, 3, 3> &calibration)
 {
-    Teig factor = 5000.0; 			// for the 16-bit PNG files 5000 equivalent to 1m. Use 50.0 to change scale to cm
-    // ====================================        World Point Calculation      ====================================
-    Teig z_ = depth.at<short>(y,x) / factor;
-    Teig x_ = (x - calibration(0,2)) * z_ / calibration(0,0);
-    Teig y_ = (y - calibration(1,2)) * z_ / calibration(1,1);
-    // Debug
-//     printf("2D_Point = [%i, %i]\t||\t3D_Point = [%f, %f, %f]\n", x, y, x_, y_, z_);
-    return Eigen::Matrix<Teig, 3, 1>(x_, y_, z_);
+    Tp uv[2] = { x, y };
+    Teig2 intrinsic[4] = { (Teig2)calibration(0,2), (Teig2)calibration(1,2), (Teig2)calibration(0,0), (Teig2)calibration(1,1) };
+    Teig2 xyz[3];
+    Teig2 depth = (Teig2) measurez.at<short>(x,y);
+    
+    projectiongeneral< Tp, Teig2 >( uv, depth, intrinsic, xyz) ;
+    return Eigen::Matrix<Teig2, 3, 1>(xyz[0], xyz[1], xyz[2]);
+//     Teig factor = 5000.0; 			// for the 16-bit PNG files 5000 equivalent to 1m. Use 50.0 to change scale to cm
+//     // ====================================        World Point Calculation      ====================================
+//     Teig z_ = depth.at<short>(y,x) / factor;
+//     Teig x_ = (x - calibration(0,2)) * z_ / calibration(0,0);
+//     Teig y_ = (y - calibration(1,2)) * z_ / calibration(1,1);
+//     // Debug
+// //     printf("2D_Point = [%i, %i]\t||\t3D_Point = [%f, %f, %f]\n", x, y, x_, y_, z_);
+//     return Eigen::Matrix<Teig, 3, 1>(x_, y_, z_);
 }
 
-template <typename Teig1, typename Teig2>
-Eigen::Matrix<Teig1, 3, 1> projectionEigen(Eigen::Matrix<Teig2, 3, 1> &image_point, cv::Mat &depth, Eigen::Matrix3d &calibration)
+template <typename Teig3, typename Teig2, typename Teig1 >
+Eigen::Matrix<Teig1, 3, 1> projection(Eigen::Matrix<Teig2, 3, 1> &image_point, cv::Mat &measurez, Eigen::Matrix<Teig3, 3, 3> &calibration)
 {
-    return projectionEigenSimple<Teig1>(int(image_point(0)), int(image_point(1)), depth, calibration);
+    Teig2 uv[2] = { image_point(0), image_point(1) };
+    Teig1 intrinsic[4] = { (Teig1)calibration(0,2), (Teig1)calibration(1,2), (Teig1)calibration(0,0), (Teig1)calibration(1,1) };
+    Teig1 xyz[3];
+    Teig1 depth = (Teig1) measurez.at<short>( uv[0], uv[1] );
+    
+    projectiongeneral< Teig2, Teig1 >( uv, depth, intrinsic, xyz) ;
+    return Eigen::Matrix<Teig1, 3, 1>(xyz[0], xyz[1], xyz[2]);
 }
 
 /**
@@ -114,33 +151,34 @@ float colorExtraction(int x, int y, cv::Mat &color_image);
 float colorExtraction(Eigen::Vector2i &image_point, cv::Mat &color_image);
 
 
-template <typename Teig>
-void extractDepth(Eigen::Matrix<Teig,-1,-1> &x2d, cv::Mat &depth, Eigen::Matrix<Teig,-1,-1> &matrix_z)
-{
-    int num_points = x2d.cols();
-    Teig factor = 5000.0; // 1m = 5000.0
-    matrix_z = Eigen::Matrix<Teig,-1,-1>::Zero(3,num_points);
-    for ( register int i = 0; i < num_points; ++i)
-    {
-        int u = int(x2d(0,i));
-        int v = int(x2d(1,i));
-        matrix_z.col(i) = Eigen::Matrix<Teig,3,1>::Ones()*( (Teig( depth.at<short>(v,u) ))/factor );
-    } // Create a Matrix 3xn where each column has the same Z per column
-};
-
-// It was more efficient to use calc3Dfrom2D with std::vector<cv::Point3d> as output
-template <typename Teig>
-void calc3Dfrom2DEigen(Eigen::Matrix<Teig,-1,-1> &x2d, cv::Mat &depth, Eigen::Matrix3d kalibration, Eigen::Matrix<Teig,-1,-1> &X3D)
-{
-    // Backprojection with the inverse of K, and using depth measurement form Kinect
-    int num_points = x2d.cols();
-    X3D = Eigen::Matrix<Teig,-1,-1>::Ones(3,num_points);
-    Eigen::Matrix<Teig,3,3> T = (kalibration.inverse()).template cast<Teig>();;
-    
-    Eigen::Matrix<Teig,-1,-1> matrix_z;
-    extractDepth(x2d, depth, matrix_z);
-    X3D = T*( x2d.cwiseProduct(matrix_z) );
-};
+// NOTE CONSIDET TO DELETE
+// template <typename Teig>
+// void extractDepth(Eigen::Matrix<Teig,-1,-1> &x2d, cv::Mat &depth, Eigen::Matrix<Teig,-1,-1> &matrix_z)
+// {
+//     int num_points = x2d.cols();
+//     Teig factor = 5000.0; // 1m = 5000.0
+//     matrix_z = Eigen::Matrix<Teig,-1,-1>::Zero(3,num_points);
+//     for ( register int i = 0; i < num_points; ++i)
+//     {
+//         int u = int(x2d(0,i));
+//         int v = int(x2d(1,i));
+//         matrix_z.col(i) = Eigen::Matrix<Teig,3,1>::Ones()*( (Teig( depth.at<short>(v,u) ))/factor );
+//     } // Create a Matrix 3xn where each column has the same Z per column
+// };
+// 
+// // It was more efficient to use calc3Dfrom2D with std::vector<cv::Point3d> as output
+// template <typename Teig>
+// void calc3Dfrom2DEigen(Eigen::Matrix<Teig,-1,-1> &x2d, cv::Mat &depth, Eigen::Matrix3d kalibration, Eigen::Matrix<Teig,-1,-1> &X3D)
+// {
+//     // Backprojection with the inverse of K, and using depth measurement form Kinect
+//     int num_points = x2d.cols();
+//     X3D = Eigen::Matrix<Teig,-1,-1>::Ones(3,num_points);
+//     Eigen::Matrix<Teig,3,3> T = (kalibration.inverse()).template cast<Teig>();;
+//     
+//     Eigen::Matrix<Teig,-1,-1> matrix_z;
+//     extractDepth(x2d, depth, matrix_z);
+//     X3D = T*( x2d.cwiseProduct(matrix_z) );
+// };
 
 
 /**

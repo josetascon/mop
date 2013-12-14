@@ -46,7 +46,7 @@ typedef union
 } RGBValue;
 
 template <typename T_eig>
-void eigen2PointCloud(Eigen::Matrix<T_eig,-1,-1> &MM, pcl::PointCloud<pcl::PointXYZ>::Ptr &cloud_out)
+void eigen2pointcloud(Eigen::Matrix<T_eig,-1,-1> &MM, pcl::PointCloud<pcl::PointXYZ>::Ptr &cloud_out)
 {
     if ( MM.rows() < 3)
     {
@@ -108,9 +108,9 @@ void cv2PointCloudSet(std::vector<std::string> &image_list, std::vector<std::str
 		std::vector< pcl::PointCloud<pcl::PointXYZRGBA>::Ptr > &set_cloud,
 		std::vector< boost::shared_ptr< Eigen::MatrixXd > > &set_covariance);
 
-void sparse2Dense( pcl::PointCloud<pcl::PointXYZRGBA>::Ptr &cloud_sparse, pcl::PointCloud<pcl::PointXYZRGBA>::Ptr &cloud_dense);
+void sparse2dense( pcl::PointCloud<pcl::PointXYZRGBA>::Ptr &cloud_sparse, pcl::PointCloud<pcl::PointXYZRGBA>::Ptr &cloud_dense);
 
-void set2Unique( std::vector< pcl::PointCloud<pcl::PointXYZRGBA>::Ptr > &data, pcl::PointCloud<pcl::PointXYZRGBA>::Ptr &cloud_out);
+void set2unique( std::vector< pcl::PointCloud<pcl::PointXYZRGBA>::Ptr > &data, pcl::PointCloud<pcl::PointXYZRGBA>::Ptr &cloud_out);
 
 void mergeClouds( pcl::PointCloud<pcl::PointXYZRGBA>::Ptr &pc1, pcl::PointCloud<pcl::PointXYZRGBA>::Ptr &pc2,
 	      boost::shared_ptr< Eigen::MatrixXd > &covariance1, boost::shared_ptr< Eigen::MatrixXd > &covariance2, 

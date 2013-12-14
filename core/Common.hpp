@@ -21,7 +21,6 @@
 
 // Std Libraries
 #include <iostream>
-#include <fstream>
 #include <string>
 
 #define pi 3.14159265358979323846
@@ -126,112 +125,6 @@ Tf sumVector(std::vector<Tf> data)
     for (register int j = 0; j < data.size(); ++j) sum += data[j];
     return sum;
 }
-
-
-// @date Sep/16/2013
-template <typename T_eig>
-void importTXTEigen(const char *filename, Eigen::Matrix<T_eig,-1,-1> &M)
-{
-    std::string str1;
-    int nrow, ncol;
-    
-    std::ifstream myfile1;
-    myfile1.open(filename);
-    if (!myfile1.is_open())
-    {
-        std::cerr << "Error: unable to open file " << filename << "\n";
-        exit(0);
-    }
-    
-    myfile1 >> str1;
-    myfile1 >> nrow;
-    myfile1 >> ncol;
-    M = Eigen::Matrix<T_eig,-1,-1>::Zero(nrow,ncol);
-    for (register int i = 0; i < nrow; ++i)
-    {
-        for(register int j = 0; j < ncol; ++j)
-        {
-	  myfile1 >> M(i,j);
-        }
-    }
-    myfile1.close();
-    return;
-}
-
-template <typename T_eig>
-void exportTXTEigen(const char *filename, Eigen::Matrix<T_eig,-1,-1> &M)
-{
-    int nrow = M.rows();
-    int ncol = M.cols();
-    char buf[256];
-    // Creating txt file with cameras
-    sprintf(buf, "./%s.txt", filename);
-    FILE *f = fopen(buf, "w");
-    assert(f);
-    
-    fprintf(f, "%s\n", filename);
-    fprintf(f, "%d ", nrow);
-    fprintf(f, "%d\n", ncol);
-    for (register int i = 0; i < nrow; ++i)
-    {
-        for(register int j = 0; j < ncol; ++j)
-        {
-	  fprintf(f, "%0.16e ", M(i,j));
-        }
-        fprintf(f, "\n");
-    }
-    
-    fclose(f);
-    return;
-}
-
-template <typename T_eig>
-void exportTXTQuaternionVector(const char *filename, std::vector< Eigen::Quaternion<T_eig> > &Qn_global)
-{
-//     char *filename = (char*)"pose_rot.txt";
-    std::ofstream myfile1;
-    myfile1.open (filename);
-    myfile1.precision(12);
-
-    for(int it = 0; it < Qn_global.size(); it++)
-    {
-        Eigen::Matrix<T_eig,3,3> rr = Qn_global[it].toRotationMatrix();
-        myfile1 << rr << "\n";
-    }
-    myfile1.close();
-}
-
-template <typename T_eig>
-void exportTXTTranslationVector(const char *filename, std::vector< Eigen::Matrix<T_eig,3,1> > &tr_global)
-{
-//     char *filename = (char*)"pose_tr.txt";
-    std::ofstream myfile1;
-    myfile1.open (filename);
-    myfile1.precision(12);
-
-    for(int it = 0; it < tr_global.size(); it++)
-    {
-        Eigen::Matrix<T_eig,3,1> tr = tr_global[it];
-        myfile1 << tr.transpose() << "\n";
-    }
-    myfile1.close();
-}
-
-/**
- * ******************************************************************
- * @brief Read XML File given by filename. The XML file contains a list of images to read. Return the location of images files.
- * 
- * @param filename	 	(input) XML file that contains the list of images
- * @param location		(output) Directory route where are located the images files
- * 
- * @date Jul/12/2013
- */
-bool importXMLImageList(const char *file_xml, std::vector< std::string > &files_names);
-
-void exportXMLImageList(const char *file_xml, std::vector< std::string > &files_names);
-
-
-
 
 int factorial(int x);
 Eigen::MatrixXd pseudoInverse( Eigen::MatrixXd &A);
