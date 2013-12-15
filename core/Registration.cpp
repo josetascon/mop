@@ -40,7 +40,7 @@ void SimpleRegistration::solvePose(std::vector< MatchQuery > *globalMatch, std::
         calc3Dfrom2D(pts2, (*set_of_depth)[cam2], KOCV, WP2);
         point3_vector2eigen(WP1, X1);
         point3_vector2eigen(WP2, X2);
-        posefrom3DPoints( X1, X2, Rot, tr );
+        poseArun( X1, X2, Rot, tr );
 //         std::cout << "X1 =\n" << X1.transpose() << "\n";
 //         std::cout << "X2 =\n" << X2.transpose() << "\n";
         
@@ -120,7 +120,7 @@ void SimpleRegistration::solvePose(Eigen::Matrix<bool,-1,-1> *visibility, Eigen:
         calc3Dfrom2D(pts2, (*set_of_depth)[cam2], KOCV, WP2);
         point3_vector2eigen(WP1, X1);
         point3_vector2eigen(WP2, X2);
-        posefrom3DPoints( X1, X2, Rot, tr );
+        poseArun( X1, X2, Rot, tr );
         // TEST print temporal pair of files
 // 	  X1.transposeInPlace();
 // 	  X2.transposeInPlace();
@@ -218,7 +218,7 @@ void SimpleRegistration::solvePoseOptimal(Eigen::Matrix<bool,-1,-1> *visibility,
         calc3Dfrom2D(pts2, (*set_of_depth)[cam2], KOCV, WP2);
         point3_vector2eigen(WP1, X1);
         point3_vector2eigen(WP2, X2);
-        posefrom3DPoints( X1, X2, Rot, tr );
+        poseArun( X1, X2, Rot, tr );
         
         varianceKinectSet( X1, Calibration, variance1 );
         varianceKinectSet( X2, Calibration, variance2 );
@@ -293,7 +293,7 @@ void SimpleRegistration::solvePose(Eigen::Matrix<bool,-1,-1> *visibility, Eigen:
         std::cout << "Total Pts: " << count_ft << "\n";
         X1 = Xtmp1.block(0,0,3,count_ft);
         X2 = Xtmp2.block(0,0,3,count_ft);
-        posefrom3DPoints( X1, X2, Rot, tr );
+        poseArun( X1, X2, Rot, tr );
         varianceKinectSet( X1, Calibration, variance1 );
         varianceKinectSet( X2, Calibration, variance2 );
 
@@ -380,7 +380,7 @@ void GraphPose::solvePose( std::vector<bool> *reliableMatch, std::vector< MatchQ
 	  calc3Dfrom2D(pts2, depth2, KOCV, WP2);
 	  point3_vector2eigen(WP1, X1);
 	  point3_vector2eigen(WP2, X2);
-	  posefrom3DPoints( X1, X2, Rot, tr );
+	  poseArun( X1, X2, Rot, tr );
 	  varianceKinectSet( X1, *Calibration, variance1 );
 	  varianceKinectSet( X2, *Calibration, variance2 );
 	  printf("POSE: %04i -> %04i:\n", cam1, cam2);

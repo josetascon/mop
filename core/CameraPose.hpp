@@ -81,10 +81,10 @@ int robustMatchesfromFundamental(std::vector< cv::Point2d > &pts1, std::vector< 
  * 
  * @date May/12/2013
  */
-void posefromFundamental( cv::Mat &Fundamental, cv::Mat &kalibration,
-						cv::Mat &Essential, cv::Mat &Rot1, cv::Mat &Rot2, cv::Mat &translation1, cv::Mat &translation2);
+void poseFundamental( cv::Mat &Fundamental, cv::Mat &kalibration,
+		cv::Mat &Essential, cv::Mat &Rot1, cv::Mat &Rot2, cv::Mat &translation1, cv::Mat &translation2);
 
-void essentialfromFundamental( Eigen::Matrix3d &Fundamental, Eigen::Matrix3d &kalibration,
+void fundamental2essential( Eigen::Matrix3d &Fundamental, Eigen::Matrix3d &kalibration,
 		        Eigen::Matrix3d &Essential);
 
 /**
@@ -101,7 +101,7 @@ void essentialfromFundamental( Eigen::Matrix3d &Fundamental, Eigen::Matrix3d &ka
  * @date Jul/15/2013
  */
 
-void posefromEssential( Eigen::Matrix3d &Essential, Eigen::Matrix3d &Rot1, Eigen::Matrix3d &Rot2, 
+void poseEssential( Eigen::Matrix3d &Essential, Eigen::Matrix3d &Rot1, Eigen::Matrix3d &Rot2, 
 		    Eigen::Vector3d &ttr1, Eigen::Vector3d &ttr2);
 /**
  * ******************************************************************
@@ -114,11 +114,27 @@ void posefromEssential( Eigen::Matrix3d &Essential, Eigen::Matrix3d &Rot1, Eigen
  * 
  * @date Jul/08/2013
  */
-void posefrom3DPoints( Eigen::MatrixXd &WorldData1, Eigen::MatrixXd &WorldData2, 
-		   Eigen::Matrix3d &Rotation, Eigen::Vector3d &translation );
-
-void posefrom3DPoints( Eigen::MatrixXf &WorldData1, Eigen::MatrixXf &WorldData2, 
-		   Eigen::Matrix3f &Rotation, Eigen::Vector3f &translation );
+template < typename Teig >
+void poseArun( Eigen::Matrix<Teig,-1,-1> &WorldData1, Eigen::Matrix<Teig,-1,-1> &WorldData2, 
+		   Eigen::Matrix<Teig,3,3> &Rotation, Eigen::Matrix<Teig,3,1> &translation )
+{
+    // Calc Centroids (mean)
+    Eigen::Matrix<Teig,-1,1> centroidA = WorldData1.rowwise().mean();
+    Eigen::Matrix<Teig,-1,1> centroidB = WorldData2.rowwise().mean();
+    // Debug:
+//     std::cout << "Mean of data 1, centroidA:\n" << centroidA << '\n';
+//     std::cout << "Mean of data 2, centroidB:\n" << centroidB << '\n';
+    // Matrix H as the covariance matrix
+    Eigen::Matrix<Teig,-1,-1> H1 = (WorldData2.colwise() - centroidB);
+    Eigen::Matrix<Teig,-1,-1> H = (WorldData1.colwise() - centroidA) * H1.transpose();
+    // H = 3x3 || NOW 3xn * 3xn'
+    Eigen::JacobiSVD<Eigen::Matrix<Teig,-1,-1>> svd(H, Eigen::ComputeFullV | Eigen::ComputeFullU);
+    Eigen::Matrix<Teig,-1,-1> VV = svd.matrixV();
+    Eigen::Matrix<Teig,-1,-1> UU = svd.matrixU();
+    
+    Rotation = (Eigen::Matrix<Teig,3,3>)(VV*UU.transpose()); // Recovered Rotation Matrix
+    translation = Eigen::Matrix<Teig,3,1>(-Rotation*centroidA + centroidB); //Recover translation
+}
 
 Eigen::MatrixXd linearCamera( Eigen::MatrixXd &xpt, Eigen::MatrixXd &Xpt);
 

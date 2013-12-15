@@ -502,13 +502,13 @@ void findCameraExtrinsics(std::vector< cv::Point2d > &pts1, std::vector< cv::Poi
 //     getFundamentalandRemoveOutliers(pts1, pts2, matches, Fund);
     cv2eigen( Fund, FundE );
     Fundamental = FundE;
-    essentialfromFundamental(FundE, calib, Essential);
-    posefromEssential( Essential, Rot1, Rot2, tr1, tr2 );
+    fundamental2essential(FundE, calib, Essential);
+    poseEssential( Essential, Rot1, Rot2, tr1, tr2 );
 //     std::cout << "Essential Matrix:\n" << Essential << '\n';
     if (determinantCorrection(Rot1))
     {
         Essential = -Essential;
-        posefromEssential( Essential, Rot1, Rot2, tr1, tr2 );
+        poseEssential( Essential, Rot1, Rot2, tr1, tr2 );
 //         std::cout << "Recalculating Essential Matrix:\n" << Essential << '\n';
     }
     checkCoherentRotation(Rot1);

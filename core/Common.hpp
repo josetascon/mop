@@ -456,9 +456,6 @@ int countPositivesInRow(Eigen::Matrix<Teig,-1,-1> &data, int row)
  * 
  * @date Jul/08/2013
  */
-// void rotation2angles(Eigen::Matrix3d &Rot, Eigen::Vector3d &angles, bool degrees = true);
-// 
-// void rotation2angles_DetectZero(Eigen::Matrix3d &Rot, Eigen::Vector3d &angles, bool degrees = true);
 template< typename Tp >
 void rotation2angles(Eigen::Matrix< Tp, 3, 3 > &Rot, Eigen::Matrix< Tp, 3, 1 > &angles, bool degrees = true)
 {
@@ -477,10 +474,6 @@ void rotation2angles(Eigen::Matrix< Tp, 3, 3 > &Rot, Eigen::Matrix< Tp, 3, 1 > &
         angles = Eigen::Matrix< Tp, 3, 1 >( -anglex*180/pi, -angley*180/pi, -anglez*180/pi );
     else 
         angles = Eigen::Matrix< Tp, 3, 1 >( -anglex, -angley, -anglez );
-//     angles(0) = -anglex*180/pi;
-//     angles(1) = -angley*180/pi;
-//     angles(2) = -anglez*180/pi;
-    return;
 }
 
 template< typename Tp >
@@ -496,7 +489,6 @@ void rotation2angles_DetectZero(Eigen::Matrix< Tp, 3, 3 > &Rot, Eigen::Matrix< T
 	  if ( std::abs(RR(i,j)) < 1e-10 ) RR(i,j) = 0.0;
     
     rotation2angles( RR, angles, degrees);
-    return;
 }
 
 
