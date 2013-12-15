@@ -225,7 +225,7 @@ void PlotGL::drawCameras()
     {
         glPushMatrix();
         Eigen::Vector3d angles;
-        anglesfromRotation((*rotation)[k], angles);
+        rotation2angles((*rotation)[k], angles);
         camera_center[k] = (-(*rotation)[k].transpose())*((*translation)[k]);
         glTranslatef( camera_center[k](0) , camera_center[k](1), camera_center[k](2));
 //         glTranslatef((*translation)[k](0) , (*translation)[k](1), (*translation)[k](2)); //(orig sign +)
@@ -256,7 +256,7 @@ void PlotGL::drawPoints()
         glPointSize(2.0f); // size of points
         /// ICP need each orientation
         Eigen::Vector3d angles;
-        anglesfromRotation((*rotation)[k], angles);
+        rotation2angles((*rotation)[k], angles);
         glTranslatef( camera_center[k](0) , camera_center[k](1), camera_center[k](2));
         glRotatef(-angles(0), 1.0f, 0.0f, 0.0f);
         glRotatef(-angles(1), 0.0f, 1.0f, 0.0f);
@@ -593,7 +593,7 @@ void visualizeCameras(boost::shared_ptr<pcl::visualization::PCLVisualizer> &view
         Eigen::Matrix3d rot = quaternion[k].toRotationMatrix();
         Eigen::Vector3d orientation, center;
         Eigen::Matrix3d rot_inv = rot.transpose();
-        anglesfromRotationZero(rot_inv, orientation); // TODO NO use this. use transformation matrix in plotcamera (create function)
+        rotation2angles_DetectZero(rot_inv, orientation); // TODO NO use this. use transformation matrix in plotcamera (create function)
         center = -rot_inv*translation[k];
         double ratio = 1.333333;
         vtkSmartPointer<vtkActor> act02 = plotCamera(center, orientation, ratio, 0.05, 1.5);
@@ -619,7 +619,7 @@ void visualizeCameras(boost::shared_ptr<pcl::visualization::PCLVisualizer> &view
         Eigen::Matrix3d rot = quaternion[k].toRotationMatrix();
         Eigen::Vector3d orientation, center;
         Eigen::Matrix3d rot_inv = rot.transpose();
-        anglesfromRotation(rot_inv, orientation);
+        rotation2angles(rot_inv, orientation);
         center = -rot_inv*translation[k];
         double ratio = 0;
         vtkSmartPointer<vtkImageActor> act01 = plotCameraImage(filename_images[k].c_str(), center, orientation, ratio, 0.05, 1.5);

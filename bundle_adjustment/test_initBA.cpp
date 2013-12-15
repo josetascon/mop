@@ -15,6 +15,7 @@
 // Local libraries
 #include "Common.hpp"
 #include "Interface.hpp"
+#include "FeaturesMap.hpp"
 #include "FeaturesEDM.hpp"
 #include "MultipleCamera.hpp"
 #include "Optimizer.hpp"
@@ -201,7 +202,7 @@ int main(int argc, char* argv[])
     featM.solveVisibility( &mydb );
 //     std::cout << "Visibility =\n" << featM.visibility << "\n";
     printf("Visibility Matrix [%d x %d]\n",featM.visibility.rows(),featM.visibility.cols());
-    featM.txt((char*)"./visibility.txt");
+    featM.exportTXT((char*)"./visibility.txt");
     num_cameras = featM.cameras();
     num_features = featM.features();
     
@@ -249,7 +250,7 @@ int main(int argc, char* argv[])
     
     std::vector< Eigen::Matrix3d > Rotation(opt01.quaternion.size());
     for (register int i = 0; i < Rotation.size(); ++i) Rotation[i] = opt01.quaternion[i].toRotationMatrix();
-    writePMVS("./pmvs", imageList_rgb, opt01.Camera, K, coefficients);
+    exportPMVS("./pmvs", imageList_rgb, opt01.Camera, K, coefficients);
     
     // ========================================== END Optimization ==========================================
     
@@ -278,7 +279,7 @@ int main(int argc, char* argv[])
     // Plot for IncrementalBA structure in one vector (Global)
     std::vector< std::vector<cv::Point3d> > WP;
     std::vector<cv::Point3d> pts;
-    convertEigentoPoint3_( opt01.structure , pts );
+    eigen2point3_vector( opt01.structure , pts );
     WP.push_back(pts);
     
     // sfm data
@@ -291,7 +292,7 @@ int main(int argc, char* argv[])
     // PLOT for sfm object structure in one vector (Global) 
 //     std::vector< std::vector<cv::Point3d> > WP;
 //     std::vector<cv::Point3d> pts;
-//     convertEigentoPoint3_( sfm01.Structure , pts );
+//     eigen2point3_vector( sfm01.Structure , pts );
 //     WP.push_back(pts);
 //     
 //     // sfm data

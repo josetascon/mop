@@ -117,7 +117,7 @@ void SfM::solvePose(Eigen::Matrix<bool,-1,-1> *visibility,
         tr_global[k+1] = Rot_chosen*tr_global[k] + tr_chosen;
         Cameras_RCV[k+1] = buildProjectionMatrix( Calibration, Rot_global[k+1], tr_global[k+1] );
         //Debug
-//         anglesfromRotation(Rot_global[cam2], angles_vec1);
+//         rotation2angles(Rot_global[cam2], angles_vec1);
 //         std::cout << "Rotation " <<  cam2 << ":\n" << Rot_global[cam2] << "\n";
 //         std::cout << "Rotation angles " <<  cam2 << ":\n" << angles_vec1.transpose() << "\n";
 //         std::cout << "Equivalent quaternion Cam " << cam2 << ":\n" << Quat_relative[cam2].w() << " " << Quat_relative[cam2].vec().transpose() << '\n';
@@ -175,7 +175,7 @@ void SfM::updateCamera()
         Qn_global[cam].normalize();
         Rot_global[cam] = Qn_global[cam].toRotationMatrix();
         Cameras_RCV[cam] = buildProjectionMatrix( Calibration, Rot_global[cam], tr_global[cam] );
-        anglesfromRotation(Rot_global[cam], angles_vec1);
+        rotation2angles(Rot_global[cam], angles_vec1);
         std::cout << "Rotation " <<  cam << ":\n" << Rot_global[cam] << "\n";
         std::cout << "Rotation angles " <<  cam << ":\n" << angles_vec1.transpose() << "\n";
         std::cout << "Equivalent quaternion Cam " << cam << ":\n" << Qn_global[cam].w() << " " << Qn_global[cam].vec().transpose() << '\n';
@@ -220,10 +220,10 @@ void IncrementalBA::runC()
     }
 //     printf("POSE: %04i -> %04i:\n", cam1, cam2);
     findCameraExtrinsics(pts1, pts2, K, F, Rot, tr);
-    convertPoint2_toEigen( pts1, x1data );
-    convertPoint2_toEigen( pts2, x2data );
-    convertHomogeneous( x1data, x1hom );
-    convertHomogeneous( x2data, x2hom );
+    point_vector2eigen( pts1, x1data );
+    point_vector2eigen( pts2, x2data );
+    homogeneous( x1data, x1hom );
+    homogeneous( x2data, x2hom );
     
     Eigen::MatrixXd P1(3,4);
     Eigen::MatrixXd P2(3,4);
@@ -281,8 +281,8 @@ void IncrementalBA::runC()
         }
         
         // Finding new camera from 3D point to 2D relation
-        convertPoint3_toEigen( pts3, x1data );
-        convertVector4EtoEigen(common_st, Xtemp);
+        point3_vector2eigen( pts3, x1data );
+        eigen_vector2eigen(common_st, Xtemp);
         P1 = Camera[cam1];
         P2 = linearCamera( x1data, Xtemp); //Actual camera from 3D point to 2D relation
         //Debug
@@ -307,7 +307,7 @@ void IncrementalBA::runC()
         double nv = 1/((svd.singularValues())(0));
         tt = sd*nv*tt; 				// Normalization is also applied to 
         RR = sd*nv*RR; 				// Rotation matrix must have 3 singular values = to 1, in order to achieve a det = 1;
-        anglesfromRotation(RR, angles_vec1); 	// Find Euler angles
+        rotation2angles(RR, angles_vec1); 	// Find Euler angles
         Eigen::Matrix3d R_angle; 			// Do not use direct conversion from RR to Quaternion because the det of RR at this point is not 1
         R_angle = Eigen::AngleAxisd(angles_vec1(0)*pi/180, Eigen::Vector3d::UnitX()) * Eigen::AngleAxisd(angles_vec1(1)*pi/180,  Eigen::Vector3d::UnitY())
         * Eigen::AngleAxisd(angles_vec1(2)*pi/180, Eigen::Vector3d::UnitZ());
@@ -370,10 +370,10 @@ void IncrementalBA::runF()
     }
 //     printf("POSE: %04i -> %04i:\n", cam1, cam2);
     findCameraExtrinsics(pts1, pts2, K, F, Rot, tr);
-    convertPoint2_toEigen( pts1, x1data );
-    convertPoint2_toEigen( pts2, x2data );
-    convertHomogeneous( x1data, x1hom );
-    convertHomogeneous( x2data, x2hom );
+    point_vector2eigen( pts1, x1data );
+    point_vector2eigen( pts2, x2data );
+    homogeneous( x1data, x1hom );
+    homogeneous( x2data, x2hom );
     
     Eigen::MatrixXd P1(3,4);
     Eigen::MatrixXd P2(3,4);
@@ -512,8 +512,8 @@ void findCameraExtrinsics(std::vector< cv::Point2d > &pts1, std::vector< cv::Poi
 //         std::cout << "Recalculating Essential Matrix:\n" << Essential << '\n';
     }
     checkCoherentRotation(Rot1);
-    anglesfromRotation( Rot1, angles_vec1);
-    anglesfromRotation( Rot2, angles_vec2);
+    rotation2angles( Rot1, angles_vec1);
+    rotation2angles( Rot2, angles_vec2);
     
 //     std::cout << "Rotation Matrix Rot1(W):\n " << Rot1 <<'\n';
 //     std::cout << "Rotation Matrix Rot2(WT):\n " << Rot2 <<'\n';
@@ -525,13 +525,13 @@ void findCameraExtrinsics(std::vector< cv::Point2d > &pts1, std::vector< cv::Poi
     // ============================== Selection of Rotation Matrix & translation Vector ===================================
     // Rotation selection as a constrained version due to little motion
     Rot = angles_vec1.norm() < angles_vec2.norm()? Rot1 : Rot2; // orig < 
-    anglesfromRotation( Rot, angles_vec1);
+    rotation2angles( Rot, angles_vec1);
     
-    convertPoint2_toEigen( pts1, x1data );
-    convertPoint2_toEigen( pts2, x2data );
+    point_vector2eigen( pts1, x1data );
+    point_vector2eigen( pts2, x2data );
     
-    convertHomogeneous(x1data,x1hom);
-    convertHomogeneous(x2data,x2hom);
+    homogeneous(x1data,x1hom);
+    homogeneous(x2data,x2hom);
     
     P1 << calib, Eigen::Vector3d::Zero(3);
     P2r1t1 << buildProjectionMatrix(calib, Rot, tr1);
@@ -542,7 +542,7 @@ void findCameraExtrinsics(std::vector< cv::Point2d > &pts1, std::vector< cv::Poi
 //     std::cout << "Triangulation (+u):\n" << X3r1t1.transpose() <<'\n';
 //     std::cout << "Triangulation (-u):\n" << X3r1t2.transpose() <<'\n';
     // rigth hand >
-    tr = countZPositive(X3r1t1) > countZPositive(X3r1t2)? tr1 : tr2;  // orig  SS > SS ? tr1 : tr2
+    tr = countPositivesInRow(X3r1t1, 2) > countPositivesInRow(X3r1t2, 2)? tr1 : tr2;  // orig  SS > SS ? tr1 : tr2
     std::cout << "Selected Rotation Matrix:\n " << Rot <<"\n";
     std::cout << "Rotation Angles:\n " << angles_vec1.transpose() <<"\n";
     std::cout << "Selected translation vector:\n " << tr.transpose() <<"\n\n";
@@ -563,7 +563,7 @@ void findCameraExtrinsics(std::vector< cv::Point2d > &pts1, std::vector< cv::Poi
     opt01.setDistortion( &coefficients );
     opt01.pose3Dto2D();
 
-    anglesfromRotation( Rot, angles_vec1);
+    rotation2angles( Rot, angles_vec1);
     std::cout << "Selected Rotation Matrix:\n " << Rot <<"\n";
     std::cout << "Rotation Angles:\n " << angles_vec1.transpose() <<"\n";
     std::cout << "Selected translation vector:\n " << tr.transpose() <<"\n\n";
@@ -571,11 +571,11 @@ void findCameraExtrinsics(std::vector< cv::Point2d > &pts1, std::vector< cv::Poi
     */
     /*
     // Rotation selection check all
-    convertPoint2_toEigen( pts1, x1data );
-    convertPoint2_toEigen( pts2, x2data );
+    point_vector2eigen( pts1, x1data );
+    point_vector2eigen( pts2, x2data );
     
-    convertHomogeneous(x1data,x1hom);
-    convertHomogeneous(x2data,x2hom);
+    homogeneous(x1data,x1hom);
+    homogeneous(x2data,x2hom);
     
     P1 << calib, Vector3d::Zero(3);
     P2r1t1 << buildProjectionMatrix(calib, Rot1, tr1);
@@ -591,7 +591,8 @@ void findCameraExtrinsics(std::vector< cv::Point2d > &pts1, std::vector< cv::Poi
 //     std::cout << "Triangulation (R1,-u):\n" << X3r1t2.transpose() <<'\n';
 //     std::cout << "Triangulation (R2,+u):\n" << X3r2t1.transpose() <<'\n';
 //     std::cout << "Triangulation (R2,-u):\n" << X3r2t2.transpose() <<'\n';
-    Eigen::Vector4i countsPos( countZPositive(X3r1t1), countZPositive(X3r1t2), countZPositive(X3r2t1), countZPositive(X3r2t2) );
+    Eigen::Vector4i countsPos( countPositivesInRow(X3r1t1, 2), countPositivesInRow(X3r1t2, 2), 
+			  countPositivesInRow(X3r2t1, 2), countPositivesInRow(X3r2t2, 2) );
     Vector4i::Index maxPos;
     countsPos.maxCoeff(&maxPos);
     std::cout << "Vector with count:\n" << countsPos << "\n";
@@ -616,7 +617,7 @@ void findCameraExtrinsics(std::vector< cv::Point2d > &pts1, std::vector< cv::Poi
 	  tr = tr2;
 	  break;
     }
-    anglesfromRotation( Rot, angles_vec1);
+    rotation2angles( Rot, angles_vec1);
     std::cout << "Selected Rotation Matrix:\n " << Rot <<"\n";
     std::cout << "Rotation Angles:\n " << angles_vec1.transpose() <<"\n";
     std::cout << "Selected translation vector:\n " << tr.transpose() <<"\n\n";

@@ -38,8 +38,8 @@ void SimpleRegistration::solvePose(std::vector< MatchQuery > *globalMatch, std::
         removeBadPointsDual(pts1, pts2, (*set_of_depth)[cam1], (*set_of_depth)[cam2]);
         calc3Dfrom2D(pts1, (*set_of_depth)[cam1], KOCV, WP1);
         calc3Dfrom2D(pts2, (*set_of_depth)[cam2], KOCV, WP2);
-        convertPoint3_toEigen(WP1, X1);
-        convertPoint3_toEigen(WP2, X2);
+        point3_vector2eigen(WP1, X1);
+        point3_vector2eigen(WP2, X2);
         posefrom3DPoints( X1, X2, Rot, tr );
 //         std::cout << "X1 =\n" << X1.transpose() << "\n";
 //         std::cout << "X2 =\n" << X2.transpose() << "\n";
@@ -56,7 +56,7 @@ void SimpleRegistration::solvePose(std::vector< MatchQuery > *globalMatch, std::
         Cameras_RCV[k+1] = buildProjectionMatrix( Calibration, Rot_global[k+1], tr_global[k+1] );
         StructurePlot[k] = WP1; // plot TESTING
         // Debug:
-        anglesfromRotation( Rot_global[k+1], angles_vec1);
+        rotation2angles( Rot_global[k+1], angles_vec1);
         std::cout << "Rotation " <<  k+1 << ":\n" << Rot_global[k+1] << "\n";
         std::cout << "Rotation angles " <<  k+1 << ":\n" << angles_vec1.transpose() << "\n";
 //         std::cout << "Equivalent quaternion Cam " << k+1 << ":\n" << Qn_global[k+1].w() << " " << Qn_global[k+1].vec().transpose() << '\n';
@@ -118,8 +118,8 @@ void SimpleRegistration::solvePose(Eigen::Matrix<bool,-1,-1> *visibility, Eigen:
         
         calc3Dfrom2D(pts1, (*set_of_depth)[cam1], KOCV, WP1);
         calc3Dfrom2D(pts2, (*set_of_depth)[cam2], KOCV, WP2);
-        convertPoint3_toEigen(WP1, X1);
-        convertPoint3_toEigen(WP2, X2);
+        point3_vector2eigen(WP1, X1);
+        point3_vector2eigen(WP2, X2);
         posefrom3DPoints( X1, X2, Rot, tr );
         // TEST print temporal pair of files
 // 	  X1.transposeInPlace();
@@ -157,7 +157,7 @@ void SimpleRegistration::solvePose(Eigen::Matrix<bool,-1,-1> *visibility, Eigen:
 //         }
 
         // Debug:
-        anglesfromRotation( Rot_global[k+1], angles_vec1);
+        rotation2angles( Rot_global[k+1], angles_vec1);
         std::cout << "Rotation " <<  k+1 << ":\n" << Rot_global[k+1] << "\n";
         std::cout << "Rotation angles " <<  k+1 << ":\n" << angles_vec1.transpose() << "\n";
 //         std::cout << "Equivalent quaternion Cam " << k+1 << ":\n" << Qn_global[k+1].w() << " " << Qn_global[k+1].vec().transpose() << '\n';
@@ -216,8 +216,8 @@ void SimpleRegistration::solvePoseOptimal(Eigen::Matrix<bool,-1,-1> *visibility,
         
         calc3Dfrom2D(pts1, (*set_of_depth)[cam1], KOCV, WP1);
         calc3Dfrom2D(pts2, (*set_of_depth)[cam2], KOCV, WP2);
-        convertPoint3_toEigen(WP1, X1);
-        convertPoint3_toEigen(WP2, X2);
+        point3_vector2eigen(WP1, X1);
+        point3_vector2eigen(WP2, X2);
         posefrom3DPoints( X1, X2, Rot, tr );
         
         varianceKinectSet( X1, Calibration, variance1 );
@@ -241,7 +241,7 @@ void SimpleRegistration::solvePoseOptimal(Eigen::Matrix<bool,-1,-1> *visibility,
         Cameras_RCV[k+1] = buildProjectionMatrix( Calibration, Rot_global[k+1], tr_global[k+1] );
 
         // Debug:
-        anglesfromRotation( Rot_global[k+1], angles_vec1);
+        rotation2angles( Rot_global[k+1], angles_vec1);
         std::cout << "Rotation " <<  k+1 << ":\n" << Rot_global[k+1] << "\n";
         std::cout << "Rotation angles " <<  k+1 << ":\n" << angles_vec1.transpose() << "\n";
 //         std::cout << "Equivalent quaternion Cam " << k+1 << ":\n" << Qn_global[k+1].w() << " " << Qn_global[k+1].vec().transpose() << '\n';
@@ -313,7 +313,7 @@ void SimpleRegistration::solvePose(Eigen::Matrix<bool,-1,-1> *visibility, Eigen:
         Cameras_RCV[k+1] = buildProjectionMatrix( Calibration, Rot_global[k+1], tr_global[k+1] );
 
         // Debug:
-        anglesfromRotation( Rot_global[k+1], angles_vec1);
+        rotation2angles( Rot_global[k+1], angles_vec1);
         std::cout << "Rotation " <<  k+1 << ":\n" << Rot_global[k+1] << "\n";
         std::cout << "Rotation angles " <<  k+1 << ":\n" << angles_vec1.transpose() << "\n";
 //         std::cout << "Equivalent quaternion Cam " << k+1 << ":\n" << Qn_global[k+1].w() << " " << Qn_global[k+1].vec().transpose() << '\n';
@@ -330,7 +330,7 @@ void SimpleRegistration::updateCamera()
         Qn_global[cam].normalize();
         Rot_global[cam] = Qn_global[cam].toRotationMatrix();
         Cameras_RCV[cam] = buildProjectionMatrix( Calibration, Rot_global[cam], tr_global[cam] );
-        anglesfromRotation(Rot_global[cam], angles_vec1);
+        rotation2angles(Rot_global[cam], angles_vec1);
         std::cout << "Rotation " <<  cam << ":\n" << Rot_global[cam] << "\n";
         std::cout << "Rotation angles " <<  cam << ":\n" << angles_vec1.transpose() << "\n";
         std::cout << "Equivalent quaternion Cam " << cam << ":\n" << Qn_global[cam].w() << " " << Qn_global[cam].vec().transpose() << '\n';
@@ -378,8 +378,8 @@ void GraphPose::solvePose( std::vector<bool> *reliableMatch, std::vector< MatchQ
 	  
 	  calc3Dfrom2D(pts1, depth1, KOCV, WP1);
 	  calc3Dfrom2D(pts2, depth2, KOCV, WP2);
-	  convertPoint3_toEigen(WP1, X1);
-	  convertPoint3_toEigen(WP2, X2);
+	  point3_vector2eigen(WP1, X1);
+	  point3_vector2eigen(WP2, X2);
 	  posefrom3DPoints( X1, X2, Rot, tr );
 	  varianceKinectSet( X1, *Calibration, variance1 );
 	  varianceKinectSet( X2, *Calibration, variance2 );
@@ -504,7 +504,7 @@ void GraphPose::runTORO()
         Eigen::Matrix3d rr = Qn_global[it].toRotationMatrix();
         Eigen::Vector3d tr = rr.transpose()*(-tr_global[it]);
         Eigen::Vector3d angles;
-        anglesfromRotation( rr, angles, false ); //false for radians units
+        rotation2angles( rr, angles, false ); //false for radians units
         
         myfile1 << "VERTEX3 ";
         myfile1 << it << " ";
@@ -523,7 +523,7 @@ void GraphPose::runTORO()
         Eigen::Matrix<double,6,1> p_j, p_i, dji;
         Eigen::Vector3d angles1, angles2;
         
-        anglesfromRotationZero( rot1, angles1, false );//false for radians units
+        rotation2angles_DetectZero( rot1, angles1, false );//false for radians units
         dji << tr1, angles1;
         
         myfile1 << "EDGE3 ";

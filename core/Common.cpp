@@ -88,83 +88,9 @@ float euclideanDistanceofcvPoints(cv::Point2f pt1, cv::Point2f pt2 )
     return sqrt(pow(result.x,2.0) + pow(result.y,2.0));
 }
 
-cv::Mat vector2Mat(cv::InputArray _src)
+cv::Mat vector2mat(cv::InputArray _src)
 {
     return _src.getMat();
-}
-
-void convertHomogeneous(Eigen::MatrixXd &data_inhom, Eigen::MatrixXd &data_hom)
-{
-    Eigen::MatrixXd Out(data_inhom.rows()+1,data_inhom.cols());
-    Eigen::RowVectorXd Un = Eigen::RowVectorXd::Ones(data_inhom.cols());
-    Out << data_inhom, Un;
-    data_hom = Out;
-}
-
-void normalizeHomogeneous(Eigen::MatrixXd &data)
-{
-    // Divide each col by his last value
-    for (int i = 0; i < data.cols(); i++) data.col(i) /= fabs(data(data.rows()-1,i));
-}
-
-int countZPositive(Eigen::MatrixXd &data)
-{
-    int count = 0;
-    for (int k = 0; k < data.cols(); k++)
-        if (data(2,k)> 0.0) count++; // Z axis NEGATIVE DUE TO left hand
-        
-    return count;
-}
-
-/// TODO Change name rotation2angles
-void anglesfromRotation(Eigen::Matrix3d &Rot, Eigen::Vector3d &angles, bool degrees)
-{
-    double anglex = 0.0;
-    double angley = 0.0;
-    double anglez = 0.0;
-    
-    anglex = atan2( Rot(1,2), Rot(2,2) );
-    angley = atan2( -Rot(0,2), sqrt( pow( Rot(0,0), 2.0 ) + pow( Rot(0,1), 2.0 ) ) );
-    
-    double s1 = sin(anglex); double c1 = cos(anglex);
-    anglez = atan2( s1*Rot(2,0) - c1*Rot(1,0) , c1*Rot(1,1) - s1*Rot(2,1) );
-    
-    // radians to degrees convertion
-    if(degrees)
-        angles = Eigen::Vector3d( -anglex*180/pi, -angley*180/pi, -anglez*180/pi );
-    else 
-        angles = Eigen::Vector3d( -anglex, -angley, -anglez );
-//     angles(0) = -anglex*180/pi;
-//     angles(1) = -angley*180/pi;
-//     angles(2) = -anglez*180/pi;
-    return;
-}
-
-void anglesfromRotationZero(Eigen::Matrix3d &Rot, Eigen::Vector3d &angles, bool degrees)
-{
-    double anglex = 0.0;
-    double angley = 0.0;
-    double anglez = 0.0;
-    Eigen::Matrix3d RR = Rot;
-    
-    for (register int i = 0; i < 3; ++i) 
-        for (register int j = 0; j < 3; ++j) 
-	  if ( std::abs(RR(i,j)) < 1e-10 ) RR(i,j) = 0.0;
-    
-    anglex = atan2( RR(1,2), RR(2,2) );
-    angley = atan2( -RR(0,2), sqrt( pow( RR(0,0), 2.0 ) + pow( RR(0,1), 2.0 ) ) );
-    
-    double s1 = sin(anglex); double c1 = cos(anglex);
-    anglez = atan2( s1*RR(2,0) - c1*RR(1,0) , c1*RR(1,1) - s1*RR(2,1) );
-    
-    // radians to degrees convertion
-    if(degrees)
-        angles = Eigen::Vector3d( -anglex*180/pi, -angley*180/pi, -anglez*180/pi );
-    else 
-        angles = Eigen::Vector3d( -anglex, -angley, -anglez );
-    
-    
-    return;
 }
 
 Eigen::Vector3d radialDistortionCorrection( Eigen::Vector3d &pt2d, Eigen::Matrix3d &kalib, Eigen::VectorXd &distCoeff )

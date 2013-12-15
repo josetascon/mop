@@ -167,7 +167,7 @@ void exportGRAPH( const char *filename, std::vector< Eigen::Quaternion<double> >
 //         Eigen::Vector3d tr = tr_global[it];
         Eigen::Vector3d tr = rr.transpose()*(-tr_global[it]); //center of coordinates
         Eigen::Vector3d angles;
-        anglesfromRotation( rr, angles, false );
+        rotation2angles( rr, angles, false );		// false = radians units
         
         myfile1 << "VERTEX3 ";
         myfile1 << it << " ";
@@ -188,8 +188,8 @@ void exportGRAPH( const char *filename, std::vector< Eigen::Quaternion<double> >
         Eigen::Matrix<double,6,1> p_j, p_i, dji;
         Eigen::Vector3d angles1, angles2;
         
-        anglesfromRotationZero( rot1, angles1, false );//false for radians units
-        anglesfromRotationZero( rot2, angles2, false );//false for radians units
+        rotation2angles_DetectZero( rot1, angles1, false );//false for radians units
+        rotation2angles_DetectZero( rot2, angles2, false );//false for radians units
         
         p_i << tr1, angles1;
         p_j << tr2, angles2;
@@ -201,7 +201,7 @@ void exportGRAPH( const char *filename, std::vector< Eigen::Quaternion<double> >
         
         // Local angles correction
         Eigen::Matrix3d rr = rot2*rot1.transpose();
-        anglesfromRotationZero( rr , angles1, false );//false for radians units
+        rotation2angles_DetectZero( rr , angles1, false );//false for radians units
         dji.tail(3) = angles1;
         
         myfile1 << "EDGE3 ";

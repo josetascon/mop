@@ -300,7 +300,7 @@ int main(int argc, char* argv[])
         //         //Structure in one vector (Global)
         //         std::vector< std::vector<cv::Point3d> > WP;
         //         std::vector<cv::Point3d> pts;
-        //         convertEigentoPoint3_( st_synthetic , pts );
+        //         eigen2point3_vector( st_synthetic , pts );
         //         WP.push_back(pts);
         //         // Data to plot
         //         PlotGL::viewer.setRotation( &rot_synthetic );
@@ -310,7 +310,7 @@ int main(int argc, char* argv[])
 	      
 	      std::vector< std::vector<cv::Point3d> > WP;
 	      std::vector<cv::Point3d> pts;
-	      convertEigentoPoint3_( opt01.structure , pts );
+	      eigen2point3_vector( opt01.structure , pts );
 	      WP.push_back(pts);
 	      // Data to plot
 	      PlotGL::viewer.setRotation( &rotation );

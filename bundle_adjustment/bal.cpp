@@ -140,7 +140,7 @@ int main(int argc, char* argv[])
     if( output )
     {
         pcl::PointCloud<pcl::PointXYZ>::Ptr model;
-        eigen2PointCloud(structure, model);
+        eigen2pointcloud(structure, model);
     
         pcl::PLYWriter wr_ply;
         wr_ply.write(output_filename.c_str(), *model);
@@ -150,7 +150,7 @@ int main(int argc, char* argv[])
     // Plot for BAL structure in one vector (Global)
     std::vector< std::vector<cv::Point3d> > WP;
     std::vector<cv::Point3d> pts;
-    convertEigentoPoint3_( structure , pts );
+    eigen2point3_vector( structure , pts );
     WP.push_back(pts);
     
     // sfm data

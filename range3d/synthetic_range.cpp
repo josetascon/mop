@@ -320,9 +320,9 @@ int main(int argc, char* argv[])
 	  double lin_euclidean_error = cf.norm();
 	  
 	  Eigen::Matrix3d rot = sr01.Qn_global[num_cameras].toRotationMatrix();
-	  anglesfromRotationZero( rot, angle_opt );
+	  rotation2angles_DetectZero( rot, angle_opt );
 	  rot = sr02.Qn_global[num_cameras].toRotationMatrix();
-	  anglesfromRotationZero( rot, angle_lin );
+	  rotation2angles_DetectZero( rot, angle_lin );
 	  
 	  std::cout << "\n================================ Error Stats ==================================\n";
 	  std::cout << "Euclidean distance for optimal method = " << opt_euclidean_error << " [m]\n";
@@ -356,11 +356,11 @@ int main(int argc, char* argv[])
 	      Eigen::Matrix3d rot;
 	      
 	      rot = qu_synthetic[cam].toRotationMatrix();
-	      anglesfromRotationZero( rot, angle );
+	      rotation2angles_DetectZero( rot, angle );
 	      rot = sr01.Qn_global[cam].toRotationMatrix();
-	      anglesfromRotationZero( rot, angle_opt );
+	      rotation2angles_DetectZero( rot, angle_opt );
 	      rot = sr02.Qn_global[cam].toRotationMatrix();
-	      anglesfromRotationZero( rot, angle_lin );
+	      rotation2angles_DetectZero( rot, angle_lin );
 	      
 	      // Angle error is just the the substraction
 	      angle_opt -= angle;
@@ -394,7 +394,7 @@ int main(int argc, char* argv[])
 	      Eigen::MatrixXd WorldPts = st_synthetic.colwise() + offset;
 	      
 	      
-	      eigen2PointCloud( WorldPts, cloud );
+	      eigen2pointcloud( WorldPts, cloud );
 	      
 	      boost::shared_ptr<pcl::visualization::PCLVisualizer> viewer;
 	      viewer = visualizeCloud(cloud);

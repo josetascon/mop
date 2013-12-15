@@ -237,7 +237,7 @@ int main(int argc, char* argv[])
     std::vector< pcl::PointCloud<pcl::PointXYZRGBA>::Ptr > set_cloud;
     cv2PointCloudSet(images, images_depth, K, sr01.Qn_global, sr01.tr_global, set_cloud);
     pcl::PointCloud<pcl::PointXYZRGBA>::Ptr model;
-    set2Unique( set_cloud, model );
+    set2unique( set_cloud, model );
     
     // ========================================== END Registration ==========================================
 

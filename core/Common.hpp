@@ -170,7 +170,7 @@ inline void AngleAxisRToQuaternion(const T* angle_axis, T* quaternion) {
  */
 float euclideanDistanceofcvPoints(cv::Point2f pt1, cv::Point2f pt2 );
 
-cv::Mat vector2Mat(cv::InputArray _src);
+cv::Mat vector2mat(cv::InputArray _src);
 
 
 /**
@@ -183,7 +183,7 @@ cv::Mat vector2Mat(cv::InputArray _src);
  * @date Jun/28/2013
  */
 template <typename T_pt, typename T_eig>
-void convertPoint2_toEigen(const std::vector< cv::Point_<T_pt> > &pts, Eigen::Matrix<T_eig,-1, -1> &D2d)
+void point_vector2eigen(const std::vector< cv::Point_<T_pt> > &pts, Eigen::Matrix<T_eig,-1, -1> &D2d)
 {
     Eigen::Matrix<T_eig,-1, -1> M_Data(2,pts.size());
     for (register int i = 0; i < pts.size(); ++i)
@@ -195,7 +195,7 @@ void convertPoint2_toEigen(const std::vector< cv::Point_<T_pt> > &pts, Eigen::Ma
 };
 
 template <typename T_pt, typename T_eig>
-void convertEigentoPoint2_(const Eigen::Matrix<T_eig,-1, -1> &D2d, std::vector< cv::Point_<T_pt> > &pts)
+void eigen2point_vector(const Eigen::Matrix<T_eig,-1, -1> &D2d, std::vector< cv::Point_<T_pt> > &pts)
 {
     std::vector< cv::Point_<T_pt> > V_Data(D2d.cols());
     for (register int i = 0; i < D2d.cols(); ++i)
@@ -205,9 +205,6 @@ void convertEigentoPoint2_(const Eigen::Matrix<T_eig,-1, -1> &D2d, std::vector< 
     }
     pts = V_Data;
 };
-
-// void convertPoint2dtoEigen(std::vector<cv::Point2d> &pts, Eigen::MatrixXd &D2d);
-// void convertEigentoPoint2d( Eigen::MatrixXd &D2d, std::vector<cv::Point2d> &pts);
 
 /**
  * ******************************************************************
@@ -219,7 +216,7 @@ void convertEigentoPoint2_(const Eigen::Matrix<T_eig,-1, -1> &D2d, std::vector< 
  * @date Jun/28/2013, update to template Sep/18/2013
  */
 template <typename T_pt, typename T_eig>
-void convertPoint3_toEigen(const std::vector< cv::Point3_<T_pt> > &pts, Eigen::Matrix<T_eig,-1, -1> &D3d)
+void point3_vector2eigen(const std::vector< cv::Point3_<T_pt> > &pts, Eigen::Matrix<T_eig,-1, -1> &D3d)
 {
     Eigen::Matrix<T_eig,-1, -1> M_Data(3,pts.size());
     for (register int i = 0; i < pts.size(); ++i)
@@ -232,7 +229,7 @@ void convertPoint3_toEigen(const std::vector< cv::Point3_<T_pt> > &pts, Eigen::M
 };
 
 template <typename T_pt, typename T_eig>
-void convertEigentoPoint3_( const Eigen::Matrix<T_eig,-1, -1> &D3d, std::vector< cv::Point3_<T_pt> > &pts)
+void eigen2point3_vector( const Eigen::Matrix<T_eig,-1, -1> &D3d, std::vector< cv::Point3_<T_pt> > &pts)
 {
     std::vector< cv::Point3_<T_pt> > V_Data(D3d.cols());
     for (register int i = 0; i < D3d.cols(); ++i)
@@ -244,11 +241,8 @@ void convertEigentoPoint3_( const Eigen::Matrix<T_eig,-1, -1> &D3d, std::vector<
     pts = V_Data;
 };
 
-// void convertPoint3dtoEigen(std::vector<cv::Point3d> &pts, Eigen::MatrixXd &D3d);
-// void convertEigentoPoint3d( Eigen::MatrixXd &D3d, std::vector<cv::Point3d> &pts);
-
 template <typename T_eig>
-void convertVector4EtoEigen(const std::vector< Eigen::Matrix<T_eig, 4, 1> > &pts, Eigen::Matrix<T_eig, -1, -1> &D3d)
+void eigen_vector2eigen(const std::vector< Eigen::Matrix<T_eig, 4, 1> > &pts, Eigen::Matrix<T_eig, -1, -1> &D3d)
 {
     Eigen::Matrix<T_eig,-1, -1> M_Data(4,pts.size());
     for (register int i = 0; i < pts.size(); ++i)
@@ -268,7 +262,7 @@ void convertVector4EtoEigen(const std::vector< Eigen::Matrix<T_eig, 4, 1> > &pts
  * @date Jun/28/2013, update to template Sep/18/2013
  */
 template <typename T_vec, typename T_qt>
-void convertQuaterniontoVector(const Eigen::Quaternion<T_qt> &quat_In, std::vector<T_vec> &quat_Vec )
+void quaternion2vector(const Eigen::Quaternion<T_qt> &quat_In, std::vector<T_vec> &quat_Vec )
 {
     quat_Vec.resize(4,T_vec(0.0));
     quat_Vec[0] = T_vec( quat_In.w() );
@@ -278,17 +272,14 @@ void convertQuaterniontoVector(const Eigen::Quaternion<T_qt> &quat_In, std::vect
 };
 
 template <typename T_vec, typename T_qt>
-void convertSetQuaterniontoVector(const std::vector< Eigen::Quaternion<T_qt> > &quat_In, std::vector< std::vector<T_vec> > &quat_Vec )
+void quaternion_vector2vector_vector(const std::vector< Eigen::Quaternion<T_qt> > &quat_In, std::vector< std::vector<T_vec> > &quat_Vec )
 {
     int num_cams = quat_In.size();
     quat_Vec.clear();
     quat_Vec.resize(num_cams);
     
-    for (register int cam = 0; cam < num_cams; ++cam) convertQuaterniontoVector( quat_In[cam], quat_Vec[cam] );
+    for (register int cam = 0; cam < num_cams; ++cam) quaternion2vector( quat_In[cam], quat_Vec[cam] );
 };
-
-// void convertQuaterniontoVector( Eigen::Quaternion<double> &quat_In, std::vector<double> &quat_Vec );
-// void convertSetQuaterniontoVector( std::vector< Eigen::Quaternion<double> > &quat_In, std::vector< std::vector<double> > &quat_Vec );
 
 /**
  * ******************************************************************
@@ -300,19 +291,19 @@ void convertSetQuaterniontoVector(const std::vector< Eigen::Quaternion<T_qt> > &
  * @date Sep/29/2013
  */
 template <typename T_evec, typename T_qt>
-void convertQuaterniontoEigenVector(const Eigen::Quaternion<T_qt> &quat_In, Eigen::Matrix<T_evec,4,1> &quat_Vec )
+void quaternion2eigen(const Eigen::Quaternion<T_qt> &quat_In, Eigen::Matrix<T_evec,4,1> &quat_Vec )
 {
     quat_Vec = Eigen::Matrix<T_evec,4,1>( T_evec(quat_In.w()), T_evec(quat_In.x()), T_evec(quat_In.y()), T_evec(quat_In.z()) );
 };
 
 template <typename T_evec, typename T_qt>
-void convertSetQuaterniontoEigenVector(const std::vector< Eigen::Quaternion<T_qt> > &quat_In, std::vector< Eigen::Matrix<T_evec,4,1> > &quat_Vec )
+void quaternion_vector2eigen_vector(const std::vector< Eigen::Quaternion<T_qt> > &quat_In, std::vector< Eigen::Matrix<T_evec,4,1> > &quat_Vec )
 {
     int num_cams = quat_In.size();
     quat_Vec.clear();
     quat_Vec.resize(num_cams);
     
-    for (register int cam = 0; cam < num_cams; ++cam) convertQuaterniontoEigenVector( quat_In[cam], quat_Vec[cam] );
+    for (register int cam = 0; cam < num_cams; ++cam) quaternion2eigen( quat_In[cam], quat_Vec[cam] );
 };
 
 /**
@@ -325,24 +316,20 @@ void convertSetQuaterniontoEigenVector(const std::vector< Eigen::Quaternion<T_qt
  * @date Jun/28/2013, update to template Sep/18/2013
  */
 template <typename T_vec, typename T_qt>
-void convertVectortoQuaternion( const std::vector<T_vec> &qVec, Eigen::Quaternion<T_qt> &quat_Out )
+void vector2quaternion( const std::vector<T_vec> &qVec, Eigen::Quaternion<T_qt> &quat_Out )
 {
     quat_Out = Eigen::Quaternion<T_qt>( T_qt(qVec[0]), T_qt(qVec[1]), T_qt(qVec[2]), T_qt(qVec[3]) );
 };
 
 template <typename T_vec, typename T_qt>
-void convertSetVectortoQuaternion( const std::vector< std::vector<T_vec> > &qVec, std::vector< Eigen::Quaternion<T_qt> > &quat_Out )
+void vector_vector2quaternion_vector( const std::vector< std::vector<T_vec> > &qVec, std::vector< Eigen::Quaternion<T_qt> > &quat_Out )
 {
     int num_cams = qVec.size();
     quat_Out.clear();
     quat_Out.resize(num_cams);
     
-    for (register int cam = 0; cam < num_cams; ++cam) convertVectortoQuaternion( qVec[cam], quat_Out[cam] );
-//         quat_Out[cam] = Eigen::Quaternion<double>( qVec[cam][0], qVec[cam][1], qVec[cam][2], qVec[cam][3] );
+    for (register int cam = 0; cam < num_cams; ++cam) vector2quaternion( qVec[cam], quat_Out[cam] );
 };
-
-// void convertVectortoQuaternion( std::vector<double> &qVec, Eigen::Quaternion<double> &quat_Out );
-// void convertSetVectortoQuaternion( std::vector< std::vector<double> > &qVec, std::vector< Eigen::Quaternion<double> > &quat_Out );
 
 /**
  * ******************************************************************
@@ -354,19 +341,19 @@ void convertSetVectortoQuaternion( const std::vector< std::vector<T_vec> > &qVec
  * @date Sep/29/2013
  */
 template <typename T_evec, typename T_qt>
-void convertEigenVectortoQuaternion( const Eigen::Matrix<T_evec,4,1> &qVec, Eigen::Quaternion<T_qt> &quat_Out )
+void eigen2quaternion( const Eigen::Matrix<T_evec,4,1> &qVec, Eigen::Quaternion<T_qt> &quat_Out )
 {
     quat_Out = Eigen::Quaternion<T_qt>( T_qt(qVec(0)), T_qt(qVec(1)), T_qt(qVec(2)), T_qt(qVec(3)) );
 };
 
 template <typename T_evec, typename T_qt>
-void convertSetEigenVectortoQuaternion( const std::vector< Eigen::Matrix<T_evec,4,1> > &qVec, std::vector< Eigen::Quaternion<T_qt> > &quat_Out )
+void eigen_vector2quaternion_vector( const std::vector< Eigen::Matrix<T_evec,4,1> > &qVec, std::vector< Eigen::Quaternion<T_qt> > &quat_Out )
 {
     int num_cams = qVec.size();
     quat_Out.clear();
     quat_Out.resize(num_cams);
     
-    for (register int cam = 0; cam < num_cams; ++cam) convertEigenVectortoQuaternion( qVec[cam], quat_Out[cam] );
+    for (register int cam = 0; cam < num_cams; ++cam) eigen2quaternion( qVec[cam], quat_Out[cam] );
 };
 
 /**
@@ -379,7 +366,7 @@ void convertSetEigenVectortoQuaternion( const std::vector< Eigen::Matrix<T_evec,
  * @date Jun/28/2013, update to template Sep/18/2013
  */
 template <typename T_vec, typename T_eig>
-void convertEigentoVector( const Eigen::Matrix<T_eig,-1, -1> &matrixE, std::vector< std::vector<T_vec> > &data )
+void eigen2vector_vector( const Eigen::Matrix<T_eig,-1, -1> &matrixE, std::vector< std::vector<T_vec> > &data )
 {
     // Conceive from the needs to change Structure matrix to Vector
     int num_cols = matrixE.cols();
@@ -398,7 +385,7 @@ void convertEigentoVector( const Eigen::Matrix<T_eig,-1, -1> &matrixE, std::vect
 };
 
 template <typename T_vec, typename T_eig>
-void convertVectortoEigen( const std::vector< std::vector<T_vec> > &data, Eigen::Matrix<T_eig,-1, -1> &matrixE )
+void vector_vector2eigen( const std::vector< std::vector<T_vec> > &data, Eigen::Matrix<T_eig,-1, -1> &matrixE )
 {
     // Conceive from the needs to change Structure matrix to Vector
     int num_cols = data.size();
@@ -415,9 +402,6 @@ void convertVectortoEigen( const std::vector< std::vector<T_vec> > &data, Eigen:
     matrixE = MM;
 };
 
-// void convertEigentoVector( Eigen::MatrixXd &matrixE, std::vector< std::vector<double> > &data );
-// void convertVectortoEigen( std::vector< std::vector<double> > &data, Eigen::MatrixXd &matrixE );
-
 /**
  * ******************************************************************
  * @brief Description: Converts eigen matrix to his homogeneous form (adding a last coordinate with 1 for each column)
@@ -427,7 +411,14 @@ void convertVectortoEigen( const std::vector< std::vector<T_vec> > &data, Eigen:
  * 
  * @date Jun/28/2013
  */
-void convertHomogeneous(Eigen::MatrixXd &data_inhom, Eigen::MatrixXd &data_hom);
+template< typename Teig >
+void homogeneous(Eigen::Matrix<Teig,-1,-1> &data_inhom, Eigen::Matrix<Teig,-1,-1> &data_hom)
+{
+    Eigen::Matrix<Teig,-1,-1> Out(data_inhom.rows()+1,data_inhom.cols());
+    Eigen::Matrix<Teig,1,-1> Un = Eigen::Matrix<Teig,1,-1>::Ones(data_inhom.cols()); // RowVectorX
+    Out << data_inhom, Un;
+    data_hom = Out;
+}
 
 /**
  * ******************************************************************
@@ -437,10 +428,24 @@ void convertHomogeneous(Eigen::MatrixXd &data_inhom, Eigen::MatrixXd &data_hom);
  * 
  * @date Jun/28/2013
  */
-void normalizeHomogeneous(Eigen::MatrixXd &data);
+template< typename Teig >
+void normalizeHomogeneous(Eigen::Matrix<Teig,-1,-1> &data)
+{
+    // Divide each col by his last value
+    for (register int i = 0; i < data.cols(); ++i) data.col(i) /= fabs(data(data.rows()-1,i));
+}
 
+// Designed to count positive in z axis for 3d points
+template < typename Teig >
+int countPositivesInRow(Eigen::Matrix<Teig,-1,-1> &data, int row)
+{
+    int count = 0;
+    for (int k = 0; k < data.cols(); k++)
+        if (data(row,k)> 0.0) count++; 
+        
+    return count;
+}
 
-int countZPositive(Eigen::MatrixXd &data);
 
 /**
  * ******************************************************************
@@ -451,9 +456,49 @@ int countZPositive(Eigen::MatrixXd &data);
  * 
  * @date Jul/08/2013
  */
-void anglesfromRotation(Eigen::Matrix3d &Rot, Eigen::Vector3d &angles, bool degrees = true);
+// void rotation2angles(Eigen::Matrix3d &Rot, Eigen::Vector3d &angles, bool degrees = true);
+// 
+// void rotation2angles_DetectZero(Eigen::Matrix3d &Rot, Eigen::Vector3d &angles, bool degrees = true);
+template< typename Tp >
+void rotation2angles(Eigen::Matrix< Tp, 3, 3 > &Rot, Eigen::Matrix< Tp, 3, 1 > &angles, bool degrees = true)
+{
+    Tp anglex = 0.0;
+    Tp angley = 0.0;
+    Tp anglez = 0.0;
+    
+    anglex = atan2( Rot(1,2), Rot(2,2) );
+    angley = atan2( -Rot(0,2), sqrt( pow( Rot(0,0), 2.0 ) + pow( Rot(0,1), 2.0 ) ) );
+    
+    Tp s1 = sin(anglex); Tp c1 = cos(anglex);
+    anglez = atan2( s1*Rot(2,0) - c1*Rot(1,0) , c1*Rot(1,1) - s1*Rot(2,1) );
+    
+    // radians to degrees convertion
+    if(degrees)
+        angles = Eigen::Matrix< Tp, 3, 1 >( -anglex*180/pi, -angley*180/pi, -anglez*180/pi );
+    else 
+        angles = Eigen::Matrix< Tp, 3, 1 >( -anglex, -angley, -anglez );
+//     angles(0) = -anglex*180/pi;
+//     angles(1) = -angley*180/pi;
+//     angles(2) = -anglez*180/pi;
+    return;
+}
 
-void anglesfromRotationZero(Eigen::Matrix3d &Rot, Eigen::Vector3d &angles, bool degrees = true);
+template< typename Tp >
+void rotation2angles_DetectZero(Eigen::Matrix< Tp, 3, 3 > &Rot, Eigen::Matrix< Tp, 3, 1 > &angles, bool degrees = true)
+{
+    Tp anglex = 0.0;
+    Tp angley = 0.0;
+    Tp anglez = 0.0;
+    Eigen::Matrix3d RR = Rot;
+    
+    for (register int i = 0; i < 3; ++i) 
+        for (register int j = 0; j < 3; ++j) 
+	  if ( std::abs(RR(i,j)) < 1e-10 ) RR(i,j) = 0.0;
+    
+    rotation2angles( RR, angles, degrees);
+    return;
+}
+
 
 Eigen::Vector3d radialDistortionCorrection( Eigen::Vector3d &pt2d, Eigen::Matrix3d &kalib, Eigen::VectorXd &distCoeff );
 

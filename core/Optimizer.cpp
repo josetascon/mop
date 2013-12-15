@@ -35,7 +35,7 @@ void GlobalOptimizer::setTranslation( std::vector< Eigen::Vector3d > *tr ){ tran
 void GlobalOptimizer::setQuaternion( std::vector< Eigen::Quaternion<double> > *quat )
 { 
     quaternion = quat; 
-    convertSetQuaterniontoVector( *quat, qv_internal ); // QUATERNION to Vector
+    quaternion_vector2vector_vector( *quat, qv_internal ); // QUATERNION to Vector
 };
 // void GlobalOptimizer::setStructure( std::vector< std::vector<double> > *st ){ structure = st; };
 void GlobalOptimizer::setStructure( Eigen::MatrixXd *st ){ structure = st; };
@@ -71,7 +71,7 @@ void GlobalOptimizer::setParameters( Eigen::Matrix<bool,-1,-1> *view_matrix,
 
 void GlobalOptimizer::update()
 {
-    convertSetVectortoQuaternion( qv_internal, *quaternion );
+    vector_vector2quaternion_vector( qv_internal, *quaternion );
 //     (*translation)[1].normalize();
 }
 
@@ -216,11 +216,11 @@ void GlobalOptimizer::stats(double &initial_error, double &final_error, double &
 // 	      Eigen::Quaternion<double> qt_tmp1, qt_tmp2;
 // 	      tr_tmp2 = (*ptr_translation)[cam+loc];
 // 	      tr_tmp1 = (*ptr_translation)[cam+loc-1];
-// 	      convertVectortoQuaternion( (*ptr_qv_internal)[cam+loc], qt_tmp2);
-// 	      convertVectortoQuaternion( (*ptr_qv_internal)[cam+loc-1], qt_tmp1);
+// 	      vector2quaternion( (*ptr_qv_internal)[cam+loc], qt_tmp2);
+// 	      vector2quaternion( (*ptr_qv_internal)[cam+loc-1], qt_tmp1);
 // 	      (*ptr_translation)[cam+loc] = qt_tmp2*tr_tmp1 + tr_tmp2;
 // 	      qt_tmp2 = qt_tmp2*qt_tmp1;
-// 	      convertQuaterniontoVector( qt_tmp2 , (*ptr_qv_internal)[cam+loc]);
+// 	      quaternion2vector( qt_tmp2 , (*ptr_qv_internal)[cam+loc]);
 // 	      std::vector< Eigen::MatrixXd > Cameras12(2);
 // 	      Eigen::Matrix3d r = qt_tmp1.toRotationMatrix();
 // 	      Cameras12[0] = buildProjectionMatrix( Calibration, r, (*ptr_translation)[cam+loc-1] );
@@ -300,7 +300,7 @@ void LocalOptimizer::setParameters(Eigen::MatrixXd *obs1, Eigen::MatrixXd *obs2,
     // rotation conditioning
     rotation = Rot;
     Eigen::Quaternion<double> qout(*Rot);
-    convertQuaterniontoVector( qout, quaternionV);
+    quaternion2vector( qout, quaternionV);
 }
 
 void LocalOptimizer::setParameters3Dto3D(Eigen::MatrixXd *obs1, Eigen::MatrixXd *obs2, 
@@ -340,7 +340,7 @@ void LocalOptimizer::update()
 {
     // update rotation data
     Eigen::Quaternion<double> qout;
-    convertVectortoQuaternion(quaternionV, qout);
+    vector2quaternion(quaternionV, qout);
     qout.normalize();
     *rotation = qout.toRotationMatrix();
 }
@@ -488,7 +488,7 @@ void PartialIncremental::update(int constant_cam, int num_cams)
 {
     for (register int cam = constant_cam; cam < num_cams; ++cam)
     {
-        convertEigenVectortoQuaternion(q_vector[cam],(*quaternion)[cam]);
+        eigen2quaternion(q_vector[cam],(*quaternion)[cam]);
         (*quaternion)[cam].normalize();
     }
 }
@@ -497,7 +497,7 @@ void PartialIncremental::run(int constant_cam, int num_cams)
 {
     int num_features = visibility->cols();
     int step = structure->rows();
-    convertSetQuaterniontoEigenVector( *quaternion, q_vector );
+    quaternion_vector2eigen_vector( *quaternion, q_vector );
     
     Problem problem;
     ceres::LossFunction* loss_function = new ceres::HuberLoss(1.0);
@@ -558,7 +558,7 @@ void BALOptimizer::runBAL()
     int step_tr = translation_and_intrinsics->rows();
     int step_st = structure->rows();
     double cost;
-    convertSetQuaterniontoEigenVector( *quaternion, q_vector );
+    quaternion_vector2eigen_vector( *quaternion, q_vector );
     
     Problem problem;
     ceres::LossFunction* loss_function = new ceres::HuberLoss(1.0);
@@ -605,7 +605,7 @@ void BALOptimizer::update()
 {
     for (register int cam = 0; cam < q_vector.size(); ++cam)
     {
-        convertEigenVectortoQuaternion(q_vector[cam],(*quaternion)[cam]);
+        eigen2quaternion(q_vector[cam],(*quaternion)[cam]);
         (*quaternion)[cam].normalize();
     }
 }
@@ -626,7 +626,7 @@ double reprojectionErrorCalculation(Eigen::Matrix<bool,-1,-1> *visibility, Eigen
     int num_features = visibility->cols();
     int step = structure->rows();
     std::vector< Eigen::Vector4d > q_vector;
-    convertSetQuaterniontoEigenVector( *quaternion, q_vector );
+    quaternion_vector2eigen_vector( *quaternion, q_vector );
     
     Problem problem;
     
