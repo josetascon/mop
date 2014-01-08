@@ -95,16 +95,16 @@ void computeCovariance(pcl::PointCloud<pcl::PointXYZRGBA>::Ptr &cloud, Eigen::Ma
 		   boost::shared_ptr< Eigen::MatrixXd > &covariance);
 
 void cv2PointCloudSet(std::vector<cv::Mat> &image, std::vector<cv::Mat> &depth, Eigen::Matrix3d &calibration, 
-		std::vector<Eigen::Quaternion<double> > &Quat, std::vector< Eigen::Vector3d > &tr,
+		std::vector<Eigen::Quaternion<double> > &Qn, std::vector< Eigen::Vector3d > &tr,
 		std::vector< pcl::PointCloud<pcl::PointXYZRGBA>::Ptr > &set_cloud);
 
 void cv2PointCloudSet(std::vector<cv::Mat> &image, std::vector<cv::Mat> &depth, Eigen::Matrix3d &calibration, 
-		std::vector<Eigen::Quaternion<double> > &Quat, std::vector< Eigen::Vector3d > &tr,
+		std::vector<Eigen::Quaternion<double> > &Qn, std::vector< Eigen::Vector3d > &tr,
 		std::vector< pcl::PointCloud<pcl::PointXYZRGBA>::Ptr > &set_cloud,
 		std::vector< boost::shared_ptr< Eigen::MatrixXd > > &set_covariance);
 
 void cv2PointCloudSet(std::vector<std::string> &image_list, std::vector<std::string> &depth_list, Eigen::Matrix3d &calibration, 
-		std::vector<Eigen::Quaternion<double> > &Quat, std::vector< Eigen::Vector3d > &tr,
+		std::vector<Eigen::Quaternion<double> > &Qn, std::vector< Eigen::Vector3d > &tr,
 		std::vector< pcl::PointCloud<pcl::PointXYZRGBA>::Ptr > &set_cloud,
 		std::vector< boost::shared_ptr< Eigen::MatrixXd > > &set_covariance);
 

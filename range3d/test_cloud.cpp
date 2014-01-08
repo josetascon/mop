@@ -229,7 +229,7 @@ int main(int argc, char* argv[])
     
     SimpleRegistration sr01( num_cameras, num_features, K );
     timer1.start();
-    sr01.solvePoseOptimal( &featM.visibility, &featM.coordinates, &images_depth );
+    sr01.solvePose( &featM.visibility, &featM.coordinates, imageList_depth );
     std::cout << "Elapsed time to solve Pose: " << timer1.elapsed_s() << " [s]\n";
 //     sr01.solvePose( &my_mmap.globalMatch, &myfeat.set_of_keypoints, &images_depth );
 //     std::cout << "Recover structure matrix:\n" << sr01.Structure.transpose() << "\n";

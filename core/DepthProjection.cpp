@@ -280,7 +280,7 @@ void varianceDepth(double &z, double &sigma)
 
 void varianceDepth(Eigen::RowVectorXd &z, Eigen::RowVectorXd &sigma)
 {
-    // [Nguyen,Izadi_2012] model
+    // [Nguyen,Izadi_2012] model of noise (standard deviation)
     Eigen::RowVectorXd n;
     n = z - 0.4*(Eigen::RowVectorXd::Ones(z.size()));
     sigma = 0.0012*(Eigen::RowVectorXd::Ones(z.size())) + 0.0019*(n.cwiseProduct(n));
@@ -288,6 +288,37 @@ void varianceDepth(Eigen::RowVectorXd &z, Eigen::RowVectorXd &sigma)
 
 void varianceKinectSet( Eigen::MatrixXd &X, Eigen::Matrix3d &K, Eigen::MatrixXd &W, double vx, double vy )
 {
+//     // Forward Propagation Variance
+//     // sx, sy: variance in image; default 1 pixel
+//     W = Eigen::MatrixXd::Zero(X.rows(),X.cols());
+//     Eigen::RowVectorXd ones_row = Eigen::RowVectorXd::Ones(X.cols());
+//     // Depth variance, z axis variance
+//     Eigen::RowVectorXd zz = X.row(2);
+//     Eigen::RowVectorXd z_square = zz.cwiseProduct(zz);
+//     Eigen::RowVectorXd sz;
+//     varianceDepth(zz, sz);
+//     W.row(2) = sz.cwiseProduct(sz);
+// //     std::cout << "depth =\n" << sz << '\n';
+//     // Squares
+//     Eigen::RowVectorXd sx = vx*ones_row;
+//     Eigen::RowVectorXd sy = vy*ones_row;
+//     Eigen::RowVectorXd sx2 = sx.cwiseProduct(sx);
+//     Eigen::RowVectorXd sy2 = sy.cwiseProduct(sy);
+//     Eigen::RowVectorXd sz2 = W.row(2);
+//     
+//     double fx = K(0,0);
+//     double fy = K(1,1);
+//     double x0 = K(0,2);
+//     double y0 = K(1,2);
+//     double c1 = pow(1/fx,2.0);
+//     double c2 = pow(-x0/fx,2.0);
+//     double c3 = pow(1/fy,2.0);
+//     double c4 = pow(-y0/fy,2.0);
+//     
+//     // Variance of x and y with forward propagation
+//     W.row(0) = (pow(0.815,2.0)*c1)*(z_square);	//c1*sx2.cwiseProduct(sz2) + c2*sz2;
+//     W.row(1) = (pow(0.815,2.0)*c3)*(z_square);//c3*sy2.cwiseProduct(sz2) + c4*sz2;
+    
     // Forward Propagation Variance
     // sx, sy: variance in image; default 1 pixel
     W = Eigen::MatrixXd::Zero(X.rows(),X.cols());

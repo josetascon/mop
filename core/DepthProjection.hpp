@@ -104,12 +104,12 @@ bool boundarykinect( Tp &measurez, Tp factor = 5000.0 )
 cv::Point3d projection(cv::Point2d &image_point, cv::Mat &measurez, double &cx, double &cy, double &fx, double &fy);
 
 template < typename Tp, typename Teig1, typename Teig2 >
-Eigen::Matrix<Teig2, 3, 1> projection(Tp x, Tp y, cv::Mat &measurez, Eigen::Matrix<Teig1, 3, 3> &calibration)
+Eigen::Matrix<Teig2, 3, 1> projection(Tp &x, Tp &y, cv::Mat &measurez, Eigen::Matrix<Teig1, 3, 3> &calibration)
 {
     Tp uv[2] = { x, y };
     Teig2 intrinsic[4] = { (Teig2)calibration(0,2), (Teig2)calibration(1,2), (Teig2)calibration(0,0), (Teig2)calibration(1,1) };
     Teig2 xyz[3];
-    Teig2 depth = (Teig2) measurez.at<short>(x,y);
+    Teig2 depth = (Teig2) measurez.at<short>( uv[1], uv[0] );
     
     projectiongeneral< Tp, Teig2 >( uv, depth, intrinsic, xyz) ;
     return Eigen::Matrix<Teig2, 3, 1>(xyz[0], xyz[1], xyz[2]);
@@ -129,7 +129,7 @@ Eigen::Matrix<Teig1, 3, 1> projection(Eigen::Matrix<Teig2, 3, 1> &image_point, c
     Teig2 uv[2] = { image_point(0), image_point(1) };
     Teig1 intrinsic[4] = { (Teig1)calibration(0,2), (Teig1)calibration(1,2), (Teig1)calibration(0,0), (Teig1)calibration(1,1) };
     Teig1 xyz[3];
-    Teig1 depth = (Teig1) measurez.at<short>( uv[0], uv[1] );
+    Teig1 depth = (Teig1) measurez.at<short>( uv[1], uv[0] );
     
     projectiongeneral< Teig2, Teig1 >( uv, depth, intrinsic, xyz) ;
     return Eigen::Matrix<Teig1, 3, 1>(xyz[0], xyz[1], xyz[2]);

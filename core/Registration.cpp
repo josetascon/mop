@@ -68,9 +68,9 @@ void SimpleRegistration::solvePose(std::vector< MatchQuery > *globalMatch, std::
 
 
 void SimpleRegistration::solvePose(Eigen::Matrix<bool,-1,-1> *visibility, Eigen::Matrix<Eigen::Vector3d,-1,-1> *coordinates, 
-		std::vector< cv::Mat > *set_of_depth)
+		std::vector< std::string > &depth_list, bool optimal)
 {
-    // initialization
+    // Initialization
     Cameras_RCV.resize(num_cameras);
     Rot_global.resize(num_cameras);
     Qn_global.resize(num_cameras);
@@ -79,48 +79,78 @@ void SimpleRegistration::solvePose(Eigen::Matrix<bool,-1,-1> *visibility, Eigen:
     
     Rot_global[0] = Eigen::Matrix3d::Identity();
     tr_global[0] = Eigen::Vector3d::Zero();
-    Qn_global[0] = Eigen::Quaternion<double>(1.0, 0.0, 0.0, 0.0); //save quaternion
+    Qn_global[0] = Eigen::Quaternion<double>(1.0, 0.0, 0.0, 0.0); 	//Save quaternion
     Cameras_RCV[0] = buildProjectionMatrix( Calibration, Rot_global[0], tr_global[0] );
     cv::Mat KOCV = (cv::Mat_<double>(3,3) << Calibration(0,0), 0.0, Calibration(0,2), 0.0, Calibration(1,1), Calibration(1,2), 0.0, 0.0, 1.0);
     
     std::vector<int> ft_number;
     std::vector< cv::Point2d > pts1, pts2;
     std::vector< cv::Point3d > WP1, WP2;
-    Eigen::MatrixXd X1, X2;
+    Eigen::MatrixXd X1, X2, variance1, variance2;
     Eigen::Matrix3d Rot;
     Eigen::Vector3d tr, angles_vec1;
     std::cout << "\n================================ POSE Estimation ==================================\n";
-    for(int k=0; k < (num_cameras - 1); k++) // pose 1-2
+    
+    for(int k=0; k < (num_cameras - 1); k++) // pose 1-2. Solve pose for continous cameras
     {
         int cam1 = k;
         int cam2 = k+1;
         pts1.clear();
         pts2.clear();
-        ft_number.clear();
         
-        for (register int ft = 0; ft < num_features; ++ft)
+        for (register int ft = 0; ft < num_features; ++ft)		// Select valid features for corresponding camera
         {
 	  if ((*visibility)(cam1,ft) && (*visibility)(cam2,ft) )
 	  {
 	      Eigen::Vector3d point1 = (*coordinates)(cam1,ft);
 	      Eigen::Vector3d point2 = (*coordinates)(cam2,ft);
-// 	      std::cout << "Point1: " << point1.transpose() << "\n";
-// 	      std::cout << "Point2: " << point2.transpose() << "\n";
 	      pts1.push_back( cv::Point2d(point1(0), point1(1)) );
 	      pts2.push_back( cv::Point2d(point2(0), point2(1)) );
 	      ft_number.push_back(ft);
 	  }
         }
-        std::vector<int> goodpt = removeBadPointsDual(pts1, pts2, (*set_of_depth)[cam1], (*set_of_depth)[cam2]);
+        cv::Mat depth1 = cv::imread( depth_list[cam1], -1 );
+        cv::Mat depth2 = cv::imread( depth_list[cam2], -1 );
+        
+        std::vector<int> goodpt = removeBadPointsDual(pts1, pts2, depth1, depth2);
         // Debug
         printf("POSE: %04i -> %04i:\n", cam1, cam2);
         printVector(goodpt);
         
-        calc3Dfrom2D(pts1, (*set_of_depth)[cam1], KOCV, WP1);
-        calc3Dfrom2D(pts2, (*set_of_depth)[cam2], KOCV, WP2);
+        calc3Dfrom2D(pts1, depth1, KOCV, WP1);
+        calc3Dfrom2D(pts2, depth2, KOCV, WP2);
         point3_vector2eigen(WP1, X1);
         point3_vector2eigen(WP2, X2);
-        poseArun( X1, X2, Rot, tr );
+        poseArun( X1, X2, Rot, tr );			// Initial pose with Arun's algorithm
+        
+        varianceKinectSet( X1, Calibration, variance1 );
+        varianceKinectSet( X2, Calibration, variance2 );
+//         std::cout << "Std dev 1:\n" << variance1.transpose() << ":\n";
+        
+        // Optimization routine
+        LocalOptimizer opt01;
+        opt01.setParameters3Dto3D( &X1, &X2, &Rot, &tr, &variance1, &variance2 );
+        if (optimal) opt01.pose3Dto3D_Covariance();
+        else opt01.pose3Dto3D();
+        
+        Xmodel.push_back(X1);
+        Xmodel.push_back(X2);
+        Variance.push_back(variance1);
+        Variance.push_back(variance2);
+       
+        Rot_global[k+1] = Rot*Rot_global[k]; // Rot;
+        tr_global[k+1] = Rot*tr_global[k] + tr; // tr_relative[k+1] = tr;
+        Qn_global[k+1] = Eigen::Quaternion<double>(Rot_global[k+1]); //save quaternion
+        Cameras_RCV[k+1] = buildProjectionMatrix( Calibration, Rot_global[k+1], tr_global[k+1] );
+
+        // Debug:
+        rotation2angles( Rot_global[k+1], angles_vec1);
+        std::cout << "Rotation " <<  k+1 << ":\n" << Rot_global[k+1] << "\n";
+        std::cout << "Rotation angles " <<  k+1 << ":\n" << angles_vec1.transpose() << "\n";
+//         std::cout << "Equivalent quaternion Cam " << k+1 << ":\n" << Qn_global[k+1].w() << " " << Qn_global[k+1].vec().transpose() << '\n';
+        std::cout << "Translation " <<  k+1 << ":\n" << tr_global[k+1].transpose() << "\n";
+        std::cout << "Camera Matrix Recover " <<  k+1 << ":\n" << Cameras_RCV[k+1] << "\n\n";
+        
         // TEST print temporal pair of files
 // 	  X1.transposeInPlace();
 // 	  X2.transposeInPlace();
@@ -132,121 +162,6 @@ void SimpleRegistration::solvePose(Eigen::Matrix<bool,-1,-1> *visibility, Eigen:
 // 	  X1.transposeInPlace();
 // 	  X2.transposeInPlace();
         // END TEST
-       
-        Rot_global[k+1] = Rot*Rot_global[k]; // Rot;
-        tr_global[k+1] = Rot*tr_global[k] + tr; // tr_relative[k+1] = tr;
-        Qn_global[k+1] = Eigen::Quaternion<double>(Rot_global[k+1]); //save quaternion
-        Cameras_RCV[k+1] = buildProjectionMatrix( Calibration, Rot_global[k+1], tr_global[k+1] );
-        
-        // Rudimentary structure computation based on MEAN
-//         Eigen::MatrixXd Xtmp = (Rot_global[k]*X1).colwise() + tr_global[k];
-// //         std::cout << "Temporal X, cam " << k << ":\n";				//Debug
-//         register int idx = 0;
-//         for (register int i = 0; i < goodpt.size(); ++i)
-//         {
-// 	  if (goodpt[i])
-// 	  {
-// 	      Eigen::Vector4d v1 = Eigen::Vector4d( Xtmp(0,idx), Xtmp(1,idx), Xtmp(2,idx), 1);
-// 	      Eigen::Vector4d v2 = Structure.col(ft_number[i]);
-// 	      Structure.col(ft_number[i]) = v2(3)? 0.5*(v2 + v1): v1;
-// 	      idx++;
-// // 	      std::cout << "v1, ft " << ft_number[i] << ": "<< v1.transpose() << ":\n";		//Debug
-// // 	      std::cout << "v2, ft " << ft_number[i] << ": "<< v2.transpose() << ":\n";		//Debug
-// // 	      std::cout << "St, ft " << ft_number[i] << ": "<< Structure.col(ft_number[i]).transpose() << ":\n";		//Debug
-// 	  }
-//         }
-
-        // Debug:
-        rotation2angles( Rot_global[k+1], angles_vec1);
-        std::cout << "Rotation " <<  k+1 << ":\n" << Rot_global[k+1] << "\n";
-        std::cout << "Rotation angles " <<  k+1 << ":\n" << angles_vec1.transpose() << "\n";
-//         std::cout << "Equivalent quaternion Cam " << k+1 << ":\n" << Qn_global[k+1].w() << " " << Qn_global[k+1].vec().transpose() << '\n';
-        std::cout << "Translation " <<  k+1 << ":\n" << tr_global[k+1].transpose() << "\n";
-        std::cout << "Camera Matrix Recover " <<  k+1 << ":\n" << Cameras_RCV[k+1] << "\n\n";
-    }
-    
-    return;
-}
-
-void SimpleRegistration::solvePoseOptimal(Eigen::Matrix<bool,-1,-1> *visibility, Eigen::Matrix<Eigen::Vector3d,-1,-1> *coordinates, 
-		std::vector< cv::Mat > *set_of_depth)
-{
-    // initialization
-    Cameras_RCV.resize(num_cameras);
-    Rot_global.resize(num_cameras);
-    Qn_global.resize(num_cameras);
-    tr_global.resize(num_cameras);
-    Structure = Eigen::MatrixXd::Zero(4,visibility->cols());
-    
-    Rot_global[0] = Eigen::Matrix3d::Identity();
-    tr_global[0] = Eigen::Vector3d::Zero();
-    Qn_global[0] = Eigen::Quaternion<double>(1.0, 0.0, 0.0, 0.0); //save quaternion
-    Cameras_RCV[0] = buildProjectionMatrix( Calibration, Rot_global[0], tr_global[0] );
-    cv::Mat KOCV = (cv::Mat_<double>(3,3) << Calibration(0,0), 0.0, Calibration(0,2), 0.0, Calibration(1,1), Calibration(1,2), 0.0, 0.0, 1.0);
-    
-    std::vector<int> ft_number;
-    std::vector< cv::Point2d > pts1, pts2;
-    std::vector< cv::Point3d > WP1, WP2;
-    Eigen::MatrixXd X1, X2, variance1, variance2;
-    Eigen::Matrix3d Rot;
-    Eigen::Vector3d tr, angles_vec1;
-    std::cout << "\n================================ POSE Estimation ==================================\n";
-    for(int k=0; k < (num_cameras - 1); k++) // pose 1-2
-    {
-        int cam1 = k;
-        int cam2 = k+1;
-        pts1.clear();
-        pts2.clear();
-        
-        for (register int ft = 0; ft < num_features; ++ft)
-        {
-	  if ((*visibility)(cam1,ft) && (*visibility)(cam2,ft) )
-	  {
-	      Eigen::Vector3d point1 = (*coordinates)(cam1,ft);
-	      Eigen::Vector3d point2 = (*coordinates)(cam2,ft);
-	      pts1.push_back( cv::Point2d(point1(0), point1(1)) );
-	      pts2.push_back( cv::Point2d(point2(0), point2(1)) );
-	      ft_number.push_back(ft);
-	  }
-        }
-        std::vector<int> goodpt = removeBadPointsDual(pts1, pts2, (*set_of_depth)[cam1], (*set_of_depth)[cam2]);
-        // Debug
-        printf("POSE: %04i -> %04i:\n", cam1, cam2);
-        printVector(goodpt);
-        
-        calc3Dfrom2D(pts1, (*set_of_depth)[cam1], KOCV, WP1);
-        calc3Dfrom2D(pts2, (*set_of_depth)[cam2], KOCV, WP2);
-        point3_vector2eigen(WP1, X1);
-        point3_vector2eigen(WP2, X2);
-        poseArun( X1, X2, Rot, tr );
-        
-        varianceKinectSet( X1, Calibration, variance1 );
-        varianceKinectSet( X2, Calibration, variance2 );
-//         std::cout << "Std dev 1:\n" << variance1.transpose() << ":\n";
-        
-        // TESTING OPT 
-        LocalOptimizer opt01;
-        opt01.setParameters3Dto3D( &X1, &X2, &Rot, &tr, &variance1, &variance2 );
-        opt01.pose3Dto3D_Covariance();
-        
-        Xmodel.push_back(X1);
-        Xmodel.push_back(X2);
-        Variance.push_back(variance1);
-        Variance.push_back(variance2);
-        // TESTING OPT.
-       
-        Rot_global[k+1] = Rot*Rot_global[k]; // Rot;
-        tr_global[k+1] = Rot*tr_global[k] + tr; // tr_relative[k+1] = tr;
-        Qn_global[k+1] = Eigen::Quaternion<double>(Rot_global[k+1]); //save quaternion
-        Cameras_RCV[k+1] = buildProjectionMatrix( Calibration, Rot_global[k+1], tr_global[k+1] );
-
-        // Debug:
-        rotation2angles( Rot_global[k+1], angles_vec1);
-        std::cout << "Rotation " <<  k+1 << ":\n" << Rot_global[k+1] << "\n";
-        std::cout << "Rotation angles " <<  k+1 << ":\n" << angles_vec1.transpose() << "\n";
-//         std::cout << "Equivalent quaternion Cam " << k+1 << ":\n" << Qn_global[k+1].w() << " " << Qn_global[k+1].vec().transpose() << '\n';
-        std::cout << "Translation " <<  k+1 << ":\n" << tr_global[k+1].transpose() << "\n";
-        std::cout << "Camera Matrix Recover " <<  k+1 << ":\n" << Cameras_RCV[k+1] << "\n\n";
     }
     
     return;

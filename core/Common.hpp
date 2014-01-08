@@ -474,6 +474,7 @@ void rotation2angles(Eigen::Matrix< Tp, 3, 3 > &Rot, Eigen::Matrix< Tp, 3, 1 > &
         angles = Eigen::Matrix< Tp, 3, 1 >( -anglex*180/pi, -angley*180/pi, -anglez*180/pi );
     else 
         angles = Eigen::Matrix< Tp, 3, 1 >( -anglex, -angley, -anglez );
+    return;
 }
 
 template< typename Tp >
@@ -482,13 +483,14 @@ void rotation2angles_DetectZero(Eigen::Matrix< Tp, 3, 3 > &Rot, Eigen::Matrix< T
     Tp anglex = 0.0;
     Tp angley = 0.0;
     Tp anglez = 0.0;
-    Eigen::Matrix3d RR = Rot;
+    Eigen::Matrix< Tp, 3, 3 > RR = Rot;
     
     for (register int i = 0; i < 3; ++i) 
         for (register int j = 0; j < 3; ++j) 
 	  if ( std::abs(RR(i,j)) < 1e-10 ) RR(i,j) = 0.0;
     
-    rotation2angles( RR, angles, degrees);
+    rotation2angles<Tp>( RR, angles, degrees);
+    return;
 }
 
 

@@ -158,7 +158,7 @@ boost::shared_ptr<pcl::visualization::PCLVisualizer>
 visualizeCloudSet( std::vector< pcl::PointCloud<pcl::PointXYZRGBA>::Ptr > &set_cloud );
 
 void visualizeCameras(boost::shared_ptr<pcl::visualization::PCLVisualizer> &viewer, 
-	      std::vector< Eigen::Quaternion<double> > &quaternion, std::vector< Eigen::Vector3d > &translation );
+	      std::vector< Eigen::Quaternion<double> > &quaternion, std::vector< Eigen::Vector3d > &translation, bool black = false );
 
 void visualizeCameras(boost::shared_ptr<pcl::visualization::PCLVisualizer> &viewer, std::vector<std::string> &filename_images,
 	      std::vector< Eigen::Quaternion<double> > &quaternion, std::vector< Eigen::Vector3d > &translation );

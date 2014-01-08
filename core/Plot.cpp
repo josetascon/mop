@@ -547,7 +547,8 @@ visualizeCloud(pcl::PointCloud<pcl::PointXYZ>::Ptr &cloud)
     // Plot a single cloud
     std::string str1 = "cloud_0";
     viewer->addPointCloud<pcl::PointXYZ> (cloud, str1);
-    viewer->setPointCloudRenderingProperties (pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 1, str1);
+    viewer->setPointCloudRenderingProperties (pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 2, str1);
+    viewer->setPointCloudRenderingProperties (pcl::visualization::PCL_VISUALIZER_COLOR, 0.0, 0.0, 0.5, str1);
     viewer->addCoordinateSystem (0.3);
     viewer->initCameraParameters();
     return viewer;
@@ -577,11 +578,12 @@ visualizeCloudSet( std::vector< pcl::PointCloud<pcl::PointXYZRGBA>::Ptr > &set_c
 }
 
 void visualizeCameras(boost::shared_ptr<pcl::visualization::PCLVisualizer> &viewer, 
-	      std::vector< Eigen::Quaternion<double> > &quaternion, std::vector< Eigen::Vector3d > &translation )
+	      std::vector< Eigen::Quaternion<double> > &quaternion, std::vector< Eigen::Vector3d > &translation, bool black )
 {
     int num_cameras = quaternion.size();
     // ============================================ PLOT CAMERAS ============================================ 
     Eigen::Vector3f white_color(1.0,1.0,1.0);
+    Eigen::Vector3f black_color(0.0,0.0,0.0);
     // Color
     std::random_device rd;
     std::mt19937_64 gen(rd());
@@ -596,12 +598,12 @@ void visualizeCameras(boost::shared_ptr<pcl::visualization::PCLVisualizer> &view
         rotation2angles_DetectZero(rot_inv, orientation); // TODO NO use this. use transformation matrix in plotcamera (create function)
         center = -rot_inv*translation[k];
         double ratio = 1.333333;
-        vtkSmartPointer<vtkActor> act02 = plotCamera(center, orientation, ratio, 0.05, 1.5);
+        vtkSmartPointer<vtkActor> act02 = plotCamera(center, orientation, ratio, 0.08, 1.5);
         act02->GetProperty()->SetColor( color(0), color(1), color(2) );
         
         std::stringstream ss;
         ss << k;
-        vtkSmartPointer<vtkActor> act03 = plotText( ss.str(), center, orientation, white_color, 2.0);
+        vtkSmartPointer<vtkActor> act03 = plotText( ss.str(), center, orientation, (black)? black_color: white_color, 2.0);
         
         addActorToRenderCollection( viewer->getRendererCollection(), act02 );
         addActorToRenderCollection( viewer->getRendererCollection(), act03 );

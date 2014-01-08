@@ -24,6 +24,7 @@
 
 //Local Libraries
 #include "Common.hpp"
+#include "CameraPose.hpp"
 #include "FeaturesEDM.hpp"
 #include "Optimizer.hpp"
 #include "DepthProjection.hpp"
@@ -58,11 +59,8 @@ public:
     void solvePose(std::vector< MatchQuery > *globalMatch, std::vector< std::vector< cv::KeyPoint > > *set_of_keypoints, 
 		std::vector< cv::Mat > *set_of_depth);
     
-    void solvePose(Eigen::Matrix<bool,-1,-1> *visibility, Eigen::Matrix<Eigen::Vector3d,-1,-1> *coordinates,
-	         std::vector< cv::Mat > *set_of_depth);
-    
-    void solvePoseOptimal(Eigen::Matrix<bool,-1,-1> *visibility, Eigen::Matrix<Eigen::Vector3d,-1,-1> *coordinates, 
-		std::vector< cv::Mat > *set_of_depth);
+    void solvePose(Eigen::Matrix<bool,-1,-1> *visibility, Eigen::Matrix<Eigen::Vector3d,-1,-1> *coordinates, 
+		std::vector< std::string > &depth_list, bool optimal = true);
     
     void solvePose(Eigen::Matrix<bool,-1,-1> *visibility, Eigen::Matrix<Eigen::Vector4d,-1,-1> *coordinates, bool optimal = true);
     

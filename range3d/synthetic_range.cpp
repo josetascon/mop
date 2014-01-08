@@ -398,8 +398,9 @@ int main(int argc, char* argv[])
 	      
 	      boost::shared_ptr<pcl::visualization::PCLVisualizer> viewer;
 	      viewer = visualizeCloud(cloud);
-	      visualizeCameras(viewer, sr01.Qn_global, sr01.tr_global);
-	      visualizeCameras(viewer, sr02.Qn_global, sr02.tr_global);
+	      viewer->setBackgroundColor( 1.0 ,1.0 ,1.0 );
+	      visualizeCameras(viewer, sr01.Qn_global, sr01.tr_global, true); //true for black color text
+	      visualizeCameras(viewer, sr02.Qn_global, sr02.tr_global, true);
 	      
 	      while (!viewer->wasStopped ())
 	      {

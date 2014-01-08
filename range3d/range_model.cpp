@@ -51,7 +51,7 @@ void help()
 				"\t[-i]\t XML input file name with rgb images\n" 
 				"\t[-d]\t XML input file name with depth images\n" 
 				"\t[-v]\t Enable verbose mode\n"				
-				"\t[-o]\t Output text filename\n"
+				"\t[-o]\t Output ply filename\n"
 				"\t[-k]\t .TXT input file name with calibration matrix\n"
 				"\t[-df]\t Valid matches in Depth Filter\n"
 				"\t[-db]\t .DB input file name with database\n"
@@ -235,8 +235,8 @@ int main(int argc, char* argv[])
         myfeat.solveSift();
         
         MatchesMap my_mmap(400,35);
-        my_mmap.solveMatches(&myfeat.descriptorsGPU);
-//         my_mmap.solveMatchesContinuous(&myfeat.descriptorsGPU);
+//         my_mmap.solveMatches(&myfeat.descriptorsGPU);
+        my_mmap.solveMatchesContinuous(&myfeat.descriptorsGPU);
         my_mmap.robustifyMatches(&myfeat.keypointsGPU);
         my_mmap.depthFilter(&myfeat.keypointsGPU, &imageList_depth, num_depth_filter);
         timer1.start();
@@ -254,7 +254,7 @@ int main(int argc, char* argv[])
         
         DOTWriter dotw("graph");
 //         dotw.exportDOT( (const char *)"figs/test.dot", &edges_pairs );
-        dotw.exportDOT( (const char *)"figs/gin_std.dot", &edges_pairs, NULL, &weights );
+        dotw.exportDOT( (const char *)"figs/std.dot", &edges_pairs, NULL, &weights );
         
         std::vector< int > discover;
         std::vector< int > parent;
@@ -263,48 +263,52 @@ int main(int argc, char* argv[])
         bfs.setInitBFS( initbfs );
         bfs.solveBFS( discover, parent );
         
-        gp.solveGraph( discover, parent );
-        
-
-        
-//         gp.solveGraphContinuous();
-//         exportGRAPH( (char*)"gin_opt.graph", gp.Qn_global, gp.tr_global ); 
+//         gp.solveGraph( discover, parent );
+//         
+// 
+//         
+        gp.solveGraphContinuous();
+        exportGRAPH( (char*)"liv.graph", gp.Qn_global, gp.tr_global ); 
 //         gp.runTORO();
 //         exportTXTQuaternionVector((char*)"pose_rot.txt", gp.Qn_global);
 //         exportTXTTranslationVector((char*)"pose_tr.txt", gp.tr_global);
 //     }
     
-//     FeaturesMap featM;
-//     featM.solveVisibility3D( &mydb );
-//     printf("Visibility Matrix [%d x %d]\n",featM.visibility.rows(),featM.visibility.cols());
-//     num_cameras = featM.cameras();
-//     num_features = featM.features();
-//     mydb.closeDB();
-//     
-//     SimpleRegistration sr01( num_cameras, num_features, K );
-//     timer1.start();
-//     sr01.solvePose( &featM.visibility, &featM.coordinates3D, true ); // true for optimal
-//     std::cout << "Elapsed time to solve Pose: " << timer1.elapsed_s() << " [s]\n";
-/*    
+    FeaturesMap featM;
+    featM.solveVisibility3D( &mydb );
+    printf("Visibility Matrix [%d x %d]\n",featM.visibility.rows(),featM.visibility.cols());
+    num_cameras = featM.cameras();
+    num_features = featM.features();
+    mydb.closeDB();
+    
+    SimpleRegistration sr01( num_cameras, num_features, K );
+    timer1.start();
+    sr01.solvePose( &featM.visibility, &featM.coordinates3D, true ); // true for optimal
+    std::cout << "Elapsed time to solve Pose: " << timer1.elapsed_s() << " [s]\n";
+    
     // Print lin and opt
     SimpleRegistration sr02( num_cameras, num_features, K );
     timer1.start();
     sr02.solvePose( &featM.visibility, &featM.coordinates3D, false ); // true for optimal
-    std::cout << "Elapsed time to solve Pose: " << timer1.elapsed_s() << " [s]\n";*/
+    std::cout << "Elapsed time to solve Pose: " << timer1.elapsed_s() << " [s]\n";
     
     // Write files of global quaternion and translation
-//     exportTXTQuaternionVector((char*)"liv_rot_opt.txt", sr01.Qn_global);
-//     exportTXTTranslationVector((char*)"liv_tr_opt.txt", sr01.tr_global);
-//     exportTXTQuaternionVector((char*)"liv_rot_lin.txt", sr02.Qn_global);
-//     exportTXTTranslationVector((char*)"liv_tr_lin.txt", sr02.tr_global);
+//     exportTXTQuaternionVector((char*)"std_rot_opt3.txt", sr01.Qn_global);
+//     exportTXTTranslationVector((char*)"std_tr_opt3.txt", sr01.tr_global);
+//     exportTXTQuaternionVector((char*)"std_rot_lin3.txt", sr02.Qn_global);
+//     exportTXTTranslationVector((char*)"std_tr_lin3.txt", sr02.tr_global);
+//     exportTXTQuaternionVector((char*)"std_rot_gp3.txt", gp.Qn_global);
+//     exportTXTTranslationVector((char*)"std_tr_gp3.txt", gp.tr_global);
+    
     
     std::vector< pcl::PointCloud<pcl::PointXYZRGBA>::Ptr > set_cloud;
     std::vector< boost::shared_ptr< Eigen::MatrixXd > > set_covariance;
 //     cv2PointCloudSet(imageList_rgb, imageList_depth, K, sr01.Qn_global, sr01.tr_global, set_cloud, set_covariance);
     cv2PointCloudSet(imageList_rgb, imageList_depth, K, gp.Qn_global, gp.tr_global, set_cloud, set_covariance);
     
-//     pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloud_join;
+    pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloud_join;
 //     mergeCloudSet( set_cloud, set_covariance, cloud_join );
+//     set2unique( set_cloud, cloud_join );
     
     // Test one merge. Use to show in blue the proximity
 //     boost::shared_ptr< Eigen::MatrixXd > Cov1, Cov2, Cov_New;
@@ -321,15 +325,17 @@ int main(int argc, char* argv[])
     
 //     std::cout << "set cloud size:" << set_cloud.size() << "\n";
     viewer = visualizeCloudSet( set_cloud );
-    
+    viewer->setBackgroundColor (1.0, 1.0, 1.0);
 //     viewer = visualizeCloud(set_cloud[0]);
 //     viewer = visualizeCloud(cloud_join);
     
     
 //     visualizeCameras( viewer, sr01.Qn_global, sr01.tr_global );
-    visualizeCameras( viewer, gp.Qn_global, gp.tr_global );
+//     visualizeCameras( viewer, sr02.Qn_global, sr02.tr_global );
+//     visualizeCameras( viewer, gp.Qn_global, gp.tr_global );
     
 //     visualizeCameras(viewer, imageList_rgb, sr01.Qn_global, sr01.tr_global );
+    visualizeCameras(viewer, imageList_rgb, gp.Qn_global, gp.tr_global );
     
 //     visualizeNoise(viewer, sr01.Xmodel, sr01.Variance, sr01.Qn_global, sr01.tr_global, 500 );
     
@@ -341,11 +347,11 @@ int main(int argc, char* argv[])
         boost::this_thread::sleep (boost::posix_time::microseconds (100000));
     }
     
-//     if (save_ply)
-//     {
-//         pcl::PLYWriter wr_ply;
-//         wr_ply.write(outputFilename, *model);
-//     }
+    if (save_ply)
+    {
+        pcl::PLYWriter wr_ply;
+        wr_ply.write(outputFilename, *cloud_join);
+    }
     
     // ========================================== END Visualization ==========================================
     return EXIT_SUCCESS;

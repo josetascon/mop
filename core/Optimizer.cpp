@@ -300,7 +300,7 @@ void LocalOptimizer::setParameters(Eigen::MatrixXd *obs1, Eigen::MatrixXd *obs2,
     // rotation conditioning
     rotation = Rot;
     Eigen::Quaternion<double> qout(*Rot);
-    quaternion2vector( qout, quaternionV);
+    quaternion2vector<double,double>( qout, quaternionV);
 }
 
 void LocalOptimizer::setParameters3Dto3D(Eigen::MatrixXd *obs1, Eigen::MatrixXd *obs2, 
@@ -340,7 +340,7 @@ void LocalOptimizer::update()
 {
     // update rotation data
     Eigen::Quaternion<double> qout;
-    vector2quaternion(quaternionV, qout);
+    vector2quaternion<double,double>(quaternionV, qout);
     qout.normalize();
     *rotation = qout.toRotationMatrix();
 }
@@ -456,7 +456,7 @@ void LocalOptimizer::pose3Dto3D_Covariance()
     options.gradient_tolerance = 1e-16;
     options.function_tolerance = 1e-16;
     options.num_threads = 8;
-    options.max_num_iterations = 20;
+    options.max_num_iterations = 30;
     
     int num_features = observation1->cols();
     

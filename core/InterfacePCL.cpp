@@ -149,30 +149,45 @@ void computeCovariance(pcl::PointCloud<pcl::PointXYZRGBA>::Ptr &cloud, Eigen::Ma
     covariance = Cov;
 }
 
+void cv2PointCloud_Pose( cv::Mat &image, cv::Mat &depth, Eigen::Matrix3d &calibration, 
+		Eigen::Quaternion<double> &Qn, Eigen::Vector3d &tr,
+		pcl::PointCloud<pcl::PointXYZRGBA>::Ptr &cloud )
+		//boost::shared_ptr< Eigen::MatrixXd > &covariance, bool covarian )
+{
+    pcl::PointCloud<pcl::PointXYZRGBA>::Ptr pc01;
+    cv2PointCloudDense(image, depth, calibration, pc01);
+    Eigen::Vector3d center = tr;
+    Eigen::Matrix3d rot = Qn.toRotationMatrix();
+    center = -rot.transpose()*center;
+    pc01->sensor_origin_ = Eigen::Vector4f(center(0),center(1),center(2), 0.0);
+    Eigen::Quaternion<float> q1 = Qn.template cast<float>();
+    pc01->sensor_orientation_ = q1.conjugate();
+    cloud = pc01;
+}
+
+void cv2PointCloud_Pose( cv::Mat &image, cv::Mat &depth, Eigen::Matrix3d &calibration, 
+		Eigen::Quaternion<double> &Qn, Eigen::Vector3d &tr,
+		pcl::PointCloud<pcl::PointXYZRGBA>::Ptr &cloud,
+		boost::shared_ptr< Eigen::MatrixXd > &covariance )
+{
+    cv2PointCloud_Pose( image, depth, calibration, Qn, tr, cloud );
+    computeCovariance(cloud, calibration, covariance);
+}
+
 void cv2PointCloudSet(std::vector<cv::Mat> &image, std::vector<cv::Mat> &depth, Eigen::Matrix3d &calibration, 
-		std::vector<Eigen::Quaternion<double> > &Quat, std::vector< Eigen::Vector3d > &tr,
+		std::vector<Eigen::Quaternion<double> > &Qn, std::vector< Eigen::Vector3d > &tr,
 		std::vector< pcl::PointCloud<pcl::PointXYZRGBA>::Ptr > &set_cloud)
 {
     int num_cameras = image.size();
     set_cloud.clear();
     set_cloud.resize(num_cameras);
     
-    for (register int k = 0; k < num_cameras ; ++k)
-    {
-        pcl::PointCloud<pcl::PointXYZRGBA>::Ptr pc01;
-        cv2PointCloudDense(image[k], depth[k], calibration, pc01);
-        Eigen::Vector3d center = tr[k];
-        Eigen::Matrix3d rot = Quat[k].toRotationMatrix();
-        center = -rot.transpose()*center;
-        pc01->sensor_origin_ = Eigen::Vector4f(center(0),center(1),center(2), 0.0);
-        Eigen::Quaternion<float> q1 = Quat[k].template cast<float>();
-        pc01->sensor_orientation_ = q1.conjugate();
-        set_cloud[k] = pc01;
-    }
+    for (register int k = 0; k < num_cameras ; ++k) 
+        cv2PointCloud_Pose( image[k], depth[k], calibration, Qn[k], tr[k], set_cloud[k] );
 }
 
 void cv2PointCloudSet(std::vector<cv::Mat> &image, std::vector<cv::Mat> &depth, Eigen::Matrix3d &calibration, 
-		std::vector<Eigen::Quaternion<double> > &Quat, std::vector< Eigen::Vector3d > &tr,
+		std::vector<Eigen::Quaternion<double> > &Qn, std::vector< Eigen::Vector3d > &tr,
 		std::vector< pcl::PointCloud<pcl::PointXYZRGBA>::Ptr > &set_cloud,
 		std::vector< boost::shared_ptr< Eigen::MatrixXd > > &set_covariance)
 {
@@ -183,23 +198,11 @@ void cv2PointCloudSet(std::vector<cv::Mat> &image, std::vector<cv::Mat> &depth, 
     set_covariance.resize(num_cameras);
     
     for (register int k = 0; k < num_cameras ; ++k)
-    {
-        pcl::PointCloud<pcl::PointXYZRGBA>::Ptr pc01;
-        boost::shared_ptr< Eigen::MatrixXd > cov01;
-        cv2PointCloudDense(image[k], depth[k], calibration, pc01, cov01 );
-        Eigen::Vector3d center = tr[k];
-        Eigen::Matrix3d rot = Quat[k].toRotationMatrix();
-        center = -rot.transpose()*center;
-        pc01->sensor_origin_ = Eigen::Vector4f(center(0),center(1),center(2), 0.0);
-        Eigen::Quaternion<float> q1 = Quat[k].template cast<float>();
-        pc01->sensor_orientation_ = q1.conjugate();
-        set_cloud[k] = pc01;
-        set_covariance[k] = cov01;
-    }
+        cv2PointCloud_Pose( image[k], depth[k], calibration, Qn[k], tr[k], set_cloud[k], set_covariance[k] );
 }
 
 void cv2PointCloudSet(std::vector<std::string> &image_list, std::vector<std::string> &depth_list, Eigen::Matrix3d &calibration, 
-		std::vector<Eigen::Quaternion<double> > &Quat, std::vector< Eigen::Vector3d > &tr,
+		std::vector<Eigen::Quaternion<double> > &Qn, std::vector< Eigen::Vector3d > &tr,
 		std::vector< pcl::PointCloud<pcl::PointXYZRGBA>::Ptr > &set_cloud,
 		std::vector< boost::shared_ptr< Eigen::MatrixXd > > &set_covariance)
 {
@@ -213,17 +216,7 @@ void cv2PointCloudSet(std::vector<std::string> &image_list, std::vector<std::str
     {
         cv::Mat image = cv::imread(image_list[k], 1);
         cv::Mat depth = cv::imread(depth_list[k], -1);
-        pcl::PointCloud<pcl::PointXYZRGBA>::Ptr pc01;
-        boost::shared_ptr< Eigen::MatrixXd > cov01;
-        cv2PointCloudDense(image, depth, calibration, pc01, cov01 );
-        Eigen::Vector3d center = tr[k];
-        Eigen::Matrix3d rot = Quat[k].toRotationMatrix();
-        center = -rot.transpose()*center;
-        pc01->sensor_origin_ = Eigen::Vector4f(center(0),center(1),center(2), 0.0);
-        Eigen::Quaternion<float> q1 = Quat[k].template cast<float>();
-        pc01->sensor_orientation_ = q1.conjugate();
-        set_cloud[k] = pc01;
-        set_covariance[k] = cov01;
+        cv2PointCloud_Pose( image, depth, calibration, Qn[k], tr[k], set_cloud[k], set_covariance[k] );
     }
 }
 
