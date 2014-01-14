@@ -57,9 +57,9 @@ void removeBadPoints(std::vector< cv::Point2d > &image_point, cv::Mat &measurez,
 std::vector<int> removeBadPointsDual(std::vector< cv::Point2d > &image_point1, std::vector< cv::Point2d > &image_point2,
 						 cv::Mat &measurez1, cv::Mat &measurez2, bool close_range = true);
 
-Eigen::Matrix<int,-1, 1> removeBadPointsDual(std::vector< Eigen::Vector3d > &image_point1, std::vector< Eigen::Vector3d > &image_point2,
-				        cv::Mat &measurez1, cv::Mat &measurez2, Eigen::MatrixXd &x1, Eigen::MatrixXd &x2, 
-				        bool close_range = true);
+// Eigen::Matrix<int,-1, 1> removeBadPointsDual(std::vector< Eigen::Vector3d > &image_point1, std::vector< Eigen::Vector3d > &image_point2,
+// 				        cv::Mat &measurez1, cv::Mat &measurez2, Eigen::MatrixXd &x1, Eigen::MatrixXd &x2, 
+// 				        bool close_range = true);
 
 
 template< typename Tp1, typename Tp2 >
@@ -79,7 +79,8 @@ void projectiongeneral(Tp1 image_point[2], Tp2 &measurez, Tp2 intrinsic[4], Tp2 
 template < typename Tp>
 bool boundarykinect( Tp &measurez, Tp factor = 5000.0 )
 {
-    if (measurez == 0 || measurez < 0.40*factor || measurez > 3.0*factor) 
+    // Detects if a Z value (measurez) is inside Kinect boundary
+    if (measurez == 0 || measurez < 0.45*factor || measurez > 3.0*factor) 
         return false;
     else return true;
 }

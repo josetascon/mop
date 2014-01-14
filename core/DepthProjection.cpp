@@ -14,24 +14,25 @@ void removeBadPoints(std::vector< cv::Point2d > &image_point, cv::Mat &measurez,
     int cnt = -1; //Debug
     if (close_range)
     {
-        for ( int i = 0; i < image_point.size(); i++)
+        for (register int i = 0; i < image_point.size(); ++i)
         {
 	  cnt++; //Debug
-	  int u = (int)image_point[i].x;
-	  int v = (int)image_point[i].y;
-	  if (measurez.at<short>(v,u) == 0 || measurez.at<short>(v,u) > 15000.0 || measurez.at<short>(v,u) < 0.5*5000.0)
+	  double u = image_point[i].x;
+	  double v = image_point[i].y;
+	  double depth = measurez.at<short>((int) round(v),(int) round(u));
+	  if ( !boundarykinect( depth ) )
+// 	  if (measurez.at<short>(v,u) == 0.0 || measurez.at<short>(v,u) > 15000.0 || measurez.at<short>(v,u) < 0.5*5000.0)
 	  {
 	      // Debug
 	      // std::cout << "Remove point " << i << '\n';
 	      image_point.erase( image_point.begin() + i);
 	      i--;
-	      continue;
 	  }
         }
     }
     else
     {
-        for ( int i = 0; i < image_point.size(); i++)
+        for (register int i = 0; i < image_point.size(); ++i)
         {
 	  int u = (int)image_point[i].x;
 	  int v = (int)image_point[i].y;
@@ -39,9 +40,7 @@ void removeBadPoints(std::vector< cv::Point2d > &image_point, cv::Mat &measurez,
 	  {
 	      image_point.erase( image_point.begin() + i);
 	      i--;
-	      continue;
 	  }
-	  
         }
     }
 }
@@ -55,15 +54,18 @@ std::vector<int> removeBadPointsDual(std::vector< cv::Point2d > &image_point1, s
     std::vector<int> good(image_point1.size(),1);
     if (close_range)
     {
-        for ( int i = 0; i < image_point1.size(); i++)
+        for (register int i = 0; i < image_point1.size(); ++i)
         {
 	  cnt++; //Debug
-	  int u1 = (int)image_point1[i].x;
-	  int v1 = (int)image_point1[i].y;
-	  int u2 = (int)image_point2[i].x;
-	  int v2 = (int)image_point2[i].y;
-	  if (measurez1.at<short>(v1,u1) > 15000.0 || measurez1.at<short>(v1,u1) < 0.4*5000.0
-	      || measurez2.at<short>(v2,u2) > 15000.0 || measurez2.at<short>(v2,u2) < 0.4*5000.0)
+	  double u1 = image_point1[i].x;
+	  double v1 = image_point1[i].y;
+	  double u2 = image_point2[i].x;
+	  double v2 = image_point2[i].y;
+	  double depth1 = measurez1.at<short>((int) round(v1),(int) round(u1));
+	  double depth2 = measurez2.at<short>((int) round(v2),(int) round(u2));
+// 	  if (measurez1.at<short>(v1,u1) > 15000.0 || measurez1.at<short>(v1,u1) < 0.4*5000.0
+// 	      || measurez2.at<short>(v2,u2) > 15000.0 || measurez2.at<short>(v2,u2) < 0.4*5000.0)
+	  if ( !boundarykinect( depth1 ) || !boundarykinect( depth2 ) )
 	  {
 	      // Debug
 // 	      std::cout << "Remove point " << cnt << '\n';
@@ -71,13 +73,12 @@ std::vector<int> removeBadPointsDual(std::vector< cv::Point2d > &image_point1, s
 	      image_point1.erase( image_point1.begin() + i);
 	      image_point2.erase( image_point2.begin() + i);
 	      i--;
-	      continue;
 	  }
         }
     }
     else
     {
-        for ( int i = 0; i < image_point1.size(); i++)
+        for (register int i = 0; i < image_point1.size(); ++i)
         {
 	  cnt++;
 	  int u1 = (int)image_point1[i].x;
@@ -90,63 +91,62 @@ std::vector<int> removeBadPointsDual(std::vector< cv::Point2d > &image_point1, s
 	      image_point1.erase( image_point1.begin() + i);
 	      image_point2.erase( image_point2.begin() + i);
 	      i--;
-	      continue;
 	  }
         }
     }
     return good;
 }
 
-Eigen::Matrix<int,-1, 1> removeBadPointsDual(std::vector< Eigen::Vector3d > &image_point1, std::vector< Eigen::Vector3d > &image_point2,
-				        cv::Mat &measurez1, cv::Mat &measurez2, Eigen::MatrixXd &x1, Eigen::MatrixXd &x2, 
-				        bool close_range)
-{
-    // ==================================== If only close range data is desired ====================================
-    // If close_range Bad points aren't stored (equals to 0, > 3 meters, or < 0.4 meters).
-    int num_points = image_point1.size();
-    Eigen::Matrix<int,-1, 1> good = Eigen::Matrix<int,-1, 1>::Zero(num_points);
-    x1 = Eigen::MatrixXd::Ones(3,num_points);
-    x2 = Eigen::MatrixXd::Ones(3,num_points);
-    int count = 0;
-    if (close_range)
-    {
-        for (register int i = 0; i < num_points; ++i)
-        {
-	  int u1 = (int)image_point1[i](0);
-	  int v1 = (int)image_point1[i](1);
-	  int u2 = (int)image_point2[i](0);
-	  int v2 = (int)image_point2[i](1);
-	  if (measurez1.at<short>(v1,u1) < 15000.0 && measurez1.at<short>(v1,u1) > 0.4*5000.0
-	      && measurez2.at<short>(v2,u2) < 15000.0 && measurez2.at<short>(v2,u2) > 0.4*5000.0)
-	  {
-	      good(i) = true;
-	      x1.col(count) = Eigen::Vector3d(image_point1[i]);
-	      x2.col(count) = Eigen::Vector3d(image_point2[i]);
-	      count++;
-	  }
-        }
-    }
-    else
-    {
-        for ( int i = 0; i < num_points; i++)
-        {
-	  int u1 = (int)image_point1[i](0);
-	  int v1 = (int)image_point1[i](1);
-	  int u2 = (int)image_point2[i](0);
-	  int v2 = (int)image_point2[i](1);
-	  if (measurez1.at<short>(v1,u1) > 0 && measurez2.at<short>(v2,u2) > 0)
-	  {
-	      good(i) = true;
-	      x1.col(count) = Eigen::Vector3d(image_point1[i]);
-	      x2.col(count) = Eigen::Vector3d(image_point2[i]);
-	      count++;
-	  }
-        }
-    }
-    x1.conservativeResize(3,count);
-    x2.conservativeResize(3,count);
-    return good;
-}
+// Eigen::Matrix<int,-1, 1> removeBadPointsDual(std::vector< Eigen::Vector3d > &image_point1, std::vector< Eigen::Vector3d > &image_point2,
+// 				        cv::Mat &measurez1, cv::Mat &measurez2, Eigen::MatrixXd &x1, Eigen::MatrixXd &x2, 
+// 				        bool close_range)
+// {
+//     // ==================================== If only close range data is desired ====================================
+//     // If close_range Bad points aren't stored (equals to 0, > 3 meters, or < 0.4 meters).
+//     int num_points = image_point1.size();
+//     Eigen::Matrix<int,-1, 1> good = Eigen::Matrix<int,-1, 1>::Zero(num_points);
+//     x1 = Eigen::MatrixXd::Ones(3,num_points);
+//     x2 = Eigen::MatrixXd::Ones(3,num_points);
+//     int count = 0;
+//     if (close_range)
+//     {
+//         for (register int i = 0; i < num_points; ++i)
+//         {
+// 	  int u1 = (int)image_point1[i](0);
+// 	  int v1 = (int)image_point1[i](1);
+// 	  int u2 = (int)image_point2[i](0);
+// 	  int v2 = (int)image_point2[i](1);
+// 	  if (measurez1.at<short>(v1,u1) < 15000.0 && measurez1.at<short>(v1,u1) > 0.4*5000.0
+// 	      && measurez2.at<short>(v2,u2) < 15000.0 && measurez2.at<short>(v2,u2) > 0.4*5000.0)
+// 	  {
+// 	      good(i) = true;
+// 	      x1.col(count) = Eigen::Vector3d(image_point1[i]);
+// 	      x2.col(count) = Eigen::Vector3d(image_point2[i]);
+// 	      count++;
+// 	  }
+//         }
+//     }
+//     else
+//     {
+//         for ( int i = 0; i < num_points; i++)
+//         {
+// 	  int u1 = (int)image_point1[i](0);
+// 	  int v1 = (int)image_point1[i](1);
+// 	  int u2 = (int)image_point2[i](0);
+// 	  int v2 = (int)image_point2[i](1);
+// 	  if (measurez1.at<short>(v1,u1) > 0 && measurez2.at<short>(v2,u2) > 0)
+// 	  {
+// 	      good(i) = true;
+// 	      x1.col(count) = Eigen::Vector3d(image_point1[i]);
+// 	      x2.col(count) = Eigen::Vector3d(image_point2[i]);
+// 	      count++;
+// 	  }
+//         }
+//     }
+//     x1.conservativeResize(3,count);
+//     x2.conservativeResize(3,count);
+//     return good;
+// }
 
 
 cv::Point3d projection(cv::Point2d &image_point, cv::Mat &measurez, double &cx, double &cy, double &fx, double &fy)
