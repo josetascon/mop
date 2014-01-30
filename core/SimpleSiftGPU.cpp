@@ -13,7 +13,8 @@ SimpleSiftGPU::SimpleSiftGPU(int num_match): matcher(num_match), num_matches(num
 //     char * s_argv[] = {(char*)"-fo", (char*)"-1", (char*)"-v", (char*)"1"};
 //     sift.ParseParam(4, s_argv);
     
-    char * s_argv[] = {(char*)"-fo", (char*)"-1", (char*)"-v", (char*)"1", (char*)"-tc2", (char*)"1000" }; // tc2 limit max features
+    char * s_argv[] = {(char*)"-fo", (char*)"-1", (char*)"-v", (char*)"0", (char*)"-tc2", (char*)"1000" }; // tc2 limit max features
+    // Change vebose level with -v 1
     sift.ParseParam(6, s_argv);
     int support = sift.CreateContextGL();
     if(support != SiftGPU::SIFTGPU_FULL_SUPPORTED)

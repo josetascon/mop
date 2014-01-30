@@ -23,6 +23,7 @@
 
 // Local libraries
 #include "DepthProjection.hpp"
+#include "Debug.hpp"
 #include "Common.hpp"
 #include "FeaturesMap.hpp"
 #include "HandleDB.hpp"
@@ -176,7 +177,6 @@ int main(int argc, char* argv[])
         std::cout << "[OK]\n";
         std::cout << "Number of Images: " << imageList_rgb.size() << "\n";
         printf("Size of Images: \tWidth: %i\t||\t Height: %i\n", image0.size().width, image0.size().height);
-        std::cout << "\nDetection and Descriptor...\t";
     }
    
     // ======================================== END Read Images ========================================
@@ -237,13 +237,13 @@ int main(int argc, char* argv[])
         myfeat.solveSift();
         
         MatchesMap my_mmap(400,35);
-//         my_mmap.solveMatches(&myfeat.descriptorsGPU);
-        my_mmap.solveMatchesContinuous(&myfeat.descriptorsGPU);
+        my_mmap.solveMatches(&myfeat.descriptorsGPU);
+//         my_mmap.solveMatchesContinuous(&myfeat.descriptorsGPU);
         my_mmap.robustifyMatches(&myfeat.keypointsGPU);
         my_mmap.depthFilter(&myfeat.keypointsGPU, &imageList_depth, num_depth_filter);
         timer1.start();
         my_mmap.solveDB3D( &mydb, &myfeat.keypointsGPU, &imageList_depth, K );
-        std::cout << "Elapsed time to solve DB: " << timer1.elapsed_s() << " [s]\n";
+        DEBUG_1( std::cout << "Elapsed time to solve DB: " << timer1.elapsed_s() << " [s]\n"; )
         
         GraphPose gp;
         gp.solvePose( &my_mmap.reliableMatch, &my_mmap.globalMatch, &myfeat.keypointsGPU, &imageList_depth, &K);
@@ -261,38 +261,37 @@ int main(int argc, char* argv[])
         std::vector< int > discover;
         std::vector< int > parent;
         GraphBFS bfs( num_vertex, num_edges, edges_pairs, weights );
-        int initbfs = 0;
-        bfs.setInitBFS( initbfs );
+//         int initbfs = 0;
+//         bfs.setInitBFS( initbfs );
         bfs.solveBFS( discover, parent );
+        DEBUG_2( std::cout << "BFS sucess\n"; )
         
-//         gp.solveGraph( discover, parent );
-//         
-// 
-//         
-        gp.solveGraphContinuous();
-        exportGRAPH( (char*)"liv.graph", gp.Qn_global, gp.tr_global ); 
+        gp.solveGraph( discover, parent );
+//         gp.solveGraphContinuous();
+        
+//         exportGRAPH( (char*)"liv.graph", gp.Qn_global, gp.tr_global ); 
 //         gp.runTORO();
 //         exportTXTQuaternionVector((char*)"pose_rot.txt", gp.Qn_global);
 //         exportTXTTranslationVector((char*)"pose_tr.txt", gp.tr_global);
 //     }
     
-    FeaturesMap featM;
-    featM.solveVisibility3D( &mydb );
-    printf("Visibility Matrix [%d x %d]\n",featM.visibility.rows(),featM.visibility.cols());
-    num_cameras = featM.cameras();
-    num_features = featM.features();
-    mydb.closeDB();
-    
-    SimpleRegistration sr01( num_cameras, num_features, K );
-    timer1.start();
-    sr01.solvePose( &featM.visibility, &featM.coordinates3D, true ); // true for optimal
-    std::cout << "Elapsed time to solve Pose: " << timer1.elapsed_s() << " [s]\n";
-    
-    // Print lin and opt
-    SimpleRegistration sr02( num_cameras, num_features, K );
-    timer1.start();
-    sr02.solvePose( &featM.visibility, &featM.coordinates3D, false ); // true for optimal
-    std::cout << "Elapsed time to solve Pose: " << timer1.elapsed_s() << " [s]\n";
+//     FeaturesMap featM;
+//     featM.solveVisibility3D( &mydb );
+//     printf("Visibility Matrix [%d x %d]\n",featM.visibility.rows(),featM.visibility.cols());
+//     num_cameras = featM.cameras();
+//     num_features = featM.features();
+//     mydb.closeDB();
+//     
+//     SimpleRegistration sr01( num_cameras, num_features, K );
+//     timer1.start();
+//     sr01.solvePose( &featM.visibility, &featM.coordinates3D, true ); // true for optimal
+//     std::cout << "Elapsed time to solve Pose: " << timer1.elapsed_s() << " [s]\n";
+//     
+//     // Print lin and opt
+//     SimpleRegistration sr02( num_cameras, num_features, K );
+//     timer1.start();
+//     sr02.solvePose( &featM.visibility, &featM.coordinates3D, false ); // true for optimal
+//     std::cout << "Elapsed time to solve Pose: " << timer1.elapsed_s() << " [s]\n";
     
     // Write files of global quaternion and translation
 //     exportTXTQuaternionVector((char*)"std_rot_opt3.txt", sr01.Qn_global);

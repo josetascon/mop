@@ -18,6 +18,7 @@
 #include <sqlite3.h>
 
 // Local Libraries
+#include "Debug.hpp"
 #include "Common.hpp"
 
 // ================================================================================================

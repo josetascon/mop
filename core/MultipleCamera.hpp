@@ -21,7 +21,8 @@
 #include <vector>
 #include <utility>		// std::pair
 
-//Local Libraries
+// Local Libraries
+#include "Debug.hpp"
 #include "Common.hpp"
 #include "FeaturesEDM.hpp"
 #include "CameraPose.hpp"

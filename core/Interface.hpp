@@ -17,6 +17,9 @@
 #include <opencv2/highgui/highgui.hpp>		//undistort in WRITEPMVS
 #include <opencv2/core/eigen.hpp>
 
+// Boost Libraries
+#include <boost/filesystem.hpp>		// Create directories OS independent
+
 // Std Libraries
 #include <iostream>
 #include <fstream>		// ofstream and/or ifstream

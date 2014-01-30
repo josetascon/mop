@@ -6,8 +6,8 @@
  * @date Jul/31/2012
  */
 
-#ifndef __Optimizer_HPP__
-#define __Optimizer_HPP__
+#ifndef __OPTIMIZER_HPP__
+#define __OPTIMIZER_HPP__
 
 // Eigen Libraries
 #include <eigen3/Eigen/Dense>
@@ -21,6 +21,7 @@
 #include <iostream>
 
 // Local Libraries
+#include "Debug.hpp"
 #include "Common.hpp"
 #include "reprojection_error.hpp"
 

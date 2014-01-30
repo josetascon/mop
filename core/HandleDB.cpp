@@ -59,7 +59,7 @@ void HandleDB::openDB()
     }
     else
     {
-        fprintf(stdout, "\nOpened database successfully\n");
+        DEBUG_1( fprintf(stdout, "\nOpened database successfully\n"); )
         db_isopen = true;
     }
     return;
@@ -75,7 +75,7 @@ void HandleDB::closeDB()
     }
     else
     {
-        fprintf(stdout, "Closed database successfully\n");
+        DEBUG_1( fprintf(stdout, "Closed database successfully\n"); )
         db_isopen = false;
     }
     return;
@@ -109,7 +109,7 @@ void HandleDB::createFeaturesTable()
    fprintf(stderr, "SQL error: %s\n", zErrMsg);
       sqlite3_free(zErrMsg);
    }else{
-      fprintf(stdout, "Table created successfully\n");
+      DEBUG_1( fprintf(stdout, "Table created successfully\n"); )
    }
    return;
 }
@@ -131,7 +131,7 @@ void HandleDB::createFeaturesTable3D()
    fprintf(stderr, "SQL error: %s\n", zErrMsg);
       sqlite3_free(zErrMsg);
    }else{
-      fprintf(stdout, "Table created successfully\n");
+      DEBUG_1( fprintf(stdout, "Table created successfully\n"); )
    }
    return;
 }
@@ -153,7 +153,7 @@ void HandleDB::createIndex1()
    fprintf(stderr, "SQL error: %s\n", zErrMsg);
       sqlite3_free(zErrMsg);
    }else{
-      fprintf(stdout, "Index created successfully\n");
+      DEBUG_1( fprintf(stdout, "Index created successfully\n"); )
    }
    return;
 }

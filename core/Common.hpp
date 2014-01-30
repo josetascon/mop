@@ -53,33 +53,43 @@ public:
       ~timer_wall();
       
       //void clear_time_clock()
-      // Start your your timer and store the initial point to measure
+      /** Start your timer and store the initial point to measure **/
       void start();
       
       // Functions to get the result in different multiplier format
-      // Return nanoseconds
+      /** Return elapsed time from start time to now in nanoseconds **/
       boost::int_least64_t elapsed_ns();
-      // Return microseconds
+      /** Return elapsed time from start time to now in microseconds **/
       boost::int_least64_t elapsed_us();
-      // Return milliseconds
+      /** Return elapsed time from start time to now in milliseconds **/
       boost::int_least64_t elapsed_ms();
-      // Return seconds
+      /** Return elapsed time from start time to now in seconds **/
       double elapsed_s();
 };
 
 // ====================================================================================================================================
 // =======================================================  FUNCTIONS  ================================================================
 // ====================================================================================================================================
-
-// @date July/22/2013
+/**
+ * ******************************************************************
+ * @brief Template Function to get the sign of a number
+ *
+ * @author José David Tascón Vidarte
+ * @date July/22/2013
+ */
 template <typename T>
 T sign(T value)
 {
     return ( value >= T(0)) ? T(1) : T(-1);
 }
 
-// @date July/22/2013
-// template Dec/11/2013
+/**
+ * ******************************************************************
+ * @brief Template Function to convert a char pointer to a number
+ *
+ * @author José David Tascón Vidarte
+ * @date Dec/11/2013
+ */
 template< typename Tp >
 Tp pchar2number(char* text)
 {
@@ -90,6 +100,13 @@ Tp pchar2number(char* text)
     return value;		//return a string with the contents of the stream
 }
 
+/**
+ * ******************************************************************
+ * @brief Template Function to convert a string to a number
+ *
+ * @author José David Tascón Vidarte
+ * @date Dec/11/2013
+ */
 template< typename Tp >
 Tp string2number(std::string text)
 {
@@ -100,6 +117,13 @@ Tp string2number(std::string text)
     return value;		//return a string with the contents of the stream
 }
 
+/**
+ * ******************************************************************
+ * @brief Template Function to convert a number to a string
+ *
+ * @author José David Tascón Vidarte
+ * @date Dec/11/2013
+ */
 template< typename Tp >
 std::string number2string(Tp number)
 {
@@ -108,9 +132,22 @@ std::string number2string(Tp number)
     return ss.str();	//return a string with the contents of the stream
 }
 
-
+/**
+ * ******************************************************************
+ * @brief Function to find a file name. For instace, the base name of a file string: /home/user/text.txt is text.txt
+ *
+ * @author José David Tascón Vidarte
+ * @date Dec/11/2013
+ */
 std::string baseFileName (const std::string& str);
 
+/**
+ * ******************************************************************
+ * @brief Function to print the data with spaces in a std::vector 
+ *
+ * @author José David Tascón Vidarte
+ * @date Dec/11/2013
+ */
 template <typename Tf>
 void printVector(std::vector<Tf> data)
 {
@@ -118,6 +155,13 @@ void printVector(std::vector<Tf> data)
     std::cout << "\n";
 }
 
+/**
+ * ******************************************************************
+ * @brief Function to sum the data in a std::vector
+ *
+ * @author José David Tascón Vidarte
+ * @date Dec/11/2013
+ */
 template <typename Tf>
 Tf sumVector(std::vector<Tf> data)
 {
@@ -127,6 +171,13 @@ Tf sumVector(std::vector<Tf> data)
 }
 
 int factorial(int x);
+/**
+ * ******************************************************************
+ * @brief Function to calculate the Moore–Penrose pseudoinverse of a matrix
+ *
+ * @author José David Tascón Vidarte
+ * @date July/22/2013
+ */
 Eigen::MatrixXd pseudoInverse( Eigen::MatrixXd &A);
 Eigen::RowVector3d pseudoInverse(  Eigen::Vector3d &A);
 

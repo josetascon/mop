@@ -347,7 +347,7 @@ void LocalOptimizer::update()
 
 void LocalOptimizer::pose3Dto2D()
 {
-    std::cout << "Two view Optimization:\n";
+    DEBUG_2( std::cout << "Two view Optimization:\n"; )
     
     Problem problem;
     ceres::LossFunction* loss_function = new ceres::HuberLoss(1.0);
@@ -388,11 +388,11 @@ void LocalOptimizer::pose3Dto2D()
     
     Solver::Summary summary;
     Solve(options, &problem, &summary);
-    std::cout << summary.BriefReport() << "\n";
+    DEBUG_2( std::cout << summary.BriefReport() << "\n"; )
 
     double cost = 0;
     problem.Evaluate(Problem::EvaluateOptions(), &cost, NULL, NULL, NULL);
-    std::cout << "RMS Reprojection Error is : " << std::sqrt(double(cost/num_features)) << "\n\n";
+    DEBUG_2( std::cout << "RMS Reprojection Error is : " << std::sqrt(double(cost/num_features)) << "\n\n"; )
 
     updatePose3Dto2D();
 //     cost = 0;
@@ -402,7 +402,7 @@ void LocalOptimizer::pose3Dto2D()
 
 void LocalOptimizer::pose3Dto3D()
 {
-    std::cout << "Aligment of 3D Points, Pose Optimization\t...\n";
+    DEBUG_2( std::cout << "Aligment of 3D Points, Pose Optimization\t...\n"; )
     
     Problem problem;
     ceres::LossFunction* loss_function = new ceres::HuberLoss(1.0);
@@ -427,19 +427,19 @@ void LocalOptimizer::pose3Dto3D()
 //     ReprojectionError3D(double *pt1, double *pt2) //pt2 = q*pt1*~q + t ; ~q*(p2 - t1)*q = pt1
     Solver::Summary summary;
     Solve(options, &problem, &summary);
-    std::cout << summary.BriefReport() << "\n";
+    DEBUG_2( std::cout << summary.BriefReport() << "\n"; )
     
     double cost = 0.0;
     problem.Evaluate(Problem::EvaluateOptions(), &cost, NULL, NULL, NULL);
     double reprojection_error = std::sqrt(double(cost/num_features));
-    printf("RMS Reprojection Error is : %0.8f\n", reprojection_error);
+    DEBUG_2( printf("RMS Reprojection Error is : %0.8f\n", reprojection_error); )
     
     update();
 }
 
 void LocalOptimizer::pose3Dto3D_Covariance()
 {
-    std::cout << "Aligment of 3D Points, Pose Optimization\t...\n";
+    DEBUG_2( std::cout << "Aligment of 3D Points, Pose Optimization\t...\n"; )
     
     if ( variance1->cols() != observation1->cols() )
     {
@@ -469,15 +469,15 @@ void LocalOptimizer::pose3Dto3D_Covariance()
 //     ReprojectionError3D(double *pt1, double *pt2) //pt2 = q*pt1*~q + t ; ~q*(p2 - t1)*q = pt1
     double cost = 0;
     problem.Evaluate(Problem::EvaluateOptions(), &cost, NULL, NULL, NULL);
-    std::cout << "Initial Mahalanobis Distance Error is : " << std::sqrt(double(cost/num_features)) << "\n";
+    DEBUG_2( std::cout << "Initial Mahalanobis Distance Error is : " << std::sqrt(double(cost/num_features)) << "\n"; )
     
     Solver::Summary summary;
     Solve(options, &problem, &summary);
-    std::cout << summary.BriefReport() << "\n";
+    DEBUG_2( std::cout << summary.BriefReport() << "\n"; )
     
     cost = 0;
     problem.Evaluate(Problem::EvaluateOptions(), &cost, NULL, NULL, NULL);
-    std::cout << "Initial Mahalanobis Distance Error is : " << std::sqrt(double(cost/num_features)) << "\n";
+    DEBUG_2( std::cout << "Final Mahalanobis Distance Error is : " << std::sqrt(double(cost/num_features)) << "\n"; )
     update();
 }
 

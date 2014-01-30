@@ -78,7 +78,7 @@ void SiftED::solveSift()
     for (int k = 0; k < num_images; k++) files[k] = nameImages[k].c_str();
     
     sift.SetImageList(num_images, files);
-    std::cout << "\n================================ SIFT Features E&D ==================================\n";
+    DEBUG_1( std::cout << "\n================================ SIFT Features E&D ==================================\n"; )
     
     for (register int k = 0; k < num_images; ++k)
     {
@@ -88,11 +88,12 @@ void SiftED::solveSift()
         descriptorsGPU[k].resize(128*ft_per_im[k]);
         
         sift.GetFeatureVector(&keypointsGPU[k][0], &descriptorsGPU[k][0]); //specify NULL if you don’t need keypoints or descriptors
-        printf("SIFT: Image %04i, \t#features = %i\n", k, ft_per_im[k]);
-//         std::string str = "SIFT: %04i,";
-//         str.append(nameImages[k]);
-//         str.append("\t #f = %i\n");
-//         printf(str.c_str(),k,ft_per_im[k]);
+//         DEBUG_1( printf("SIFT: Image %04i, \t#features = %i\n", k, ft_per_im[k]); )
+        DEBUG_1( std::string str = "SIFT: Image %04i, ";
+	  str.append( basename(strdup(nameImages[k].c_str())) );
+	  str.append("\t #f = %i\n");
+	  printf(str.c_str(),k,ft_per_im[k]);
+        )
     }
 };
 

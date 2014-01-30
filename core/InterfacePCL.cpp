@@ -118,7 +118,7 @@ void cv2PointCloudDense(cv::Mat &image, cv::Mat &depth, Eigen::Matrix3d &calibra
     cloud->sensor_origin_.setZero ();
     cloud->sensor_orientation_.setIdentity ();
     cloud->is_dense = true;
-    std::cout << "Cloud size = " << cloud->width*cloud->height << "\n";
+    DEBUG_3( std::cout << "Cloud size = " << cloud->width*cloud->height << "\n"; )
     cloud_out = cloud;
 }
 
@@ -211,12 +211,17 @@ void cv2PointCloudSet(std::vector<std::string> &image_list, std::vector<std::str
     set_cloud.resize(num_cameras);
     set_covariance.clear();
     set_covariance.resize(num_cameras);
-    
+    DEBUG_1( std::cout << "\n================================ Point Cloud, Creating Point Clouds from Images ==================================\n"; )
     for (register int k = 0; k < num_cameras ; ++k)
     {
         cv::Mat image = cv::imread(image_list[k], 1);
         cv::Mat depth = cv::imread(depth_list[k], -1);
         cv2PointCloud_Pose( image, depth, calibration, Qn[k], tr[k], set_cloud[k], set_covariance[k] );
+        DEBUG_1( std::string str = "Cloud size = %i, \tImage: ";
+	  str.append( basename(strdup(image_list[k].c_str())) );
+	  str.append("\n");
+	  printf(str.c_str(),set_cloud[k]->width*set_cloud[k]->height);
+        )
     }
 }
 
@@ -248,8 +253,8 @@ void sparse2dense( pcl::PointCloud<pcl::PointXYZRGBA>::Ptr &cloud_sparse, pcl::P
         cloud->sensor_origin_ = cloud_sparse->sensor_origin_;
         cloud->sensor_orientation_ = cloud_sparse->sensor_orientation_;
         cloud->is_dense = true;
-        std::cout << "Sparse Cloud size = " << cloud_sparse->width*cloud_sparse->height << "\n";
-        std::cout << "Dense Cloud size = " << cloud->width*cloud->height << "\n";
+        DEBUG_2( std::cout << "Sparse Cloud size = " << cloud_sparse->width*cloud_sparse->height << "\n"; )
+        DEBUG_2( std::cout << "Dense Cloud size = " << cloud->width*cloud->height << "\n"; )
     }
     else cloud = cloud_sparse;
     cloud->is_dense = true;
@@ -260,7 +265,7 @@ void set2unique( std::vector< pcl::PointCloud<pcl::PointXYZRGBA>::Ptr > &data, p
 {
     pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloud (new pcl::PointCloud <pcl::PointXYZRGBA>);
     int num_pc = data.size();
-    std::cout << "Init merging clouds\n";
+    DEBUG_1( std::cout << "\n================================ Point Cloud, Joint Cloud Model ==================================\n"; )
     for (register int k = 0; k < num_pc; ++k)
     {
         for (pcl::PointCloud< pcl::PointXYZRGBA >::iterator it = data[k]->begin() ; it != data[k]->end(); ++it)
@@ -285,11 +290,11 @@ void set2unique( std::vector< pcl::PointCloud<pcl::PointXYZRGBA>::Ptr > &data, p
 	  cloud->push_back( pt1 );
         }
     }
-    std::cout << "End merging clouds\n";
+    DEBUG_3( std::cout << "End merging clouds\n"; )
     cloud->sensor_origin_.setZero ();
     cloud->sensor_orientation_ = Eigen::Quaternion<float>::Identity();
     cloud->is_dense = true;
-    std::cout << "Cloud size = " << cloud->width*cloud->height << "\n";
+    DEBUG_1( std::cout << "Final Point Cloud size = " << cloud->width*cloud->height << "\n"; )
     cloud_out = cloud;
 }
 
@@ -428,8 +433,8 @@ void mergeClouds( pcl::PointCloud<pcl::PointXYZRGBA>::Ptr &pc1, pcl::PointCloud<
     //     std::cout << "Mean of distances = " << uu << "\n";
     //     std::cout << "Std of distances = " << var.cwiseSqrt() << "\n";
     
-    std::cout << "Merged cloud size = " << pc_out->width*pc_out->height << "\n";
-    std::cout << "Elapsed time to merge: " << timer1.elapsed_s() << " [s]\n";
+    DEBUG_2( std::cout << "Merged cloud size = " << pc_out->width*pc_out->height << "\n"; )
+    DEBUG_2( std::cout << "Elapsed time to merge: " << timer1.elapsed_s() << " [s]\n"; )
     cloud_out = pc_out;
 }
 
@@ -438,18 +443,25 @@ void mergeCloudSet( std::vector< pcl::PointCloud<pcl::PointXYZRGBA>::Ptr > &set_
 		pcl::PointCloud<pcl::PointXYZRGBA>::Ptr &model)
 {
     int size_clouds = set_cloud.size();
+    int cumulative_points = 0;
     
     pcl::PointCloud<pcl::PointXYZRGBA>::Ptr initial_cloud, result_cloud;
     boost::shared_ptr< Eigen::MatrixXd > cov_init, cov_final;
     
     initial_cloud = set_cloud[0];
     cov_init = set_covariance[0];
-    
+    cumulative_points += set_cloud[0]->width*set_cloud[0]->height;
+    DEBUG_1( std::cout << "\n================================ Point Cloud, Merge Cloud Model (Kyostila et al. 2013) ==================================\n"; )
     for (register int i = 1; i < size_clouds; ++i)
     {
+        cumulative_points += set_cloud[i]->width*set_cloud[i]->height;
         mergeClouds( initial_cloud, set_cloud[i], cov_init, set_covariance[i], result_cloud, cov_final );
         initial_cloud = result_cloud;
         cov_init = cov_final;
     }
+    
+    int final_points = result_cloud->width*result_cloud->height;
+    DEBUG_1( std::cout << "Merged cloud size = " << final_points << "\n"; )
+    DEBUG_1( printf( "Saving: [%i / %i] => %f%%\n\n", final_points, cumulative_points, ((float)final_points/(float)cumulative_points)*100.0); )
     model = result_cloud;
 }

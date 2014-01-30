@@ -184,7 +184,7 @@ void SimpleRegistration::solvePose(Eigen::Matrix<bool,-1,-1> *visibility, Eigen:
     Eigen::MatrixXd X1, X2, Xtmp1, Xtmp2, variance1, variance2;
     Eigen::Matrix3d Rot;
     Eigen::Vector3d tr, angles_vec1;
-    std::cout << "\n================================ POSE Estimation ==================================\n";
+    DEBUG_1( std::cout << "\n================================ POSE Estimation ==================================\n"; )
     for(int k=0; k < (num_cameras - 1); k++) // pose 1-2
     {
         int cam1 = k;
@@ -204,8 +204,8 @@ void SimpleRegistration::solvePose(Eigen::Matrix<bool,-1,-1> *visibility, Eigen:
 	  }
         }
         // Debug
-        printf("POSE: %04i -> %04i:\n", cam1, cam2);
-        std::cout << "Total Pts: " << count_ft << "\n";
+        DEBUG_1( printf("POSE: %04i -> %04i:\n", cam1, cam2); )
+        DEBUG_1( std::cout << "Total Pts: " << count_ft << "\n"; )
         X1 = Xtmp1.block(0,0,3,count_ft);
         X2 = Xtmp2.block(0,0,3,count_ft);
         poseArun( X1, X2, Rot, tr );
@@ -265,7 +265,7 @@ void GraphPose::solvePose( std::vector<bool> *reliableMatch, std::vector< MatchQ
     vertices = list_depth->size();
     localPose.clear();
     cv::Mat KOCV = (cv::Mat_<double>(3,3) << (*Calibration)(0,0), 0.0, (*Calibration)(0,2), 0.0, (*Calibration)(1,1), (*Calibration)(1,2), 0.0, 0.0, 1.0);
-    std::cout << "\n================================ GRAPH POSE Estimation ==================================\n";
+    DEBUG_1( std::cout << "\n================================ GRAPH POSE Estimation ==================================\n"; )
     for(register int it = 0; it < reliableMatch->size(); ++it)
     {
         
@@ -298,13 +298,13 @@ void GraphPose::solvePose( std::vector<bool> *reliableMatch, std::vector< MatchQ
 	  poseArun( X1, X2, Rot, tr );
 	  varianceKinectSet( X1, *Calibration, variance1 );
 	  varianceKinectSet( X2, *Calibration, variance2 );
-	  printf("POSE: %04i -> %04i:\n", cam1, cam2);
+	  DEBUG_1( printf("POSE: %04i -> %04i\n", cam1, cam2); )
 	  
 	  // Optimization with Mahalanobis distance
 	  LocalOptimizer opt01;
 	  opt01.setParameters3Dto3D( &X1, &X2, &Rot, &tr, &variance1, &variance2 );
 	  opt01.pose3Dto3D_Covariance();
-	  std::cout << "\n";
+	  DEBUG_2( std::cout << "\n"; )
 	  
 	  // Save pose to global object
 	  Eigen::Quaternion<double> quat(Rot);
@@ -321,7 +321,8 @@ void GraphPose::solveEdges()
     edges_pairs.clear();
 //     weights.resize(edges);
 //     edges_pairs.resize(edges);
-    std::cout << "Edges:\n";
+    DEBUG_1( std::cout << "\n================================ GRAPH, Edge List ==================================\n"; )
+    DEBUG_1( std::cout << "Edges:\n"; )
     
     for(register int it = 0; it < edges; ++it)
     {
@@ -329,7 +330,7 @@ void GraphPose::solveEdges()
         edges_pairs.push_back( std::make_pair( localPose[it].cam_id1, localPose[it].cam_id2) );
         
         // Debug
-        std::cout << it << ": " << localPose[it].cam_id1 << " -> " << localPose[it].cam_id2 << "\n";
+        DEBUG_1( std::cout << it << ": " << localPose[it].cam_id1 << " -> " << localPose[it].cam_id2 << "\n"; )
         
 //         weights[it] = float( localPose[it].num_matches );
 //         edges_pairs[it] = std::make_pair( localPose[it].cam_id1, localPose[it].cam_id2);
@@ -347,7 +348,7 @@ void GraphPose::solveGraph(std::vector< int > &discover, std::vector< int > &par
     
     Qn_global[ discover[0] ] = Eigen::Quaternion<double>::Identity();
     tr_global[ discover[0] ] = Eigen::Vector3d::Zero();
-    
+    DEBUG_1( std::cout << "\n================================ GRAPH, Solution to relative poses ==================================\n"; )
     for (register int k = 1; k < discover.size(); ++k)
     {
         int v2 = discover[k];
@@ -358,7 +359,7 @@ void GraphPose::solveGraph(std::vector< int > &discover, std::vector< int > &par
         {
 	  int idp = find_id_pair( edges_pairs, v2, v1 );
 	  // Debug
-	  std::cout << "Find: " << v1 << " -> " << v2 << "\t||\tat: "<< idp <<"\n";
+	  DEBUG_1( std::cout << "Find: " << v1 << " -> " << v2 << "\t||\tEdge: "<< idp <<"\n"; )
 	  
 	  Qn_global[v2] = localPose[idp].quaternion.conjugate()*Qn_global[v1];
 	  tr_global[v2] = localPose[idp].quaternion.conjugate()*(tr_global[v1] - localPose[idp].translation);
@@ -367,7 +368,7 @@ void GraphPose::solveGraph(std::vector< int > &discover, std::vector< int > &par
         {
 	  int idp = find_id_pair( edges_pairs, v1, v2 );
 	  // Debug
-	  std::cout << "Find: " << v1 << " -> " << v2 << "\t||\tat: "<< idp <<"\n";
+	  DEBUG_1( std::cout << "Find: " << v1 << " -> " << v2 << "\t||\tEdge: "<< idp <<"\n"; )
 	  
 	  Qn_global[v2] = localPose[idp].quaternion*Qn_global[v1];
 	  tr_global[v2] = localPose[idp].quaternion*tr_global[v1] + localPose[idp].translation;

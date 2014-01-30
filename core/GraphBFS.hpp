@@ -19,6 +19,8 @@
 #include <boost/graph/adjacency_list.hpp>
 #include <boost/graph/breadth_first_search.hpp>
 
+#include "Debug.hpp"
+
 
 template < typename tt > class bfs_parent_visitor: public boost::default_bfs_visitor
 {
@@ -80,6 +82,30 @@ public:
     void setInitBFS( int &init ) { init_bfs = init; };
     void getInitBFS( int &init ) { init = init_bfs; };
     
+    int estimateInitial(Graph &g)	// Initial point to solve BFS based on vertex with maximun outedges
+    {
+        std::vector<int> outedges_count(num_vertices(g));
+        std::vector<int>::iterator result;
+        
+        boost::graph_traits<Graph>::out_edge_iterator e, e_end;
+        boost::graph_traits<Graph>::vertex_descriptor A;// = vertex(0, g);
+        for (int k = 0; k < num_vertices(g); k++)
+        {
+	  A = vertex(k,g);
+	  int count = 0;
+	  for (tie(e, e_end) = out_edges(A, g); e != e_end; ++e)
+	  {
+	      // Debug
+// 	      std::cout << "(" << source(*e, g) << "," << name[target(*e, g)] << ")" << "\n";
+	      count++;
+	  }
+	  outedges_count[k] = count;
+        }
+        
+        result = std::max_element(outedges_count.begin(), outedges_count.end());
+        return std::distance(outedges_count.begin(), result);
+    }
+    
     void solveBFS( std::vector< int > &discover, std::vector< int > &parent )
     {
         // Create undirect graph
@@ -90,11 +116,12 @@ public:
         std::vector< bool > visited(num_vertices(g), false);
         
         // Init of BFS
-        /// TODO select origin as vertex with major connectivity        
+        DEBUG_1( std::cout << "\n================================ GRAPH, Breath First Search ==================================\n"; )
         if ( init_bfs == -1 ) 
         {
-	  init_bfs = 0;
-	  path[0] = 0;
+	  init_bfs = estimateInitial(g);
+	  path[init_bfs] = init_bfs;
+	  DEBUG_1( std::cout << "Initial node in BFS is "<< init_bfs <<"\n"; )
         }
         else path[init_bfs] = init_bfs;
         visited[init_bfs] = true;
@@ -103,11 +130,14 @@ public:
         boost::breadth_first_search(g, vertex(init_bfs, g), visitor(vis));	// Solve breath first search
         
         // Debug
-        std::cout << "Discovered order:\n";
-        for (int k = 0; k < path.size(); ++k)
+        DEBUG_2( std::cout << "Path size "<< path.size() <<"\n"; )
+        DEBUG_2( std::cout << "Discover size "<< dtime.size() <<"\n"; )
+        
+        DEBUG_1( std::cout << "Discovered order:\n"; )
+        for (int k = 0; (k < path.size() && k < dtime.size()); ++k)
         {
-	  std::cout << dtime[k] << ":\t";
-	  std::cout << "parent: " << path[ dtime[k] ] << "\n";
+	  DEBUG_1( std::cout << dtime[k] << ":\t"; )
+	  DEBUG_1( std::cout << "parent: " << path[ dtime[k] ] << "\n"; )
         }
         
         parent = path;

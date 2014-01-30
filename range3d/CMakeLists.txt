@@ -47,8 +47,18 @@ include_directories(${LOCAL_DIR})
 file(GLOB_RECURSE INCS "*.hpp")
 file(GLOB_RECURSE SRCS "core/*.cpp")
 
+# Comprising all targets to link
+set(LINK_TARGETS ${PCL_LIBRARIES} ${VTK_LIBRARIES} ${OpenCV_LIBS} ${Eigen_LIBS} ${CERES_LIBRARIES} ${OPENGL_USED_LIBRARIES} 
+	        ${Boost_LIBRARIES} ${SiftGPU_LIBRARIES} ${THREAD_LIBRARIES} ${SQLITE3_LIBRARIES})
+
 # Compilation flags
-ADD_DEFINITIONS(-std=c++11)
+add_definitions(-std=c++11)
+
+# General Library Compilation
+add_library ( mop ${INCS} ${SRCS} )
+target_link_libraries ( mop ${LINK_TARGETS} )
+
+# Executables
 
 # add_executable (capture_pcd capture_pcd.cpp)
 # target_link_libraries (capture_pcd ${PCL_LIBRARIES})
@@ -56,14 +66,14 @@ ADD_DEFINITIONS(-std=c++11)
 # add_executable (sparse2dense sparse2dense.cpp)
 # target_link_libraries (sparse2dense ${PCL_LIBRARIES})
 
-# add_executable( test_cloud test_cloud.cpp ${INCS} ${SRCS})
-# target_link_libraries( test_cloud ${OpenCV_LIBS} ${Eigen3_LIBS} ${CERES_LIBRARIES} ${OPENGL_USED_LIBRARIES} ${Boost_LIBRARIES}
-# 			      ${SiftGPU_LIBRARIES} ${THREAD_LIBRARIES} ${SQLITE3_LIBRARIES} ${PCL_LIBRARIES})
+# add_executable( test_cloud test_cloud.cpp )
+# target_link_libraries( test_cloud "mop" ${LINK_TARGETS} )
+# 
+add_executable ( range_model range_model.cpp )
+target_link_libraries ( range_model "mop" ${LINK_TARGETS} )
+# 
+# add_executable (synthetic_range synthetic_range.cpp)
+# target_link_libraries ( synthetic_range "mop" ${LINK_TARGETS} )
 
-add_executable (range_model range_model.cpp ${INCS} ${SRCS})
-target_link_libraries (range_model ${PCL_LIBRARIES} ${VTK_LIBRARIES} ${OpenCV_LIBS} ${Eigen3_LIBS} ${CERES_LIBRARIES} ${OPENGL_USED_LIBRARIES} 
-			      ${Boost_LIBRARIES} ${SiftGPU_LIBRARIES} ${THREAD_LIBRARIES} ${SQLITE3_LIBRARIES} )
-
-# add_executable (synthetic_range synthetic_range.cpp ${INCS} ${SRCS})
-# target_link_libraries (synthetic_range ${PCL_LIBRARIES} ${VTK_LIBRARIES} ${OpenCV_LIBS} ${Eigen3_LIBS} ${CERES_LIBRARIES} ${OPENGL_USED_LIBRARIES} 
-# 			      ${Boost_LIBRARIES} ${SiftGPU_LIBRARIES} ${THREAD_LIBRARIES} ${SQLITE3_LIBRARIES})
+add_executable (frame frame.cpp)
+target_link_libraries ( frame "mop" ${LINK_TARGETS} )

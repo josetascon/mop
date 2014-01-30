@@ -18,9 +18,13 @@
 
 // Std Libraries
 #include <iostream>
+#include <libgen.h>
 
 // SiftGPU Library
 #include <SiftGPU.h>
+
+// Local Libraries
+#include "Debug.hpp"
 
 // ================================================================================================
 // ========================================== CLASS SiftED ========================================

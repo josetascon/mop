@@ -29,7 +29,7 @@ void MatchesMap::solveMatchesContinuous(std::vector< std::vector<float> > *descr
 //     int combinations = num_images - 1; // Due to solve only continous matches
     globalMatch.resize(num_images - 1);
     reliableMatch.resize(num_images - 1);
-    std::cout << "\n================================ MATCH Features ==================================\n";
+    DEBUG_1( std::cout << "\n================================ MATCH Features ==================================\n"; )
     
     for(register int cam = 0; cam < num_images - 1; ++cam)
     {
@@ -55,9 +55,9 @@ void MatchesMap::solveMatchesContinuous(std::vector< std::vector<float> > *descr
         }
         globalMatch[cam].cam_id1 = cam;
         globalMatch[cam].cam_id2 = cam+1;
-        printf("MATCH: %04i -> %04i:\t#matches = %i\n", cam, cam+1, nmatch);
+        DEBUG_1( printf("MATCH: %04i -> %04i:\t#matches = %i\n", cam, cam+1, nmatch); )
     }
-//     std::cout << "End solveMatches\n";
+    DEBUG_2( std::cout << "End solveMatches\n"; )
 }
 
 void MatchesMap::solveMatches(std::vector< std::vector<float> > *descriptorsGPU)
@@ -92,7 +92,7 @@ void MatchesMap::solveMatches(std::vector< std::vector<float> > *descriptorsGPU)
     
     globalMatch.resize(combinations);
     reliableMatch.resize(combinations);
-    std::cout << "\n================================ MATCH Features ==================================\n";
+    DEBUG_1( std::cout << "\n================================ MATCH Features ==================================\n"; )
     while(it < combinations)
     {
         for(cam = 0; cam + stride < num_images; cam++)
@@ -120,16 +120,17 @@ void MatchesMap::solveMatches(std::vector< std::vector<float> > *descriptorsGPU)
 	  }
 	  globalMatch[it].cam_id1 = cam;
 	  globalMatch[it].cam_id2 = cam+stride;
-	  printf("MATCH: %04i -> %04i:\t#matches = %i\n", cam, cam+stride, nmatch);
+	  DEBUG_1( printf("MATCH: %04i -> %04i:\t#matches = %i\n", cam, cam+stride, nmatch); )
 	  it++;
         }
         stride++;
     }
-//     std::cout << "End solveMatches\n";
+    DEBUG_2( std::cout << "End solveMatches\n"; )
 }
 
 void MatchesMap::robustifyMatches(std::vector< std::vector< cv::KeyPoint > > *set_of_keypoints)
 {
+    DEBUG_1( std::cout << "\nRobustify matches with fundamental matrix:\n"; )
     for(register int it = 0; it < reliableMatch.size(); ++it)
     {
         if (reliableMatch[it])
@@ -141,14 +142,14 @@ void MatchesMap::robustifyMatches(std::vector< std::vector< cv::KeyPoint > > *se
 	  std::vector<cv::KeyPoint> kps2 = (*set_of_keypoints)[cam2];
 	  std::vector< cv::Point2d > pts1, pts2;
 	  extractPointsfromMatches( globalMatch[it].matches, kps1, kps2, pts1, pts2);
-// 	  std::cout << "matches size = " << globalMatch[it].matches.size() << "\n";
-// 	  std::cout << "pts1 size = " << pts1.size() << "\n";
-// 	  std::cout << "pts2 size = " << pts2.size() << "\n";
+ 	  DEBUG_3( std::cout << "matches size = " << globalMatch[it].matches.size() << "\n"; )
+	  DEBUG_3( std::cout << "pts1 size = " << pts1.size() << "\n"; )
+	  DEBUG_3( std::cout << "pts2 size = " << pts2.size() << "\n"; )
 // 	  keyPointstoPoints(kps1, pts1);
 // 	  keyPointstoPoints(kps2, pts2);
 	  cv::Mat F_est;
 	  int inlier = robustMatchesfromFundamental(pts1, pts2, globalMatch[it].matches, F_est, 5);
-	  printf("MATCH: %04i -> %04i:\t#matches = %i\n", cam1, cam2, inlier);
+	  DEBUG_1( printf("MATCH: %04i -> %04i:\t#matches = %i\n", cam1, cam2, inlier); )
 	  if (pts1.size() < min_nmatch_reliable) reliableMatch[it] = false;
         }
     }
@@ -156,7 +157,7 @@ void MatchesMap::robustifyMatches(std::vector< std::vector< cv::KeyPoint > > *se
 
 void MatchesMap::robustifyMatches(std::vector< std::vector< SiftGPU::SiftKeypoint > > *set_of_keypoints)
 {
-    std::cout << "\nRobustify matches with fundamental matrix:\n";
+    DEBUG_1( std::cout << "\nRobustify matches with fundamental matrix:\n"; )
     for(register int it = 0; it < reliableMatch.size(); ++it)
     {
         if (reliableMatch[it])
@@ -168,14 +169,14 @@ void MatchesMap::robustifyMatches(std::vector< std::vector< SiftGPU::SiftKeypoin
 	  std::vector<SiftGPU::SiftKeypoint> kps2 = (*set_of_keypoints)[cam2];
 	  std::vector< cv::Point2d > pts1, pts2;
 	  extractPointsfromMatches( globalMatch[it].matches, kps1, kps2, pts1, pts2);
-// 	  std::cout << "matches size = " << globalMatch[it].matches.size() << "\n";
-// 	  std::cout << "pts1 size = " << pts1.size() << "\n";
-// 	  std::cout << "pts2 size = " << pts2.size() << "\n";
+ 	  DEBUG_3( std::cout << "matches size = " << globalMatch[it].matches.size() << "\n"; )
+	  DEBUG_3( std::cout << "pts1 size = " << pts1.size() << "\n"; )
+	  DEBUG_3( std::cout << "pts2 size = " << pts2.size() << "\n"; )
 // 	  keyPointstoPoints(kps1, pts1);
 // 	  keyPointstoPoints(kps2, pts2);
 	  cv::Mat F_est;
 	  int inlier = robustMatchesfromFundamental(pts1, pts2, globalMatch[it].matches, F_est, 5);
-	  printf("MATCH: %04i -> %04i:\t#matches = %i\n", cam1, cam2, inlier);
+	  DEBUG_1( printf("MATCH: %04i -> %04i:\t#matches = %i\n", cam1, cam2, inlier); )
 	  if (pts1.size() < min_nmatch_reliable) reliableMatch[it] = false;
         }
     }
@@ -184,7 +185,7 @@ void MatchesMap::robustifyMatches(std::vector< std::vector< SiftGPU::SiftKeypoin
 void MatchesMap::depthFilter(std::vector< std::vector< SiftGPU::SiftKeypoint > > *set_of_keypoints,
 		         std::vector< cv::Mat > *set_of_depth, const int reliable )
 {
-    std::cout << "\nFilter matches with valid depth values:\n";
+    DEBUG_1( std::cout << "\nFilter matches with valid depth values:\n"; )
     for(register int it = 0; it < reliableMatch.size(); ++it)
     {
         if (reliableMatch[it])
@@ -220,8 +221,8 @@ void MatchesMap::depthFilter(std::vector< std::vector< SiftGPU::SiftKeypoint > >
 		}
 		k++;
 	      }
-	      printf("MATCH: %04i -> %04i:\t#matches = %i\n", cam1, cam2, globalMatch[it].matches.size());
-// 	      std::cout << "Erase Matches Size: " << globalMatch[it].matches.size() << "\n";
+	      DEBUG_1( printf("MATCH: %04i -> %04i:\t#matches = %i\n", cam1, cam2, globalMatch[it].matches.size()); )
+ 	      DEBUG_2( std::cout << "Erase Matches, Size: " << globalMatch[it].matches.size() << "\n"; )
 	  }
         }
     }
@@ -230,7 +231,7 @@ void MatchesMap::depthFilter(std::vector< std::vector< SiftGPU::SiftKeypoint > >
 void MatchesMap::depthFilter(std::vector< std::vector< SiftGPU::SiftKeypoint > > *set_of_keypoints,
 		         std::vector< std::string > *depth_list, const int reliable )
 {
-    std::cout << "\nFilter matches with valid depth values:\n";
+    DEBUG_1( std::cout << "\nFilter matches with valid depth values:\n"; )
     for(register int it = 0; it < reliableMatch.size(); ++it)
     {
         if (reliableMatch[it])
@@ -268,8 +269,8 @@ void MatchesMap::depthFilter(std::vector< std::vector< SiftGPU::SiftKeypoint > >
 		}
 		k++;
 	      }
-	      printf("MATCH: %04i -> %04i:\t#matches = %i\n", cam1, cam2, globalMatch[it].matches.size());
-// 	      std::cout << "Erase Matches Size: " << globalMatch[it].matches.size() << "\n";
+	      DEBUG_1( printf("MATCH: %04i -> %04i:\t#matches = %i\n", cam1, cam2, globalMatch[it].matches.size()); )
+	      DEBUG_2( std::cout << "Erase Matches Size: " << globalMatch[it].matches.size() << "\n"; )
 	  }
         }
     }
@@ -470,7 +471,7 @@ void MatchesMap::exportTXT(const char *file_txt, std::vector< std::vector<SiftGP
 {
     std::ofstream myfile1;
     myfile1.open (file_txt);
-	
+    DEBUG_1( std::cout << "Export matches to file: " << file_txt << "\n"; )
     for(int it = 0; it < reliableMatch.size(); it++)
     {
         if (reliableMatch[it])

@@ -24,6 +24,7 @@
 #include <SiftGPU.h>
 
 // Local Libraries
+#include "Debug.hpp"
 #include "Common.hpp"
 #include "HandleDB.hpp"
 #include "CameraPose.hpp"

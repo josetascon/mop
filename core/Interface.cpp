@@ -56,14 +56,28 @@ void exportPMVS(const char *output_path, std::vector<std::string> &nameImages,
     char buf[256];
     char *cmd = &buf[0];
     printf("Creating PMVS directories\n");
-    sprintf(cmd, "rm -rf %s\n", output_path);		// Delete previous data pmvs
-    system(cmd);
-    sprintf(cmd, "mkdir -p %s/txt/\n", output_path);
-    system(cmd);
-    sprintf(cmd, "mkdir -p %s/visualize/\n", output_path);
-    system(cmd);
-    sprintf(cmd, "mkdir -p %s/models/\n", output_path);
-    system(cmd);
+//     sprintf(cmd, "rm -rf %s\n", output_path);		// Delete previous data pmvs
+//     system(cmd);
+//     sprintf(cmd, "mkdir -p %s/txt/\n", output_path);
+//     system(cmd);
+//     sprintf(cmd, "mkdir -p %s/visualize/\n", output_path);
+//     system(cmd);
+//     sprintf(cmd, "mkdir -p %s/models/\n", output_path);
+//     system(cmd);
+    
+    // Delete previous data pmvs
+    sprintf(cmd, "%s/", output_path);
+    boost::filesystem::remove_all(cmd);
+    
+    // Create folder for pmvs
+    sprintf(cmd, "%s/", output_path);
+    boost::filesystem::create_directory(cmd);
+    sprintf(cmd, "%s/txt/", output_path);
+    boost::filesystem::create_directory(cmd);
+    sprintf(cmd, "%s/visualize/", output_path);
+    boost::filesystem::create_directory(cmd);
+    sprintf(cmd, "%s/models/", output_path);
+    boost::filesystem::create_directory(cmd);
 
     for(int cam = 0; cam < num_cameras; cam++)
     {
@@ -125,10 +139,14 @@ void undistortImages( const char * output_path, std::vector< std::string > &file
     char buf[256];
     char *cmd = &buf[0];
     printf("Creating undistort directories\n");
-    sprintf(cmd, "rm -rf %s\n", output_path);		// Delete previous data pmvs
-    system(cmd);
-    sprintf(cmd, "mkdir -p %s/\n", output_path);
-    system(cmd);
+//     sprintf(cmd, "rm -rf %s\n", output_path);		// Delete previous folder
+//     system(cmd);
+//     sprintf(cmd, "mkdir -p %s/\n", output_path);
+//     system(cmd);
+    sprintf(cmd, "%s/", output_path);
+    boost::filesystem::remove_all(cmd);
+    sprintf(cmd, "%s/", output_path);
+    boost::filesystem::create_directory(cmd);
     
     cv::Mat K, coeff; 
     eigen2cv( Calibration, K );

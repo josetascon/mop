@@ -25,6 +25,7 @@
 #include <vector>
 
 // Local Libraries
+#include "Debug.hpp"
 #include "Common.hpp"
 #include "DepthProjection.hpp"
 
@@ -72,7 +73,7 @@ void eigen2pointcloud(Eigen::Matrix<T_eig,-1,-1> &MM, pcl::PointCloud<pcl::Point
     cloud->sensor_orientation_.z () = 0.0f;
     
     cloud->is_dense = true;
-    std::cout << "Cloud size = " << cloud->width*cloud->height << "\n";
+    DEBUG_2( std::cout << "Cloud size = " << cloud->width*cloud->height << "\n"; )
     cloud_out = cloud;
 }
 
