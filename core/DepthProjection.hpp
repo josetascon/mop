@@ -255,6 +255,7 @@ void calc3DandRGBfrom2D(std::vector<cv::Point2d> &corners, cv::Mat &depth, cv::M
 // Variance
 void varianceDepth(double &z, double &sigma);
 void varianceDepth(Eigen::RowVectorXd &z, Eigen::RowVectorXd &sigma);
+void varianceKinect( Eigen::Vector3d &X, Eigen::Matrix3d &K, Eigen::Vector3d &W, double vx = 1.0, double vy = 1.0);
 void varianceKinectSet( Eigen::MatrixXd &X, Eigen::Matrix3d &K, Eigen::MatrixXd &W, double vx = 1.0, double vy = 1.0);
 
 

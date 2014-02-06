@@ -465,3 +465,15 @@ void mergeCloudSet( std::vector< pcl::PointCloud<pcl::PointXYZRGBA>::Ptr > &set_
     DEBUG_1( printf( "Saving: [%i / %i] => %f%%\n\n", final_points, cumulative_points, ((float)final_points/(float)cumulative_points)*100.0); )
     model = result_cloud;
 }
+
+void poseICP( pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloud0, pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloud1 )
+{
+//     pcl::IterativeClosestPoint<pcl::PointXYZRGBA, pcl::PointXYZRGBA> icp;
+//     icp.setInputCloud(cloud_in);
+//     icp.setInputTarget(cloud_out);
+//     pcl::PointCloud<pcl::PointXYZ> Final;
+//     icp.align(Final);
+//     std::cout << "has converged:" << icp.hasConverged() << " score: " <<
+//     icp.getFitnessScore() << std::endl;
+//     std::cout << icp.getFinalTransformation() << std::endl;
+}

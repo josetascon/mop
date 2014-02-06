@@ -908,6 +908,78 @@ struct RE3D_Covariance
 
 };
 
+struct RE3D_constS_QT_Cov
+{
+    RE3D_constS_QT_Cov(double *pt_global, double *pt_local, double *variance)
+    : pt_global(pt_global), pt_local(pt_local), variance(variance) {}
+
+    template <typename T>
+    bool operator()(const T* const quaternion, const T* const translation, T* residuals) const 
+    {
+        const T observed_x = T(pt_global[0]);
+        const T observed_y = T(pt_global[1]);
+        const T observed_z = T(pt_global[2]);
+        
+        T point[3] = { T(pt_local[0]), T(pt_local[1]), T(pt_local[2])};
+        T p2r[3];
+        T qconj[4] = {T(quaternion[0]), T(-quaternion[1]), T(-quaternion[2]), T(-quaternion[3]) };
+        point[0] -= translation[0];
+        point[1] -= translation[1];
+        point[2] -= translation[2];
+        ceres::QuaternionRotatePoint(qconj, point, p2r);
+        
+        // final projected point position.
+        T predicted_x = p2r[0];
+        T predicted_y = p2r[1];
+        T predicted_z = p2r[2];
+        
+        // The error is the difference between the predicted and observed position.
+        residuals[0] = (predicted_x - observed_x)/sqrt(T(variance[0]));
+        residuals[1] = (predicted_y - observed_y)/sqrt(T(variance[1]));
+        residuals[2] = (predicted_z - observed_z)/sqrt(T(variance[2]));
+        return true;
+    }
+    
+    double *pt_global;
+    double *pt_local;
+    double *variance;
+};
+
+struct RE3D_QTS_Cov
+{
+    RE3D_QTS_Cov(double *pt_local, double *variance)
+    : pt_local(pt_local), variance(variance) {}
+
+    template <typename T>
+    bool operator()(const T* const quaternion, const T* const translation, const T* const structure, T* residuals) const 
+    {
+        const T observed_x = T(structure[0]);
+        const T observed_y = T(structure[1]);
+        const T observed_z = T(structure[2]);
+        
+        T point[3] = { T(pt_local[0]), T(pt_local[1]), T(pt_local[2])};
+        T p2r[3];
+        T qconj[4] = {T(quaternion[0]), T(-quaternion[1]), T(-quaternion[2]), T(-quaternion[3]) };
+        point[0] -= translation[0];
+        point[1] -= translation[1];
+        point[2] -= translation[2];
+        ceres::QuaternionRotatePoint(qconj, point, p2r);
+        
+        // final projected point position.
+        T predicted_x = p2r[0];
+        T predicted_y = p2r[1];
+        T predicted_z = p2r[2];
+        
+        // The error is the difference between the predicted and observed position.
+        residuals[0] = (predicted_x - observed_x)/sqrt(T(variance[0]));
+        residuals[1] = (predicted_y - observed_y)/sqrt(T(variance[1]));
+        residuals[2] = (predicted_z - observed_z)/sqrt(T(variance[2]));
+        return true;
+    }
+    
+    double *pt_local;
+    double *variance;
+};
 
 
 // Templated pinhole camera model for used with Ceres.  The camera is

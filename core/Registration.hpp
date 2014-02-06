@@ -129,7 +129,7 @@ public:
     
     void solveGraph(std::vector< int > &discover, std::vector< int > &parent);
     void solveGraphContinuous();
-    void runTORO();
+    void exportGRAPH( const char *filename );
 };
 
 

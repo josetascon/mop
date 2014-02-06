@@ -377,8 +377,8 @@ int main(int argc, char* argv[])
 	  
 	  // ============================================ Plot Data ============================================
 	  
-// 	  writeGraph( (char*)"synthetic_opt.graph", sr01.Qn_global, sr01.tr_global ); 
-// 	  writeGraph( (char*)"synthetic_lin.graph", sr02.Qn_global, sr02.tr_global );
+	  exportGRAPH( (char*)"synthetic_opt.graph", sr01.Qn_global, sr01.tr_global ); 
+	  exportGRAPH( (char*)"synthetic_lin.graph", sr02.Qn_global, sr02.tr_global );
 // 	  exportTXTQuaternionVector((char*)"syn_rot.txt", qu_synthetic);
 // 	  exportTXTTranslationVector((char*)"syn_tr.txt", cam_center);
 // 	  exportTXTQuaternionVector((char*)"syn_rot_opt.txt", sr01.Qn_global);

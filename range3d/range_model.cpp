@@ -20,6 +20,7 @@
 #include <iostream>
 #include <string>
 #include <vector>
+#include <libgen.h>
 
 // Local libraries
 #include "DepthProjection.hpp"
@@ -33,6 +34,7 @@
 #include "Registration.hpp"
 #include "Optimizer.hpp"
 #include "Plot.hpp"
+#include "GlobalPose3D.hpp"
 
 #include "DOTWriter.hpp"
 #include "GraphBFS.hpp"
@@ -54,7 +56,8 @@ void help()
 				"\t[-i]\t XML input file name with rgb images\n" 
 				"\t[-d]\t XML input file name with depth images\n" 
 				"\t[-v]\t Enable verbose mode\n"				
-				"\t[-o]\t Output ply filename\n"
+				"\t[-op]\t Output ply filename\n"
+				"\t[-ot]\t Output txt filename\n"
 				"\t[-k]\t .TXT input file name with calibration matrix\n"
 				"\t[-df]\t Valid matches in Depth Filter\n"
 				"\t[-db]\t .DB input file name with database\n"
@@ -71,6 +74,7 @@ int main(int argc, char* argv[])
     bool verbose = false;
     bool load_k = false;
     bool save_ply = false;
+    bool save_txt = false;
     bool undis = false;
     int num_depth_filter = 3;		// Minimal valid match
     const char* filename_calib;
@@ -110,6 +114,10 @@ int main(int argc, char* argv[])
 	      i++;
 	      outputFilename = argv[i];
 	      save_ply = true;
+	  }
+	  else if( strcmp( s, "-ot" ) == 0 )
+	  {
+	      save_txt = true;
 	  }
 	  else if( strcmp( s, "-k" ) == 0 )
 	  {
@@ -154,6 +162,8 @@ int main(int argc, char* argv[])
     int num_features;
     int num_cameras;
     timer_wall timer1;
+    std::string base_filename = basename((char*)inputFilename_rgb);
+    base_filename = base_filename.substr(0, base_filename.rfind("."));
 
     // ========================================== Read Images ==========================================
     if (verbose)
@@ -268,20 +278,33 @@ int main(int argc, char* argv[])
         
         gp.solveGraph( discover, parent );
 //         gp.solveGraphContinuous();
+
         
-//         exportGRAPH( (char*)"liv.graph", gp.Qn_global, gp.tr_global ); 
-//         gp.runTORO();
-//         exportTXTQuaternionVector((char*)"pose_rot.txt", gp.Qn_global);
-//         exportTXTTranslationVector((char*)"pose_tr.txt", gp.tr_global);
+        std::string graph_file1, graph_file2;
+        graph_file1 = graph_file2 = base_filename;
+        graph_file1.append("_gp.graph");
+        graph_file2.append("_ex.graph");
+        gp.exportGRAPH( graph_file1.c_str() );
+        exportGRAPH( graph_file2.c_str(), gp.Qn_global, gp.tr_global );
+        
+        if ( save_txt )
+        {
+	  std::string txt_file1, txt_file2;
+	  txt_file1 = txt_file2 = base_filename;
+	  txt_file1.append("_rot.txt");
+	  txt_file2.append("_tr.txt");
+	  exportTXTQuaternionVector(txt_file1.c_str(), gp.Qn_global);
+	  exportTXTTranslationVector(txt_file2.c_str(), gp.tr_global);
+        }
 //     }
     
-//     FeaturesMap featM;
-//     featM.solveVisibility3D( &mydb );
-//     printf("Visibility Matrix [%d x %d]\n",featM.visibility.rows(),featM.visibility.cols());
-//     num_cameras = featM.cameras();
-//     num_features = featM.features();
-//     mydb.closeDB();
-//     
+    FeaturesMap featM;
+    featM.solveVisibility3D( &mydb );
+    printf("Visibility Matrix [%d x %d]\n",featM.visibility.rows(),featM.visibility.cols());
+    num_cameras = featM.cameras();
+    num_features = featM.features();
+    mydb.closeDB();
+    
 //     SimpleRegistration sr01( num_cameras, num_features, K );
 //     timer1.start();
 //     sr01.solvePose( &featM.visibility, &featM.coordinates3D, true ); // true for optimal
@@ -305,7 +328,8 @@ int main(int argc, char* argv[])
     std::vector< pcl::PointCloud<pcl::PointXYZRGBA>::Ptr > set_cloud;
     std::vector< boost::shared_ptr< Eigen::MatrixXd > > set_covariance;
 //     cv2PointCloudSet(imageList_rgb, imageList_depth, K, sr01.Qn_global, sr01.tr_global, set_cloud, set_covariance);
-    cv2PointCloudSet(imageList_rgb, imageList_depth, K, gp.Qn_global, gp.tr_global, set_cloud, set_covariance);
+    /// uncomment this line
+//     cv2PointCloudSet(imageList_rgb, imageList_depth, K, gp.Qn_global, gp.tr_global, set_cloud, set_covariance);
     
     pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloud_join;
 //     mergeCloudSet( set_cloud, set_covariance, cloud_join );
@@ -320,23 +344,37 @@ int main(int argc, char* argv[])
     
     // TODO Remember to free the memory here, images, Features, etc
     
+    
+    /// new TEST
+    GlobalPose3D global01;
+    global01.solve(&featM.visibility, &featM.coordinates3D, &K, &gp.Qn_global, &gp.tr_global);
+//     global01.solve(&featM.visibility, &featM.coordinates3D, &K, &sr01.Qn_global, &sr01.tr_global);
+    pcl::PointCloud<pcl::PointXYZ>::Ptr cloudE;
+    eigen2pointcloud( global01.Structure, cloudE );
+    /// NOTE: I realize that I didn't check quaternion normalization. WORKS PERFECTLY
+    cv2PointCloudSet(imageList_rgb, imageList_depth, K, gp.Qn_global, gp.tr_global, set_cloud, set_covariance);
+//     cv2PointCloudSet(imageList_rgb, imageList_depth, K, sr01.Qn_global, sr01.tr_global, set_cloud, set_covariance);
+    
     // ============================================ Visualization ============================================
     
     boost::shared_ptr<pcl::visualization::PCLVisualizer> viewer;
     
 //     std::cout << "set cloud size:" << set_cloud.size() << "\n";
+    /// uncomment
     viewer = visualizeCloudSet( set_cloud );
     viewer->setBackgroundColor (1.0, 1.0, 1.0);
+    
+//     viewer = visualizeCloud(cloudE);
 //     viewer = visualizeCloud(set_cloud[0]);
 //     viewer = visualizeCloud(cloud_join);
     
     
 //     visualizeCameras( viewer, sr01.Qn_global, sr01.tr_global );
 //     visualizeCameras( viewer, sr02.Qn_global, sr02.tr_global );
-//     visualizeCameras( viewer, gp.Qn_global, gp.tr_global );
+    visualizeCameras( viewer, gp.Qn_global, gp.tr_global );
     
 //     visualizeCameras(viewer, imageList_rgb, sr01.Qn_global, sr01.tr_global );
-    visualizeCameras(viewer, imageList_rgb, gp.Qn_global, gp.tr_global );
+//     visualizeCameras(viewer, imageList_rgb, gp.Qn_global, gp.tr_global );
     
 //     visualizeNoise(viewer, sr01.Xmodel, sr01.Variance, sr01.Qn_global, sr01.tr_global, 500 );
     

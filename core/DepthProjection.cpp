@@ -286,6 +286,27 @@ void varianceDepth(Eigen::RowVectorXd &z, Eigen::RowVectorXd &sigma)
     sigma = 0.0012*(Eigen::RowVectorXd::Ones(z.size())) + 0.0019*(n.cwiseProduct(n));
 }
 
+void varianceKinect( Eigen::Vector3d &X, Eigen::Matrix3d &K, Eigen::Vector3d &W, double vx, double vy )
+{
+    double sz2;
+    double sx2 = vx*vx;
+    double sy2 = vy*vy;
+    varianceDepth( X(2), sz2 );
+    
+    double fx = K(0,0);
+    double fy = K(1,1);
+    double x0 = K(0,2);
+    double y0 = K(1,2);
+    double c1 = pow(1/fx,2.0);
+    double c2 = pow(-x0/fx,2.0);
+    double c3 = pow(1/fy,2.0);
+    double c4 = pow(-y0/fy,2.0);
+    // Variance of x and y with forward propagation
+    W(0) = c1*sx2*sz2 + c2*sz2;
+    W(1) = c3*sy2*sz2 + c4*sz2;
+    W(2) = sz2;
+}
+
 void varianceKinectSet( Eigen::MatrixXd &X, Eigen::Matrix3d &K, Eigen::MatrixXd &W, double vx, double vy )
 {
 //     // Forward Propagation Variance

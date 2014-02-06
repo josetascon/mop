@@ -228,15 +228,16 @@ void SimpleRegistration::solvePose(Eigen::Matrix<bool,-1,-1> *visibility, Eigen:
         Cameras_RCV[k+1] = buildProjectionMatrix( Calibration, Rot_global[k+1], tr_global[k+1] );
 
         // Debug:
-        rotation2angles( Rot_global[k+1], angles_vec1);
-        std::cout << "Rotation " <<  k+1 << ":\n" << Rot_global[k+1] << "\n";
-        std::cout << "Rotation angles " <<  k+1 << ":\n" << angles_vec1.transpose() << "\n";
-//         std::cout << "Equivalent quaternion Cam " << k+1 << ":\n" << Qn_global[k+1].w() << " " << Qn_global[k+1].vec().transpose() << '\n';
-        std::cout << "Translation " <<  k+1 << ":\n" << tr_global[k+1].transpose() << "\n";
-        std::cout << "Camera Matrix Recover " <<  k+1 << ":\n" << Cameras_RCV[k+1] << "\n\n";
+        DEBUG_2( rotation2angles( Rot_global[k+1], angles_vec1); )
+        DEBUG_2( std::cout << "Rotation " <<  k+1 << ":\n" << Rot_global[k+1] << "\n"; )
+        DEBUG_2( std::cout << "Rotation angles " <<  k+1 << ":\n" << angles_vec1.transpose() << "\n"; )
+//         DEBUG_2( std::cout << "Equivalent quaternion Cam " << k+1 << ":\n" << Qn_global[k+1].w() << " " << Qn_global[k+1].vec().transpose() << '\n'; )
+        DEBUG_2( std::cout << "Translation " <<  k+1 << ":\n" << tr_global[k+1].transpose() << "\n"; )
+        DEBUG_2( std::cout << "Camera Matrix Recover " <<  k+1 << ":\n" << Cameras_RCV[k+1] << "\n\n"; )
     }
 }
 
+// Update camera with new quaternion values (after global optimization like BA)
 void SimpleRegistration::updateCamera()
 {
     Eigen::Vector3d angles_vec1;
@@ -407,12 +408,11 @@ void GraphPose::solveGraphContinuous()
 //     std::cout << "End | Global Vertex Pose " << "\n";
 }
 
-void GraphPose::runTORO()
+void GraphPose::exportGRAPH( const char *filename )
 {
-    char *file_txt = (char*)"pose.graph";
-    
+//     char *file_txt = (char*)"pose.graph";
     std::ofstream myfile1;
-    myfile1.open (file_txt);
+    myfile1.open (filename);
     myfile1.precision(12);
 
     for(int it = 0; it < Qn_global.size(); it++)

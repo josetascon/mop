@@ -71,9 +71,12 @@ target_link_libraries ( mop ${LINK_TARGETS} )
 # 
 add_executable ( range_model range_model.cpp )
 target_link_libraries ( range_model "mop" ${LINK_TARGETS} )
-# 
-# add_executable (synthetic_range synthetic_range.cpp)
-# target_link_libraries ( synthetic_range "mop" ${LINK_TARGETS} )
+
+add_executable (synthetic_range synthetic_range.cpp)
+target_link_libraries ( synthetic_range "mop" ${LINK_TARGETS} )
 
 add_executable (frame frame.cpp)
 target_link_libraries ( frame "mop" ${LINK_TARGETS} )
+
+add_executable ( image2pcd image2pcd.cpp )
+target_link_libraries ( image2pcd "mop" ${LINK_TARGETS} )
