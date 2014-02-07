@@ -466,7 +466,7 @@ void mergeCloudSet( std::vector< pcl::PointCloud<pcl::PointXYZRGBA>::Ptr > &set_
     model = result_cloud;
 }
 
-void poseICP( pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloud0, pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloud1 )
+void poseICP( pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloud1, pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloud2 )
 {
 //     pcl::IterativeClosestPoint<pcl::PointXYZRGBA, pcl::PointXYZRGBA> icp;
 //     icp.setInputCloud(cloud_in);

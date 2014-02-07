@@ -31,6 +31,7 @@
 #include "Interface.hpp"
 #include "InterfacePCL.hpp"
 #include "FeaturesEDM.hpp"
+#include "SimpleRegistration.hpp"
 #include "Registration.hpp"
 #include "Optimizer.hpp"
 #include "Plot.hpp"
@@ -255,49 +256,49 @@ int main(int argc, char* argv[])
         my_mmap.solveDB3D( &mydb, &myfeat.keypointsGPU, &imageList_depth, K );
         DEBUG_1( std::cout << "Elapsed time to solve DB: " << timer1.elapsed_s() << " [s]\n"; )
         
-        GraphPose gp;
-        gp.solvePose( &my_mmap.reliableMatch, &my_mmap.globalMatch, &myfeat.keypointsGPU, &imageList_depth, &K);
-        gp.solveEdges();
-        
-        num_vertex = gp.getNumVertex();
-        num_edges = gp.getNumEdges();
-        weights = gp.getWeights();
-        edges_pairs = gp.getEdgesPairs();
-        
-        DOTWriter dotw("graph");
-//         dotw.exportDOT( (const char *)"figs/test.dot", &edges_pairs );
-        dotw.exportDOT( (const char *)"figs/std.dot", &edges_pairs, NULL, &weights );
-        
-        std::vector< int > discover;
-        std::vector< int > parent;
-        GraphBFS bfs( num_vertex, num_edges, edges_pairs, weights );
-//         int initbfs = 0;
-//         bfs.setInitBFS( initbfs );
-        bfs.solveBFS( discover, parent );
-        DEBUG_2( std::cout << "BFS sucess\n"; )
-        
-        gp.solveGraph( discover, parent );
-//         gp.solveGraphContinuous();
-
-        
-        std::string graph_file1, graph_file2;
-        graph_file1 = graph_file2 = base_filename;
-        graph_file1.append("_gp.graph");
-        graph_file2.append("_ex.graph");
-        gp.exportGRAPH( graph_file1.c_str() );
-        exportGRAPH( graph_file2.c_str(), gp.Qn_global, gp.tr_global );
-        
-        if ( save_txt )
-        {
-	  std::string txt_file1, txt_file2;
-	  txt_file1 = txt_file2 = base_filename;
-	  txt_file1.append("_rot.txt");
-	  txt_file2.append("_tr.txt");
-	  exportTXTQuaternionVector(txt_file1.c_str(), gp.Qn_global);
-	  exportTXTTranslationVector(txt_file2.c_str(), gp.tr_global);
-        }
-//     }
-    
+//         GraphPose gp;
+//         gp.solvePose( &my_mmap.reliableMatch, &my_mmap.globalMatch, &myfeat.keypointsGPU, &imageList_depth, &K);
+//         gp.solveEdges();
+//         
+//         num_vertex = gp.getNumVertex();
+//         num_edges = gp.getNumEdges();
+//         weights = gp.getWeights();
+//         edges_pairs = gp.getEdgesPairs();
+//         
+//         DOTWriter dotw("graph");
+// //         dotw.exportDOT( (const char *)"figs/test.dot", &edges_pairs );
+//         dotw.exportDOT( (const char *)"figs/std.dot", &edges_pairs, NULL, &weights );
+//         
+//         std::vector< int > discover;
+//         std::vector< int > parent;
+//         GraphBFS bfs( num_vertex, num_edges, edges_pairs, weights );
+// //         int initbfs = 0;
+// //         bfs.setInitBFS( initbfs );
+//         bfs.solveBFS( discover, parent );
+//         DEBUG_2( std::cout << "BFS sucess\n"; )
+//         
+//         gp.solveGraph( discover, parent );
+// //         gp.solveGraphContinuous();
+// 
+//         
+//         std::string graph_file1, graph_file2;
+//         graph_file1 = graph_file2 = base_filename;
+//         graph_file1.append("_gp.graph");
+//         graph_file2.append("_ex.graph");
+//         gp.exportGRAPH( graph_file1.c_str() );
+//         exportGRAPH( graph_file2.c_str(), gp.Qn_global, gp.tr_global );
+//         
+//         if ( save_txt )
+//         {
+// 	  std::string txt_file1, txt_file2;
+// 	  txt_file1 = txt_file2 = base_filename;
+// 	  txt_file1.append("_rot.txt");
+// 	  txt_file2.append("_tr.txt");
+// 	  exportTXTQuaternionVector(txt_file1.c_str(), gp.Qn_global);
+// 	  exportTXTTranslationVector(txt_file2.c_str(), gp.tr_global);
+//         }
+// //     }
+//     
     FeaturesMap featM;
     featM.solveVisibility3D( &mydb );
     printf("Visibility Matrix [%d x %d]\n",featM.visibility.rows(),featM.visibility.cols());
@@ -305,10 +306,10 @@ int main(int argc, char* argv[])
     num_features = featM.features();
     mydb.closeDB();
     
-//     SimpleRegistration sr01( num_cameras, num_features, K );
-//     timer1.start();
-//     sr01.solvePose( &featM.visibility, &featM.coordinates3D, true ); // true for optimal
-//     std::cout << "Elapsed time to solve Pose: " << timer1.elapsed_s() << " [s]\n";
+    SimpleRegistration sr01( num_cameras, num_features, K );
+    timer1.start();
+    sr01.solvePose( &featM.visibility, &featM.coordinates3D, true ); // true for optimal
+    std::cout << "Elapsed time to solve Pose: " << timer1.elapsed_s() << " [s]\n";
 //     
 //     // Print lin and opt
 //     SimpleRegistration sr02( num_cameras, num_features, K );
@@ -347,13 +348,13 @@ int main(int argc, char* argv[])
     
     /// new TEST
     GlobalPose3D global01;
-    global01.solve(&featM.visibility, &featM.coordinates3D, &K, &gp.Qn_global, &gp.tr_global);
-//     global01.solve(&featM.visibility, &featM.coordinates3D, &K, &sr01.Qn_global, &sr01.tr_global);
+//     global01.solve(&featM.visibility, &featM.coordinates3D, &K, &gp.Qn_global, &gp.tr_global);
+    global01.solve(&featM.visibility, &featM.coordinates3D, &K, &sr01.Qn_global, &sr01.tr_global);
     pcl::PointCloud<pcl::PointXYZ>::Ptr cloudE;
     eigen2pointcloud( global01.Structure, cloudE );
     /// NOTE: I realize that I didn't check quaternion normalization. WORKS PERFECTLY
-    cv2PointCloudSet(imageList_rgb, imageList_depth, K, gp.Qn_global, gp.tr_global, set_cloud, set_covariance);
-//     cv2PointCloudSet(imageList_rgb, imageList_depth, K, sr01.Qn_global, sr01.tr_global, set_cloud, set_covariance);
+//     cv2PointCloudSet(imageList_rgb, imageList_depth, K, gp.Qn_global, gp.tr_global, set_cloud, set_covariance);
+    cv2PointCloudSet(imageList_rgb, imageList_depth, K, sr01.Qn_global, sr01.tr_global, set_cloud, set_covariance);
     
     // ============================================ Visualization ============================================
     
@@ -369,9 +370,9 @@ int main(int argc, char* argv[])
 //     viewer = visualizeCloud(cloud_join);
     
     
-//     visualizeCameras( viewer, sr01.Qn_global, sr01.tr_global );
+    visualizeCameras( viewer, sr01.Qn_global, sr01.tr_global );
 //     visualizeCameras( viewer, sr02.Qn_global, sr02.tr_global );
-    visualizeCameras( viewer, gp.Qn_global, gp.tr_global );
+//     visualizeCameras( viewer, gp.Qn_global, gp.tr_global );
     
 //     visualizeCameras(viewer, imageList_rgb, sr01.Qn_global, sr01.tr_global );
 //     visualizeCameras(viewer, imageList_rgb, gp.Qn_global, gp.tr_global );
