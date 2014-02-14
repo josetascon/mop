@@ -120,10 +120,14 @@ void SimpleRegistration::solvePose(Eigen::Matrix<bool,-1,-1> *visibility, Eigen:
         Rot = pose.getRotation();
         tr = pose.getTranslation();
         
-        Xmodel.push_back( pose.getPointsX1() );
-        Xmodel.push_back( pose.getPointsX2() );
-        Variance.push_back( pose.getVariance1() );
-        Variance.push_back( pose.getVariance2() );
+        // COMPILER FLAG
+        XMODEL
+        (
+	  Xmodel.push_back( pose.getPointsX1() );
+	  Xmodel.push_back( pose.getPointsX2() );
+	  Variance.push_back( pose.getVariance1() );
+	  Variance.push_back( pose.getVariance2() );
+        )
         
         updateGlobal( k+1 );
         DEBUG_2( printGlobal( k+1 ); )
@@ -175,15 +179,44 @@ void SimpleRegistration::solvePose(Eigen::Matrix<bool,-1,-1> *visibility, Eigen:
         X1 = Xtmp1.block(0,0,3,count_ft);
         X2 = Xtmp2.block(0,0,3,count_ft);
         
+        bool check_metric = checkMetricBoundary( X1, X2 );
+        bool is_solved = false;
+        DEBUG_3( std::cout << "Check data: " << check_metric << "\n"; )
+        
+        if (fallback_icp)
+        {
+	  if ( (X1.cols() < valid_min_points) || (X2.cols() < valid_min_points)) check_metric = false;
+        }  
+        
         Pose3D pose( X1, X2, Calibration );
-        pose.solvePose(optimal);
-        Rot = pose.getRotation();
-        tr = pose.getTranslation();
-
-        Xmodel.push_back( pose.getPointsX1() );
-        Xmodel.push_back( pose.getPointsX2() );
-        Variance.push_back( pose.getVariance1() );
-        Variance.push_back( pose.getVariance2() );
+        if (fallback_icp) pose.setFallBackPoseOn();
+        
+        if (check_metric)
+        {
+	  is_solved = pose.solvePose(optimal);
+        }
+        if (is_solved)
+        {
+	  Rot = pose.getRotation();
+	  tr = pose.getTranslation();
+        }
+        else
+        {
+	  DEBUG_1( std::cout << "Running ICP. Patience ...\n"; )
+	  PoseICP icp_solver( (*images_rgb)[cam1] , (*images_depth)[cam1], (*images_rgb)[cam2], (*images_depth)[cam2], Calibration );
+	  icp_solver.run();
+	  Rot = icp_solver.getRotation();
+	  tr = icp_solver.getTranslation();
+        }
+        
+        // COMPILER FLAG
+        XMODEL
+        (
+	  Xmodel.push_back( pose.getPointsX1() );
+	  Xmodel.push_back( pose.getPointsX2() );
+	  Variance.push_back( pose.getVariance1() );
+	  Variance.push_back( pose.getVariance2() );
+        )
         
         updateGlobal( k+1 );
         DEBUG_2( printGlobal( k+1 ); )

@@ -50,6 +50,47 @@ bool checkCoherentRotation(Eigen::Matrix3d &Rot);
 //@date Jul/18/2013
 Eigen::MatrixXd buildProjectionMatrix( Eigen::Matrix3d &kalibration, Eigen::Matrix3d &Rotation, Eigen::Vector3d &translation);
 
+
+/// Set Origin of coordinates to [0 0 0]
+template< typename Tp >
+void setCoordinatestoOrigin(std::vector< Eigen::Quaternion<Tp> > &Qn_global, std::vector< Eigen::Matrix<Tp,3,1> > &tr_global )
+{
+    Eigen::Quaternion<Tp> q0 = Qn_global[0];
+    Eigen::Matrix<Tp,3,1> t0 = tr_global[0];
+    for (register int k = 0; k < Qn_global.size(); ++k)
+    {
+        Qn_global[k] = Qn_global[k]*q0.conjugate();
+        tr_global[k] = tr_global[k] - Qn_global[k]*t0;
+    }
+}
+
+/// Set coordinates to an specific point
+template< typename Tp >
+void setCoordinatestoDesiredPosition(std::vector< Eigen::Quaternion<Tp> > &Qn_global, std::vector< Eigen::Matrix<Tp,3,1> > &tr_global,
+		    Eigen::Quaternion<Tp> &qn_desired, Eigen::Matrix<Tp,3,1> &tr_desired, int camera = 0 )
+{
+    // Other idea
+    {
+//     Eigen::Matrix<Tp,3,1> center = Qn_global[camera].conjugate()*(-tr_global[camera]);
+//     Eigen::Matrix<Tp,3,1> center_desired = qn_desired.conjugate()*(-tr_desired);
+//     Eigen::Matrix<Tp,3,1> c0 = -center + center_desired;
+    }
+    
+    Eigen::Quaternion<Tp> q0 = Qn_global[camera].conjugate()*qn_desired;
+    Eigen::Matrix<Tp,3,1> t0 = qn_desired.conjugate()*(tr_global[camera] - tr_desired);
+    // when the update take place for camera then:
+//     Qn_global[camera] = q0*Qn_global[camera]
+//     tr_global[camera] = tr_global[camera] - Qn_global[camera]*t0 // HERE Qn_global[camera] is now qn_desired
+    
+    for (register int k = 0; k < Qn_global.size(); ++k)
+    {
+        Qn_global[k] = Qn_global[k]*q0;
+        tr_global[k] = tr_global[k] - Qn_global[k]*t0;
+    }
+}
+
+
+
 /**
  * ******************************************************************
  * @brief Description: Get fundamental matrix with a robust algorithm (RANSAC) and remove points marked as outliers from pts1 and pts2

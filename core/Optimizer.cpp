@@ -198,7 +198,8 @@ void OptimizeG3D::pose_Covariance()
     {
         for (register int ft = 0; ft < num_features ; ++ft)
         {
-	  if( (*visibility)(cam,ft) )
+	  Eigen::Vector3d vv = Variance->col(ft); // Check if variance vector (corresponding to feature ft) is not zero
+	  if( (*visibility)(cam,ft) && !(vv.isZero()) )
 	  {
 	      CostFunction* cost_function = new AutoDiffCostFunction<RE3D_QTS_Cov, 3, 4, 3, 3>( 
 		        new RE3D_QTS_Cov( ((*coordinates)(cam,ft).data()), (Variance->data()+step*ft)));

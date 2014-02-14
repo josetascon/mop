@@ -23,7 +23,9 @@
 #include <iostream>
 #include <string>
 
-#define pi 3.14159265358979323846
+#ifndef CONSTANT_PI
+#define CONSTANT_PI 3.14159265358979323846
+#endif
 
 // ================================================================================================
 // ======================================= CLASS timer_wall =======================================
@@ -46,6 +48,9 @@ private:
       boost::chrono::milliseconds ms_time_f;
       boost::chrono::duration<double> s_time_f;
       
+      // Save a chrono time
+      boost::int_least64_t lap_value;
+      
 public:
       //Constructor
       timer_wall();
@@ -65,6 +70,8 @@ public:
       boost::int_least64_t elapsed_ms();
       /** Return elapsed time from start time to now in seconds **/
       double elapsed_s();
+      
+      boost::int_least64_t lap();
 };
 
 // ====================================================================================================================================
@@ -497,7 +504,6 @@ int countPositivesInRow(Eigen::Matrix<Teig,-1,-1> &data, int row)
     return count;
 }
 
-
 /**
  * ******************************************************************
  * @brief Description: Find euler angles from a rotation matrix. R = Rx*Ry*Rz
@@ -522,7 +528,7 @@ void rotation2angles(Eigen::Matrix< Tp, 3, 3 > &Rot, Eigen::Matrix< Tp, 3, 1 > &
     
     // radians to degrees convertion
     if(degrees)
-        angles = Eigen::Matrix< Tp, 3, 1 >( -anglex*180/pi, -angley*180/pi, -anglez*180/pi );
+        angles = Eigen::Matrix< Tp, 3, 1 >( -anglex*180/CONSTANT_PI, -angley*180/CONSTANT_PI, -anglez*180/CONSTANT_PI );
     else 
         angles = Eigen::Matrix< Tp, 3, 1 >( -anglex, -angley, -anglez );
     return;

@@ -36,6 +36,7 @@
 // New
 #include "SiftED.hpp"
 #include "MatchesMap.hpp"
+#include "FeaturesMap.hpp"
 #include "FrameSelector.hpp"
 #include "SimpleSiftGPU.hpp"
 #include "FeaturesCV.hpp"

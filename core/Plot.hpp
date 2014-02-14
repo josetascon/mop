@@ -52,6 +52,7 @@
 #include <vtkLine.h>
 #include <vtkPlane.h>
 #include <vtkDiskSource.h>
+#include <vtkLineSource.h>
 #include <vtkSphereSource.h>
 #include <vtkTextSource.h>
 #include <vtkParametricFunctionSource.h>
@@ -169,6 +170,10 @@ void visualizeNoise(boost::shared_ptr<pcl::visualization::PCLVisualizer> &viewer
 
 void visualizeGraph( int num_vertex, int num_edges , std::vector<float> &weights, std::vector< std::pair<int,int> > &edges_pairs );
 
+void visualizeTrack( boost::shared_ptr<pcl::visualization::PCLVisualizer> &viewer, 
+	      std::vector< Eigen::Quaternion<double> > &quaternion, std::vector< Eigen::Vector3d > &translation, 
+	      Eigen::Vector3d color = Eigen::Vector3d( 0.0, 0.6, 0.0 ), double line_width = 2.0);
+
 
 
 // ================================================================================================
@@ -176,6 +181,7 @@ void visualizeGraph( int num_vertex, int num_edges , std::vector<float> &weights
 // ================================================================================================
 void addActorToRenderCollection(const vtkSmartPointer<vtkRendererCollection> &collection, const vtkSmartPointer<vtkActor> &actor, int viewport = 0);
 void addActorToRenderCollection(const vtkSmartPointer<vtkRendererCollection> &collection, const vtkSmartPointer<vtkImageActor> &actor, int viewport = 0);
+vtkSmartPointer<vtkActor> actorLine(Eigen::Vector3d init_pt, Eigen::Vector3d end_pt, double line_width = 1.0);
 vtkSmartPointer<vtkActor> actorSphere(Eigen::Vector3d center, double radius);
 vtkSmartPointer<vtkActor> actorCircleR(const Eigen::Vector3d center, const Eigen::Vector3d orientation, double radius);
 vtkSmartPointer<vtkActor> actorEllipsoid(const Eigen::Vector3d center, const Eigen::Vector3d radius);

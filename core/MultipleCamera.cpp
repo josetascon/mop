@@ -309,8 +309,9 @@ void IncrementalBA::runC()
         RR = sd*nv*RR; 				// Rotation matrix must have 3 singular values = to 1, in order to achieve a det = 1;
         rotation2angles(RR, angles_vec1); 	// Find Euler angles
         Eigen::Matrix3d R_angle; 			// Do not use direct conversion from RR to Quaternion because the det of RR at this point is not 1
-        R_angle = Eigen::AngleAxisd(angles_vec1(0)*pi/180, Eigen::Vector3d::UnitX()) * Eigen::AngleAxisd(angles_vec1(1)*pi/180,  Eigen::Vector3d::UnitY())
-        * Eigen::AngleAxisd(angles_vec1(2)*pi/180, Eigen::Vector3d::UnitZ());
+        R_angle = Eigen::AngleAxisd(angles_vec1(0)*CONSTANT_PI/180, Eigen::Vector3d::UnitX()) * 
+        Eigen::AngleAxisd(angles_vec1(1)*CONSTANT_PI/180,  Eigen::Vector3d::UnitY())
+        * Eigen::AngleAxisd(angles_vec1(2)*CONSTANT_PI/180, Eigen::Vector3d::UnitZ());
         //Debug
 //         std::cout << "nv = " << nv << "\n";
 //         std::cout << "sd = " << sd << "\n";

@@ -57,6 +57,18 @@ void removeBadPoints(std::vector< cv::Point2d > &image_point, cv::Mat &measurez,
 std::vector<int> removeBadPointsDual(std::vector< cv::Point2d > &image_point1, std::vector< cv::Point2d > &image_point2,
 						 cv::Mat &measurez1, cv::Mat &measurez2, bool close_range = true);
 
+template < typename Tp>
+bool checkMetricBoundary( Eigen::Matrix<Tp,-1,-1> &X1, Eigen::Matrix<Tp,-1,-1> &X2, int zmin = 0.45, int zmax = 3.0 )
+{
+    for( register int k = 0; k < X1.cols(); ++k)
+    {
+        Tp d1 = X1(2,k);
+        Tp d2 = X2(2,k);
+        if ( d1 < zmin || d1 > zmax || d2 < zmin || d2 > zmax) return false;
+    }
+    return true;
+}
+
 // Eigen::Matrix<int,-1, 1> removeBadPointsDual(std::vector< Eigen::Vector3d > &image_point1, std::vector< Eigen::Vector3d > &image_point2,
 // 				        cv::Mat &measurez1, cv::Mat &measurez2, Eigen::MatrixXd &x1, Eigen::MatrixXd &x2, 
 // 				        bool close_range = true);

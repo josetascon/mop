@@ -26,21 +26,15 @@
 #include "DepthProjection.hpp"
 #include "Debug.hpp"
 #include "Common.hpp"
-#include "FeaturesMap.hpp"
 #include "HandleDB.hpp"
 #include "Interface.hpp"
 #include "InterfacePCL.hpp"
+#include "DOTWriter.hpp"
+
 #include "FeaturesEDM.hpp"
-#include "SimpleRegistration.hpp"
 #include "Registration.hpp"
 #include "Optimizer.hpp"
 #include "Plot.hpp"
-#include "GlobalPose3D.hpp"
-
-#include "DOTWriter.hpp"
-#include "GraphBFS.hpp"
-
-
 
 // using namespace cv;
 // using namespace std;
@@ -110,7 +104,7 @@ int main(int argc, char* argv[])
 	      i++;
 	      inputFilename_depth = argv[i];
 	  }
-	  else if( strcmp( s, "-o" ) == 0 )
+	  else if( strcmp( s, "-op" ) == 0 )
 	  {
 	      i++;
 	      outputFilename = argv[i];
@@ -175,6 +169,12 @@ int main(int argc, char* argv[])
     }
     importXMLImageList(inputFilename_rgb, imageList_rgb);		//Reading list of images from XML list
     importXMLImageList(inputFilename_depth, imageList_depth);
+    
+    if (imageList_depth.size() != imageList_rgb.size())
+    {
+        DEBUG_E( ("Number of color and depth images files are different. Please check your xml files.") );
+        exit(-1);
+    }
     
     if (verbose)
     {
@@ -248,6 +248,7 @@ int main(int argc, char* argv[])
         myfeat.solveSift();
         
         MatchesMap my_mmap(400,35);
+        my_mmap.setAllContinousOn(); // ENABLE CONTINOUS MATCHES ALWAYS TO ALLOW ICP WORK
         my_mmap.solveMatches(&myfeat.descriptorsGPU);
 //         my_mmap.solveMatchesContinuous(&myfeat.descriptorsGPU);
         my_mmap.robustifyMatches(&myfeat.keypointsGPU);
@@ -256,30 +257,26 @@ int main(int argc, char* argv[])
         my_mmap.solveDB3D( &mydb, &myfeat.keypointsGPU, &imageList_depth, K );
         DEBUG_1( std::cout << "Elapsed time to solve DB: " << timer1.elapsed_s() << " [s]\n"; )
         
-//         GraphPose gp;
-//         gp.solvePose( &my_mmap.reliableMatch, &my_mmap.globalMatch, &myfeat.keypointsGPU, &imageList_depth, &K);
-//         gp.solveEdges();
+        GraphPose gp( K );
+        gp.setFallBackICPOn( &imageList_rgb, &imageList_depth );
+        gp.run( &imageList_depth, &my_mmap.reliableMatch, &my_mmap.globalMatch, &myfeat.keypointsGPU, true ); // true for optimal
+//         gp.solveLocalPoseAllNodes( &imageList_depth, &my_mmap.reliableMatch, &my_mmap.globalMatch, &myfeat.keypointsGPU );
+//         gp.solveEdgesAllNodes();
 //         
-//         num_vertex = gp.getNumVertex();
-//         num_edges = gp.getNumEdges();
+//         gp.solveGraph();
+//         gp.solveGlobalPoseAllNodes();
+// //         gp.solveGlobalPoseContinuous();
+        
+        
 //         weights = gp.getWeights();
 //         edges_pairs = gp.getEdgesPairs();
 //         
 //         DOTWriter dotw("graph");
-// //         dotw.exportDOT( (const char *)"figs/test.dot", &edges_pairs );
-//         dotw.exportDOT( (const char *)"figs/std.dot", &edges_pairs, NULL, &weights );
-//         
-//         std::vector< int > discover;
-//         std::vector< int > parent;
-//         GraphBFS bfs( num_vertex, num_edges, edges_pairs, weights );
-// //         int initbfs = 0;
-// //         bfs.setInitBFS( initbfs );
-//         bfs.solveBFS( discover, parent );
-//         DEBUG_2( std::cout << "BFS sucess\n"; )
-//         
-//         gp.solveGraph( discover, parent );
-// //         gp.solveGraphContinuous();
-// 
+//         char buf[256];
+//         char *file_dot = &buf[0];
+//         sprintf(file_dot, "figs/%s.dot", base_filename.c_str());
+//         dotw.exportDOT( file_dot.c_str(), &edges_pairs );
+//         dotw.exportDOT( file_dot, &edges_pairs, NULL, &weights );
 //         
 //         std::string graph_file1, graph_file2;
 //         graph_file1 = graph_file2 = base_filename;
@@ -288,17 +285,8 @@ int main(int argc, char* argv[])
 //         gp.exportGRAPH( graph_file1.c_str() );
 //         exportGRAPH( graph_file2.c_str(), gp.Qn_global, gp.tr_global );
 //         
-//         if ( save_txt )
-//         {
-// 	  std::string txt_file1, txt_file2;
-// 	  txt_file1 = txt_file2 = base_filename;
-// 	  txt_file1.append("_rot.txt");
-// 	  txt_file2.append("_tr.txt");
-// 	  exportTXTQuaternionVector(txt_file1.c_str(), gp.Qn_global);
-// 	  exportTXTTranslationVector(txt_file2.c_str(), gp.tr_global);
-//         }
-// //     }
-//     
+//     }
+    
     FeaturesMap featM;
     featM.solveVisibility3D( &mydb );
     printf("Visibility Matrix [%d x %d]\n",featM.visibility.rows(),featM.visibility.cols());
@@ -306,10 +294,11 @@ int main(int argc, char* argv[])
     num_features = featM.features();
     mydb.closeDB();
     
-    SimpleRegistration sr01( num_cameras, num_features, K );
-    timer1.start();
-    sr01.solvePose( &featM.visibility, &featM.coordinates3D, true ); // true for optimal
-    std::cout << "Elapsed time to solve Pose: " << timer1.elapsed_s() << " [s]\n";
+//     SimpleRegistration sr01( num_cameras, num_features, K );
+//     sr01.setFallBackICPOn( &imageList_rgb, &imageList_depth, num_depth_filter );
+//     timer1.start();
+//     sr01.solvePose( &featM.visibility, &featM.coordinates3D, true ); // true for optimal
+//     std::cout << "Elapsed time to solve Pose: " << timer1.elapsed_s() << " [s]\n";
 //     
 //     // Print lin and opt
 //     SimpleRegistration sr02( num_cameras, num_features, K );
@@ -318,23 +307,24 @@ int main(int argc, char* argv[])
 //     std::cout << "Elapsed time to solve Pose: " << timer1.elapsed_s() << " [s]\n";
     
     // Write files of global quaternion and translation
-//     exportTXTQuaternionVector((char*)"std_rot_opt3.txt", sr01.Qn_global);
-//     exportTXTTranslationVector((char*)"std_tr_opt3.txt", sr01.tr_global);
-//     exportTXTQuaternionVector((char*)"std_rot_lin3.txt", sr02.Qn_global);
-//     exportTXTTranslationVector((char*)"std_tr_lin3.txt", sr02.tr_global);
-//     exportTXTQuaternionVector((char*)"std_rot_gp3.txt", gp.Qn_global);
-//     exportTXTTranslationVector((char*)"std_tr_gp3.txt", gp.tr_global);
+//     if ( save_txt )
+//     {
+//         std::string txt_file1, txt_file2;
+//         txt_file1 = txt_file2 = base_filename;
+//         txt_file1.append("_rot");
+//         txt_file2.append("_tr");
+//         
+//         exportTXTQuaternionVector( (txt_file1 + "_gp.txt").c_str(), gp.Qn_global);
+//         exportTXTTranslationVector( (txt_file2 + "_gp.txt").c_str(), gp.tr_global);
+// //         exportTXTQuaternionVector( (txt_file1 + "_sr_opt.txt").c_str(), sr01.Qn_global);
+// //         exportTXTTranslationVector( (txt_file2 + "_sr_opt.txt").c_str(), sr01.tr_global);
+// //         exportTXTQuaternionVector( (txt_file1 + "_sr_lin.txt").c_str(), sr02.Qn_global);
+// //         exportTXTTranslationVector( (txt_file2 + "_sr_lin.txt").c_str(), sr02.tr_global);
+//         
+// //         exportTXTQuaternionVector( (txt_file1 + "_gl-opt.txt").c_str(), gp.Qn_global);
+// //         exportTXTTranslationVector( (txt_file2 + "_gl-opt.txt").c_str(), gp.tr_global);
+//     }
     
-    
-    std::vector< pcl::PointCloud<pcl::PointXYZRGBA>::Ptr > set_cloud;
-    std::vector< boost::shared_ptr< Eigen::MatrixXd > > set_covariance;
-//     cv2PointCloudSet(imageList_rgb, imageList_depth, K, sr01.Qn_global, sr01.tr_global, set_cloud, set_covariance);
-    /// uncomment this line
-//     cv2PointCloudSet(imageList_rgb, imageList_depth, K, gp.Qn_global, gp.tr_global, set_cloud, set_covariance);
-    
-    pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloud_join;
-//     mergeCloudSet( set_cloud, set_covariance, cloud_join );
-//     set2unique( set_cloud, cloud_join );
     
     // Test one merge. Use to show in blue the proximity
 //     boost::shared_ptr< Eigen::MatrixXd > Cov1, Cov2, Cov_New;
@@ -346,36 +336,63 @@ int main(int argc, char* argv[])
     // TODO Remember to free the memory here, images, Features, etc
     
     
-    /// new TEST
+    // RUN GLOBAL Optimization
     GlobalPose3D global01;
-//     global01.solve(&featM.visibility, &featM.coordinates3D, &K, &gp.Qn_global, &gp.tr_global);
-    global01.solve(&featM.visibility, &featM.coordinates3D, &K, &sr01.Qn_global, &sr01.tr_global);
+    global01.solve(&featM.visibility, &featM.coordinates3D, &K, &gp.Qn_global, &gp.tr_global);
+//     global01.solve(&featM.visibility, &featM.coordinates3D, &K, &sr01.Qn_global, &sr01.tr_global);
     pcl::PointCloud<pcl::PointXYZ>::Ptr cloudE;
     eigen2pointcloud( global01.Structure, cloudE );
-    /// NOTE: I realize that I didn't check quaternion normalization. WORKS PERFECTLY
-//     cv2PointCloudSet(imageList_rgb, imageList_depth, K, gp.Qn_global, gp.tr_global, set_cloud, set_covariance);
-    cv2PointCloudSet(imageList_rgb, imageList_depth, K, sr01.Qn_global, sr01.tr_global, set_cloud, set_covariance);
+    
+    setCoordinatestoOrigin(gp.Qn_global, gp.tr_global);
+//     setCoordinatestoOrigin(sr01.Qn_global, sr01.tr_global);
+    
+//     Eigen::Quaternion<double> q_desired( 0.92388, 0.0, -0.38268, 0.0 ); // 45 degrees y axis
+//     Eigen::Vector3d t_desired(-0.70711, 0.0, -0.70711 ); // center = [1,0,0]
+//     setCoordinatestoDesiredPosition( gp.Qn_global, gp.tr_global, q_desired, t_desired, 4 ); // move camera 5 to desired point
+    
+    
+//     if ( save_txt )
+//     {
+//         std::string txt_file1, txt_file2;
+//         txt_file1 = txt_file2 = base_filename;
+//         txt_file1.append("_rot");
+//         txt_file2.append("_tr");
+//         exportTXTQuaternionVector( (txt_file1 + "_gl_opt.txt").c_str(), gp.Qn_global);
+//         exportTXTTranslationVector( (txt_file2 + "_gl_opt.txt").c_str(), gp.tr_global);
+//     }
+    
+    std::vector< pcl::PointCloud<pcl::PointXYZRGBA>::Ptr > set_cloud;
+    std::vector< boost::shared_ptr< Eigen::MatrixXd > > set_covariance;
+    cv2PointCloudSet(imageList_rgb, imageList_depth, K, gp.Qn_global, gp.tr_global, set_cloud, set_covariance);
+//     cv2PointCloudSet(imageList_rgb, imageList_depth, K, sr01.Qn_global, sr01.tr_global, set_cloud, set_covariance);
+    
+    pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloud_join;
+//     mergeCloudSet( set_cloud, set_covariance, cloud_join );
+//     set2unique( set_cloud, cloud_join );
     
     // ============================================ Visualization ============================================
     
     boost::shared_ptr<pcl::visualization::PCLVisualizer> viewer;
     
 //     std::cout << "set cloud size:" << set_cloud.size() << "\n";
-    /// uncomment
+    // Visualize Cloud
     viewer = visualizeCloudSet( set_cloud );
-    viewer->setBackgroundColor (1.0, 1.0, 1.0);
-    
 //     viewer = visualizeCloud(cloudE);
 //     viewer = visualizeCloud(set_cloud[0]);
 //     viewer = visualizeCloud(cloud_join);
+    viewer->setBackgroundColor (1.0, 1.0, 1.0);
     
-    
-    visualizeCameras( viewer, sr01.Qn_global, sr01.tr_global );
+    // Visualize Camera positions
+//     visualizeCameras( viewer, sr01.Qn_global, sr01.tr_global );
 //     visualizeCameras( viewer, sr02.Qn_global, sr02.tr_global );
-//     visualizeCameras( viewer, gp.Qn_global, gp.tr_global );
+    visualizeCameras( viewer, gp.Qn_global, gp.tr_global );
     
 //     visualizeCameras(viewer, imageList_rgb, sr01.Qn_global, sr01.tr_global );
 //     visualizeCameras(viewer, imageList_rgb, gp.Qn_global, gp.tr_global );
+    
+    // Other visualizations
+    visualizeTrack( viewer, gp.Qn_global, gp.tr_global );
+//     visualizeTrack( viewer, sr01.Qn_global, sr01.tr_global );
     
 //     visualizeNoise(viewer, sr01.Xmodel, sr01.Variance, sr01.Qn_global, sr01.tr_global, 500 );
     

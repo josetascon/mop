@@ -13,6 +13,7 @@ std::vector<cv::DMatch> MatchesMap::match(int nmatch)
     return globalMatch[nmatch].matches;
 }
 
+/// TODO: LOOP CLOSURE HERE. CHECK LAST IMAGE with the first one or some of them
 void MatchesMap::solveMatchesContinuous(std::vector< std::vector<float> > *descriptorsGPU)
 {
     
@@ -26,7 +27,7 @@ void MatchesMap::solveMatchesContinuous(std::vector< std::vector<float> > *descr
     }
         
     num_images = descriptorsGPU->size();
-//     int combinations = num_images - 1; // Due to solve only continous matches
+//     int combinations = num_images - 1; // Due to solve only continuous matches
     globalMatch.resize(num_images - 1);
     reliableMatch.resize(num_images - 1);
     DEBUG_1( std::cout << "\n================================ MATCH Features ==================================\n"; )
@@ -42,10 +43,13 @@ void MatchesMap::solveMatchesContinuous(std::vector< std::vector<float> > *descr
         int nmatch = matcher.GetSiftMatch(num_goodmatch, match_buf); // match descriptors
         globalMatch[cam].matches.clear();
         
-        if (nmatch < min_nmatch_reliable) // check reliability of match
+        if (!continuous) // check if all continuous must be stored
         {
-	  reliableMatch[cam] = false;
-	  continue;
+	  if (nmatch < min_nmatch_reliable) // check reliability of match
+	  {
+	      reliableMatch[cam] = false;
+	      continue;
+	  }
         }
         
         reliableMatch[cam] = true;
@@ -108,9 +112,12 @@ void MatchesMap::solveMatches(std::vector< std::vector<float> > *descriptorsGPU)
 
 	  if (nmatch < min_nmatch_reliable) // check reliability of match
 	  {
-	      reliableMatch[it] = false;
-	      it++;
-	      continue;
+	      if( !(continuous && (stride == 1)) )
+	      {
+		reliableMatch[it] = false;
+		it++;
+		continue;
+	      }
 	  }
 	  
 	  reliableMatch[it] = true;
@@ -150,7 +157,10 @@ void MatchesMap::robustifyMatches(std::vector< std::vector< cv::KeyPoint > > *se
 	  cv::Mat F_est;
 	  int inlier = robustMatchesfromFundamental(pts1, pts2, globalMatch[it].matches, F_est, 5);
 	  DEBUG_1( printf("MATCH: %04i -> %04i:\t#matches = %i\n", cam1, cam2, inlier); )
-	  if (pts1.size() < min_nmatch_reliable) reliableMatch[it] = false;
+	  if( !((cam2 - cam1 == 1) && continuous) )
+	  {
+	      if (pts1.size() < min_nmatch_reliable) reliableMatch[it] = false;
+	  }
         }
     }
 }
@@ -177,7 +187,10 @@ void MatchesMap::robustifyMatches(std::vector< std::vector< SiftGPU::SiftKeypoin
 	  cv::Mat F_est;
 	  int inlier = robustMatchesfromFundamental(pts1, pts2, globalMatch[it].matches, F_est, 5);
 	  DEBUG_1( printf("MATCH: %04i -> %04i:\t#matches = %i\n", cam1, cam2, inlier); )
-	  if (pts1.size() < min_nmatch_reliable) reliableMatch[it] = false;
+	  if( !((cam2 - cam1 == 1) && continuous) )
+	  {
+	      if (pts1.size() < min_nmatch_reliable) reliableMatch[it] = false;
+	  }
         }
     }
 }
@@ -206,7 +219,7 @@ void MatchesMap::depthFilter(std::vector< std::vector< SiftGPU::SiftKeypoint > >
 	  int sum = sumVector(goodpt);
 	  if (sum < reliable)
 	  {
-	      reliableMatch[it] = false;
+	      if( !((cam2 - cam1 == 1) && continuous) ) reliableMatch[it] = false;
 // 	      std::cout << "false " ;
 	  }
 	  else
@@ -254,7 +267,7 @@ void MatchesMap::depthFilter(std::vector< std::vector< SiftGPU::SiftKeypoint > >
 	  int sum = sumVector(goodpt);
 	  if (sum < reliable)
 	  {
-	      reliableMatch[it] = false;
+	      if( !((cam2 - cam1 == 1) && continuous) ) reliableMatch[it] = false;
 // 	      std::cout << "false " ;
 	  }
 	  else

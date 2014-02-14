@@ -1,6 +1,8 @@
 %Explanation of camera Model
 % A camera matrix is P = K*[R | t] where K is [3x3] matrix and [R t] is a [3x4] matrix. Then P = [3x4]
 
+% Tip: Rotations in OpenGL, positive rotations are counter clockwise-
+
 If we have a camera P0 at origin C0 then P0 = K*[I 0]
 Then we have a camera P1 at R1, t1 form P0, so we have P1 = K*[R1 t1];
 Another camera P2 at R2, t2 from P1, so from reference C0 we have a camera P2 = K*[R2*R1 R2*t1+t2]

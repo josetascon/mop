@@ -598,7 +598,7 @@ void visualizeCameras(boost::shared_ptr<pcl::visualization::PCLVisualizer> &view
         rotation2angles_DetectZero(rot_inv, orientation); // TODO NO use this. use transformation matrix in plotcamera (create function)
         center = -rot_inv*translation[k];
         double ratio = 1.333333;
-        vtkSmartPointer<vtkActor> act02 = plotCamera(center, orientation, ratio, 0.08, 1.5);
+        vtkSmartPointer<vtkActor> act02 = plotCamera(center, orientation, ratio, 0.04, 1.5);
         act02->GetProperty()->SetColor( color(0), color(1), color(2) );
         
         std::stringstream ss;
@@ -753,6 +753,30 @@ void visualizeGraph( int num_vertex, int num_edges , std::vector<float> &weights
     renderWindowInteractor2->Start();
 }
 
+void visualizeTrack( boost::shared_ptr<pcl::visualization::PCLVisualizer> &viewer, 
+	      std::vector< Eigen::Quaternion<double> > &quaternion, std::vector< Eigen::Vector3d > &translation, 
+	      Eigen::Vector3d color, double line_width )
+{
+    // Visualize track with images
+    int num_cameras = quaternion.size();
+    // ============================================ PLOT CAMERAS ============================================ 
+    for(register int k = 0; k < num_cameras - 1; ++k)
+    {
+        Eigen::Matrix3d rot0 = quaternion[k].toRotationMatrix();
+        Eigen::Matrix3d rot1 = quaternion[k+1].toRotationMatrix();
+        Eigen::Vector3d center0, center1;
+        Eigen::Matrix3d rot0_inv = rot0.transpose();
+        Eigen::Matrix3d rot1_inv = rot1.transpose();
+        center0 = -rot0_inv*translation[k];
+        center1 = -rot1_inv*translation[k+1];
+        
+        vtkSmartPointer<vtkActor> act01 = actorLine( center0, center1, line_width );
+        act01->GetProperty()->SetColor( color.data() );
+        addActorToRenderCollection( viewer->getRendererCollection(), act01 );
+    }
+    
+}
+
 
 // ================================================================================================
 // ================================= Functions Visualizer PCL =====================================
@@ -799,6 +823,21 @@ void addActorToRenderCollection(const vtkSmartPointer<vtkRendererCollection> &co
         }
         ++i;
     }
+}
+
+vtkSmartPointer<vtkActor> actorLine(Eigen::Vector3d init_pt, Eigen::Vector3d end_pt, double line_width)
+{
+    vtkSmartPointer<vtkLineSource> lineSource = vtkSmartPointer<vtkLineSource>::New();
+    lineSource->SetPoint1( init_pt.data() );
+    lineSource->SetPoint2( end_pt.data() );
+    lineSource->Update();
+    
+    vtkSmartPointer<vtkPolyDataMapper> mapper = vtkSmartPointer<vtkPolyDataMapper>::New();
+    mapper->SetInputConnection(lineSource->GetOutputPort());
+    vtkSmartPointer<vtkActor> actor = vtkSmartPointer<vtkActor>::New();
+    actor->SetMapper(mapper);
+    actor->GetProperty()->SetLineWidth( line_width );
+    return actor;
 }
 
 vtkSmartPointer<vtkActor> actorSphere(Eigen::Vector3d center, double radius)

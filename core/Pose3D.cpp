@@ -49,8 +49,8 @@ void Pose3D::adaptPoints( std::vector<cv::Point2d> &pts1, std::vector<cv::Point2
     
     removeBadPointsDual(pts1, pts2, range1, range2);
     
-    calc3Dfrom2D(pts1, *depth1, KOCV, WP1);
-    calc3Dfrom2D(pts2, *depth2, KOCV, WP2);
+    calc3Dfrom2D(pts1, range1, KOCV, WP1);
+    calc3Dfrom2D(pts2, range2, KOCV, WP2);
     point3_vector2eigen(WP1, X1);
     point3_vector2eigen(WP2, X2);
     
@@ -58,12 +58,23 @@ void Pose3D::adaptPoints( std::vector<cv::Point2d> &pts1, std::vector<cv::Point2
 }
     
 // Function to solve pose from X1 and X2
-void Pose3D::solvePose(bool optimal)
+bool Pose3D::solvePose(bool optimal)
 {
     if ( !load_points)
     {
         DEBUG_E( ("Not loaded points. Load properly the points or execute solvePoints() first") ); 
         exit(-1);
+    }
+    
+    
+    if ( (X1.cols() < 3) || (X2.cols() < 3))
+    {
+        if (!allow_pose_fail)
+        {
+	  DEBUG_E( ("Insuficient points to solve pose.") ); 
+	  exit(-1);
+        }
+        else return false;
     }
     
     poseArun( X1, X2, Rotation, translation );			// Initial pose with Arun's algorithm
@@ -85,6 +96,8 @@ void Pose3D::solvePose(bool optimal)
         opt01.setParameters3Dto3D( &X1, &X2, &Rotation, &translation);
         opt01.pose3Dto3D();
     }
+    
+    return true;
 }
 
  

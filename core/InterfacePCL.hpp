@@ -121,6 +121,6 @@ void mergeCloudSet( std::vector< pcl::PointCloud<pcl::PointXYZRGBA>::Ptr > &set_
 		std::vector< boost::shared_ptr< Eigen::MatrixXd > > &set_covariance,
 		pcl::PointCloud<pcl::PointXYZRGBA>::Ptr &model);
 
-void poseICP( pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloud0, pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloud1 );
+// void poseICP( pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloud0, pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloud1 );
 
 #endif

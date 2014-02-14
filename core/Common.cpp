@@ -29,26 +29,37 @@ void timer_wall::start()
 boost::int_least64_t timer_wall::elapsed_ns()
 {
     ns_time_f = (boost::chrono::steady_clock::now() - t_0);
+    lap_value = ns_time_f.count();
     return ns_time_f.count();
 }
 
 boost::int_least64_t timer_wall::elapsed_us()
 {
     us_time_f = boost::chrono::duration_cast<boost::chrono::microseconds>(boost::chrono::steady_clock::now() - t_0);
+    lap_value = us_time_f.count();
     return us_time_f.count();
 }
 
 boost::int_least64_t timer_wall::elapsed_ms()
 {
     ms_time_f = boost::chrono::duration_cast<boost::chrono::milliseconds>(boost::chrono::steady_clock::now() - t_0);
+    lap_value = ms_time_f.count();
     return ms_time_f.count();
 }
 
 double timer_wall::elapsed_s()
 {
     s_time_f = (boost::chrono::steady_clock::now() - t_0);
+    lap_value = (boost::int_least64_t) s_time_f.count(); //casting
     return s_time_f.count();
 }
+
+boost::int_least64_t timer_wall::lap()
+{
+    return lap_value;
+}
+    
+    
 
 
 

@@ -9,6 +9,15 @@
 #ifndef __SIMPLEREGISTRATION_HPP__
 #define __SIMPLEREGISTRATION_HPP__
 
+#define LOCAL_MODEL
+// if LOCAL_MODEL variable is ACTIVE
+#ifdef LOCAL_MODEL
+#define XMODEL(x) { x }
+#else
+#define XMODEL(x) {}
+#endif
+
+
 // Eigen Libraries
 #include <eigen3/Eigen/Dense>
 
@@ -22,12 +31,11 @@
 
 // Local Libraries
 #include "Debug.hpp"
-#include "Common.hpp"
+// #include "Common.hpp"
 #include "Pose3D.hpp"
-// #include "CameraPose.hpp"
+#include "PoseICP.hpp"
 #include "FeaturesEDM.hpp"
-#include "Optimizer.hpp"
-#include "DepthProjection.hpp"
+// #include "DepthProjection.hpp"
 
 // ================================================================================================
 // ================================= CLASS SimpleRegistration =====================================
@@ -35,10 +43,14 @@
 class SimpleRegistration		// Registration Aligment of Points based on Image Features
 {
 private:
+    bool fallback_icp;
+    int valid_min_points;
     int num_cameras;
     int num_features;
     Eigen::Matrix3d Calibration;
     
+    std::vector< std::string> *images_rgb;
+    std::vector< std::string> *images_depth;
     
     Eigen::MatrixXd X1, X2;
     Eigen::Matrix3d Rot;
@@ -54,13 +66,23 @@ public:
     std::vector< Eigen::Matrix3d > Rot_global;
     std::vector< Eigen::Quaternion<double> > Qn_global;
     std::vector< Eigen::Vector3d > tr_global;
-    std::vector< Eigen::MatrixXd > Xmodel;	// Created to easily access 3D features. ( e.g. when I need to Plot elipsoids )
+    std::vector< Eigen::MatrixXd > Xmodel; // Created to easily access 3D features. ( e.g. when I need to Plot elipsoids )
     std::vector< Eigen::MatrixXd > Variance;
     
     // Constructor
-    SimpleRegistration(int cams, int feats, Eigen::Matrix3d Calib) : num_cameras(cams), num_features(feats), Calibration(Calib) { };
+    SimpleRegistration(int cams, int feats, Eigen::Matrix3d Calib) : num_cameras(cams), num_features(feats), Calibration(Calib) { fallback_icp = false; };
     // Destructor
     ~SimpleRegistration() { ; };
+    
+    void setFallBackICPOn( std::vector< std::string> *rgb, std::vector< std::string> *depth, int min_points = 3 ) // Minimal number of points to solve pose
+    {
+        images_rgb = rgb;
+        images_depth = depth;
+        fallback_icp = true;
+        valid_min_points = min_points;
+    }
+    
+    void setFallBackICPOff() { fallback_icp = false; };
     
     //solve Pose, use continuous matches
     void solvePose(std::vector< MatchQuery > *globalMatch, std::vector< std::vector< cv::KeyPoint > > *set_of_keypoints, 

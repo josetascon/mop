@@ -52,6 +52,8 @@ private:
     int num_goodmatch;
     int min_nmatch_reliable;
     int actualfeature;
+    
+    bool continuous;
 //     // OPTION 2
 //     Eigen::Matrix< std::vector< cv::DMatch> , -1, -1 > globalMatches;
 //     Eigen::Matrix< bool, -1, -1 > avalibleMatches;
@@ -61,9 +63,9 @@ public:
     std::vector< MatchQuery > globalMatch;
     std::vector<bool> reliableMatch;
     
-    MatchesMap() { num_goodmatch = 35; min_nmatch_reliable = 20; };
-    MatchesMap(int ngood): num_goodmatch(ngood) { min_nmatch_reliable = 20; };
-    MatchesMap(int ngood, int nreliable): num_goodmatch(ngood), min_nmatch_reliable(nreliable) { };
+    MatchesMap() { num_goodmatch = 35; min_nmatch_reliable = 20; continuous = false; };
+    MatchesMap(int ngood): num_goodmatch(ngood) { min_nmatch_reliable = 20; continuous = false; };
+    MatchesMap(int ngood, int nreliable): num_goodmatch(ngood), min_nmatch_reliable(nreliable) { continuous = false; };
 
     ~MatchesMap() { };
     
@@ -79,6 +81,11 @@ public:
     void solveDB( HandleDB *mydb, std::vector< std::vector<SiftGPU::SiftKeypoint> > *keypointsGPU );
     void solveDB3D( HandleDB *mydb, std::vector< std::vector<SiftGPU::SiftKeypoint> > *keypointsGPU, 
 		 std::vector< std::string > *depth_list, Eigen::Matrix3d &calibration );
+    
+    void setAllContinousOn() { continuous = true; };
+    void setAllContinousOff() { continuous = false; };
+    
+    
     void exportTXT( const char *file_txt, std::vector< std::vector<SiftGPU::SiftKeypoint> > *keypointsGPU );
     void plot( std::vector< cv::Mat > *images, std::vector< std::vector< cv::KeyPoint > > *set_of_keypoints );
     
