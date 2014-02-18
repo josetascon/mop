@@ -113,13 +113,13 @@ void sparse2dense( pcl::PointCloud<pcl::PointXYZRGBA>::Ptr &cloud_sparse, pcl::P
 
 void set2unique( std::vector< pcl::PointCloud<pcl::PointXYZRGBA>::Ptr > &data, pcl::PointCloud<pcl::PointXYZRGBA>::Ptr &cloud_out);
 
-void mergeClouds( pcl::PointCloud<pcl::PointXYZRGBA>::Ptr &pc1, pcl::PointCloud<pcl::PointXYZRGBA>::Ptr &pc2,
-	      boost::shared_ptr< Eigen::MatrixXd > &covariance1, boost::shared_ptr< Eigen::MatrixXd > &covariance2, 
-	      pcl::PointCloud<pcl::PointXYZRGBA>::Ptr &cloud_out, boost::shared_ptr< Eigen::MatrixXd > &covariance_out );
-
-void mergeCloudSet( std::vector< pcl::PointCloud<pcl::PointXYZRGBA>::Ptr > &set_cloud, 
-		std::vector< boost::shared_ptr< Eigen::MatrixXd > > &set_covariance,
-		pcl::PointCloud<pcl::PointXYZRGBA>::Ptr &model);
+// void mergeClouds( pcl::PointCloud<pcl::PointXYZRGBA>::Ptr &pc1, pcl::PointCloud<pcl::PointXYZRGBA>::Ptr &pc2,
+// 	      boost::shared_ptr< Eigen::MatrixXd > &covariance1, boost::shared_ptr< Eigen::MatrixXd > &covariance2, 
+// 	      pcl::PointCloud<pcl::PointXYZRGBA>::Ptr &cloud_out, boost::shared_ptr< Eigen::MatrixXd > &covariance_out );
+// 
+// void mergeCloudSet( std::vector< pcl::PointCloud<pcl::PointXYZRGBA>::Ptr > &set_cloud, 
+// 		std::vector< boost::shared_ptr< Eigen::MatrixXd > > &set_covariance,
+// 		pcl::PointCloud<pcl::PointXYZRGBA>::Ptr &model);
 
 // void poseICP( pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloud0, pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloud1 );
 

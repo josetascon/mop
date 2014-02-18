@@ -29,6 +29,7 @@
 #include "HandleDB.hpp"
 #include "Interface.hpp"
 #include "InterfacePCL.hpp"
+#include "MergeClouds.hpp"
 #include "DOTWriter.hpp"
 
 #include "FeaturesEDM.hpp"
@@ -249,23 +250,24 @@ int main(int argc, char* argv[])
         
         MatchesMap my_mmap(400,35);
         my_mmap.setAllContinousOn(); // ENABLE CONTINOUS MATCHES ALWAYS TO ALLOW ICP WORK
-        my_mmap.solveMatches(&myfeat.descriptorsGPU);
-//         my_mmap.solveMatchesContinuous(&myfeat.descriptorsGPU);
+//         my_mmap.solveMatches(&myfeat.descriptorsGPU);
+//         my_mmap.solveMatchesGroups(&myfeat.descriptorsGPU, 5);
+        my_mmap.solveMatchesContinuous(&myfeat.descriptorsGPU);
         my_mmap.robustifyMatches(&myfeat.keypointsGPU);
         my_mmap.depthFilter(&myfeat.keypointsGPU, &imageList_depth, num_depth_filter);
         timer1.start();
         my_mmap.solveDB3D( &mydb, &myfeat.keypointsGPU, &imageList_depth, K );
         DEBUG_1( std::cout << "Elapsed time to solve DB: " << timer1.elapsed_s() << " [s]\n"; )
         
-        GraphPose gp( K );
-        gp.setFallBackICPOn( &imageList_rgb, &imageList_depth );
-        gp.run( &imageList_depth, &my_mmap.reliableMatch, &my_mmap.globalMatch, &myfeat.keypointsGPU, true ); // true for optimal
-//         gp.solveLocalPoseAllNodes( &imageList_depth, &my_mmap.reliableMatch, &my_mmap.globalMatch, &myfeat.keypointsGPU );
-//         gp.solveEdgesAllNodes();
-//         
-//         gp.solveGraph();
-//         gp.solveGlobalPoseAllNodes();
-// //         gp.solveGlobalPoseContinuous();
+//         GraphPose gp( K );
+//         gp.setFallBackICPOn( &imageList_rgb, &imageList_depth );
+//         gp.run( &imageList_depth, &my_mmap.reliableMatch, &my_mmap.globalMatch, &myfeat.keypointsGPU, true ); // true for optimal
+// //         gp.solveLocalPoseAllNodes( &imageList_depth, &my_mmap.reliableMatch, &my_mmap.globalMatch, &myfeat.keypointsGPU );
+// //         gp.solveEdgesAllNodes();
+// //         
+// //         gp.solveGraph();
+// //         gp.solveGlobalPoseAllNodes();
+// // //         gp.solveGlobalPoseContinuous();
         
         
 //         weights = gp.getWeights();
@@ -294,11 +296,11 @@ int main(int argc, char* argv[])
     num_features = featM.features();
     mydb.closeDB();
     
-//     SimpleRegistration sr01( num_cameras, num_features, K );
-//     sr01.setFallBackICPOn( &imageList_rgb, &imageList_depth, num_depth_filter );
-//     timer1.start();
-//     sr01.solvePose( &featM.visibility, &featM.coordinates3D, true ); // true for optimal
-//     std::cout << "Elapsed time to solve Pose: " << timer1.elapsed_s() << " [s]\n";
+    SimpleRegistration sr01( num_cameras, num_features, K );
+    sr01.setFallBackICPOn( &imageList_rgb, &imageList_depth, num_depth_filter );
+    timer1.start();
+    sr01.solvePose( &featM.visibility, &featM.coordinates3D, true ); // true for optimal
+    std::cout << "Elapsed time to solve Pose: " << timer1.elapsed_s() << " [s]\n";
 //     
 //     // Print lin and opt
 //     SimpleRegistration sr02( num_cameras, num_features, K );
@@ -338,13 +340,21 @@ int main(int argc, char* argv[])
     
     // RUN GLOBAL Optimization
     GlobalPose3D global01;
-    global01.solve(&featM.visibility, &featM.coordinates3D, &K, &gp.Qn_global, &gp.tr_global);
-//     global01.solve(&featM.visibility, &featM.coordinates3D, &K, &sr01.Qn_global, &sr01.tr_global);
+//     global01.solve(&featM.visibility, &featM.coordinates3D, &K, &gp.Qn_global, &gp.tr_global);
+    global01.solve(&featM.visibility, &featM.coordinates3D, &K, &sr01.Qn_global, &sr01.tr_global);
     pcl::PointCloud<pcl::PointXYZ>::Ptr cloudE;
     eigen2pointcloud( global01.Structure, cloudE );
     
-    setCoordinatestoOrigin(gp.Qn_global, gp.tr_global);
-//     setCoordinatestoOrigin(sr01.Qn_global, sr01.tr_global);
+//     setCoordinatestoOrigin(gp.Qn_global, gp.tr_global);
+    setCoordinatestoOrigin(sr01.Qn_global, sr01.tr_global);
+    
+    // Load ground truth
+//     std::vector< Eigen::Quaternion<double> > ground_qn_global;
+//     std::vector< Eigen::Vector3d > ground_tr_global;
+//     importTXTQuaternionVector( "freiburg3_ground_rot.txt", ground_qn_global );
+//     importTXTTranslationVector( "freiburg3_ground_tr.txt", ground_tr_global );
+//     setCoordinatestoOrigin(ground_qn_global, ground_tr_global);
+    
     
 //     Eigen::Quaternion<double> q_desired( 0.92388, 0.0, -0.38268, 0.0 ); // 45 degrees y axis
 //     Eigen::Vector3d t_desired(-0.70711, 0.0, -0.70711 ); // center = [1,0,0]
@@ -363,8 +373,8 @@ int main(int argc, char* argv[])
     
     std::vector< pcl::PointCloud<pcl::PointXYZRGBA>::Ptr > set_cloud;
     std::vector< boost::shared_ptr< Eigen::MatrixXd > > set_covariance;
-    cv2PointCloudSet(imageList_rgb, imageList_depth, K, gp.Qn_global, gp.tr_global, set_cloud, set_covariance);
-//     cv2PointCloudSet(imageList_rgb, imageList_depth, K, sr01.Qn_global, sr01.tr_global, set_cloud, set_covariance);
+//     cv2PointCloudSet(imageList_rgb, imageList_depth, K, gp.Qn_global, gp.tr_global, set_cloud, set_covariance);
+    cv2PointCloudSet(imageList_rgb, imageList_depth, K, sr01.Qn_global, sr01.tr_global, set_cloud, set_covariance);
     
     pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloud_join;
 //     mergeCloudSet( set_cloud, set_covariance, cloud_join );
@@ -383,16 +393,17 @@ int main(int argc, char* argv[])
     viewer->setBackgroundColor (1.0, 1.0, 1.0);
     
     // Visualize Camera positions
-//     visualizeCameras( viewer, sr01.Qn_global, sr01.tr_global );
+    visualizeCameras( viewer, sr01.Qn_global, sr01.tr_global );
 //     visualizeCameras( viewer, sr02.Qn_global, sr02.tr_global );
-    visualizeCameras( viewer, gp.Qn_global, gp.tr_global );
+//     visualizeCameras( viewer, gp.Qn_global, gp.tr_global );
     
 //     visualizeCameras(viewer, imageList_rgb, sr01.Qn_global, sr01.tr_global );
 //     visualizeCameras(viewer, imageList_rgb, gp.Qn_global, gp.tr_global );
     
     // Other visualizations
-    visualizeTrack( viewer, gp.Qn_global, gp.tr_global );
-//     visualizeTrack( viewer, sr01.Qn_global, sr01.tr_global );
+//     visualizeTrack( viewer, gp.Qn_global, gp.tr_global );
+    visualizeTrack( viewer, sr01.Qn_global, sr01.tr_global );
+//     visualizeTrack( viewer, ground_qn_global, ground_tr_global, Eigen::Vector3d( 0.9, 0.0, 0.0 ) );
     
 //     visualizeNoise(viewer, sr01.Xmodel, sr01.Variance, sr01.Qn_global, sr01.tr_global, 500 );
     

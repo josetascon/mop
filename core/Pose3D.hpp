@@ -48,10 +48,10 @@ private:
     Eigen::MatrixXd variance1;
     Eigen::MatrixXd variance2;
     
-    cv::Mat *image1;
-    cv::Mat *image2;
-    cv::Mat *depth1;
-    cv::Mat *depth2;
+    boost::shared_ptr< cv::Mat > image1;
+    boost::shared_ptr< cv::Mat > image2;
+    boost::shared_ptr< cv::Mat > depth1;
+    boost::shared_ptr< cv::Mat > depth2;
     
     bool load_images;
     bool load_calib;
@@ -64,20 +64,20 @@ private:
         boost::shared_ptr< cv::Mat > im2_ptr (new cv::Mat);
         *im1_ptr = cv::imread( rgb1, -1 ); //load image
         *im2_ptr = cv::imread( rgb2, -1 );
-        image1 = im1_ptr.get(); // return pointer value
-        image2 = im2_ptr.get(); 
+        image1 = im1_ptr; // return pointer value
+        image2 = im2_ptr; 
     }
     
     void setRGBImages( cv::Mat *rgb1, cv::Mat *rgb2 )
     {
-        image1 = rgb1;
-        image2 = rgb2;
+        image1 = boost::shared_ptr<cv::Mat>(rgb1);
+        image2 = boost::shared_ptr<cv::Mat>(rgb2);
     }
     
     void setDepthImages( cv::Mat *range1, cv::Mat *range2 )
     {
-        depth1 = range1;
-        depth2 = range2;
+        depth1 = boost::shared_ptr<cv::Mat>(range1);
+        depth2 = boost::shared_ptr<cv::Mat>(range2);
     }
     
     void setDepthImages( std::string &range1, std::string &range2 )
@@ -86,8 +86,8 @@ private:
         boost::shared_ptr< cv::Mat > im2_ptr (new cv::Mat);
         *im1_ptr = cv::imread( range1, -1 ); //load image
         *im2_ptr = cv::imread( range2, -1 );
-        depth1 = im1_ptr.get(); // return pointer value
-        depth2 = im2_ptr.get(); 
+        depth1 = im1_ptr; // return pointer value
+        depth2 = im2_ptr; 
     }
     
 public:

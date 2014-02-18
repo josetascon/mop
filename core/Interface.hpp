@@ -97,7 +97,7 @@ void exportTXTQuaternionVector(const char *filename, std::vector< Eigen::Quatern
     myfile1.open (filename);
     myfile1.precision(12);
 
-    for(int it = 0; it < Qn_global.size(); it++)
+    for(register int it = 0; it < Qn_global.size(); ++it)
     {
         Eigen::Matrix<T_eig,3,3> rr = Qn_global[it].toRotationMatrix();
         myfile1 << rr << "\n";
@@ -113,13 +113,42 @@ void exportTXTTranslationVector(const char *filename, std::vector< Eigen::Matrix
     myfile1.open (filename);
     myfile1.precision(12);
 
-    for(int it = 0; it < tr_global.size(); it++)
+    for(register int it = 0; it < tr_global.size(); ++it)
     {
         Eigen::Matrix<T_eig,3,1> tr = tr_global[it];
         myfile1 << tr.transpose() << "\n";
     }
     myfile1.close();
 }
+
+template <typename T_eig>
+void importTXTQuaternionVector(const char *filename, std::vector< Eigen::Quaternion<T_eig> > &Qn_global)
+{
+    Qn_global.clear();
+    Eigen::Matrix<T_eig,-1,-1> Mdata;
+    importTXTEigen( filename, Mdata );
+    
+    for(register int it = 0; it < Mdata.rows()/3; ++it)
+    {
+        Eigen::Matrix<T_eig,3,3> rr = Mdata.block(it*3,0,3,3);
+        Qn_global.push_back( Eigen::Quaternion<T_eig>(rr) );
+    }
+}
+
+template <typename T_eig>
+void importTXTTranslationVector(const char *filename, std::vector< Eigen::Matrix<T_eig,3,1> > &tr_global)
+{
+    tr_global.clear();
+    Eigen::Matrix<T_eig,-1,-1> Mdata;
+    importTXTEigen( filename, Mdata );
+    
+    for(register int it = 0; it < Mdata.rows(); ++it)
+    {
+        Eigen::Matrix<T_eig,3,1> vv = Mdata.row(it);
+        tr_global.push_back( vv );
+    }
+}
+
 
 /**
  * ******************************************************************

@@ -69,8 +69,18 @@ public:
 
     ~MatchesMap() { };
     
+    void solveMatchesPairs_subgroup(std::vector< std::vector<float> > *descriptorsGPU, int init_image, int final_image );
+    void solveMatchesContinuous_subgroup(std::vector< std::vector<float> > *descriptorsGPU, int init_image, int final_image);
+    
+    void solveMatchesOneElement_subgroupUp(std::vector< std::vector<float> > *descriptorsGPU, int element, int final_image );
+    void solveMatchesOneElement_subgroupDown(std::vector< std::vector<float> > *descriptorsGPU, int init_image, int element );
+    void solveMatchesOneElement_subgroup(std::vector< std::vector<float> > *descriptorsGPU, int element, int init_image, int final_image );
+    void solveMatchesOneElement(std::vector< std::vector<float> > *descriptorsGPU, int element);
+    
     void solveMatches( std::vector< std::vector<float> > *descriptorsGPU );
     void solveMatchesContinuous( std::vector< std::vector<float> > *descriptorsGPU );
+    void solveMatchesGroups(std::vector< std::vector<float> > *descriptorsGPU, int groupsize);
+    
     void robustifyMatches( std::vector< std::vector< cv::KeyPoint > > *set_of_keypoints );
     void robustifyMatches(std::vector< std::vector< SiftGPU::SiftKeypoint > > *set_of_keypoints);
     void depthFilter(std::vector< std::vector< SiftGPU::SiftKeypoint > > *set_of_keypoints,

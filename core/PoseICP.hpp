@@ -58,12 +58,10 @@ private:
     {
         boost::shared_ptr< cv::Mat > im1_ptr (new cv::Mat); // smart pointer to free memory properly
         boost::shared_ptr< cv::Mat > im2_ptr (new cv::Mat);
-        cv::Mat im1 = cv::imread( rgb1, -1 ); //load image
-        cv::Mat im2 = cv::imread( rgb2, -1 );
-        *im1_ptr = im1;
-        *im2_ptr = im2;
+        *im1_ptr = cv::imread( rgb1, -1 ); //load image
+        *im2_ptr = cv::imread( rgb2, -1 );
         image1 = im1_ptr; // return pointer value
-        image2 = im2_ptr; 
+        image2 = im2_ptr;
     }
     
     void setRGBImages( cv::Mat *rgb1, cv::Mat *rgb2 )
@@ -84,12 +82,12 @@ private:
     {
         boost::shared_ptr< cv::Mat > im1_ptr (new cv::Mat); // smart pointer to free memory properly
         boost::shared_ptr< cv::Mat > im2_ptr (new cv::Mat);
-        cv::Mat im1 = cv::imread( range1, -1 ); //load image
-        cv::Mat im2 = cv::imread( range2, -1 );
+        *im1_ptr = cv::imread( range1, -1 ); //load image
+        *im2_ptr = cv::imread( range2, -1 );
 //         boost::shared_ptr< cv::Mat > im1_ptr (&im1); // smart pointer to free memory properly
 //         boost::shared_ptr< cv::Mat > im2_ptr (&im2);
-        *im1_ptr = im1;
-        *im2_ptr = im2;
+//         *im1_ptr = im1;
+//         *im2_ptr = im2;
         depth1 = im1_ptr; // return pointer value
         depth2 = im2_ptr; 
     }

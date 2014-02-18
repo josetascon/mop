@@ -13,11 +13,9 @@ std::vector<cv::DMatch> MatchesMap::match(int nmatch)
     return globalMatch[nmatch].matches;
 }
 
-/// TODO: LOOP CLOSURE HERE. CHECK LAST IMAGE with the first one or some of them
-void MatchesMap::solveMatchesContinuous(std::vector< std::vector<float> > *descriptorsGPU)
+void MatchesMap::solveMatchesContinuous_subgroup(std::vector< std::vector<float> > *descriptorsGPU, int init_image, int final_image)
 {
-    
-//     std::cout << "Start solveMatches\n";
+    DEBUG_2( std::cout << "Start solveMatches\n"; )
     SiftMatchGPU matcher(num_goodmatch);
     
     if(matcher.VerifyContextGL() == 0)
@@ -26,14 +24,15 @@ void MatchesMap::solveMatchesContinuous(std::vector< std::vector<float> > *descr
         return;
     }
         
-    num_images = descriptorsGPU->size();
-//     int combinations = num_images - 1; // Due to solve only continuous matches
-    globalMatch.resize(num_images - 1);
-    reliableMatch.resize(num_images - 1);
-    DEBUG_1( std::cout << "\n================================ MATCH Features ==================================\n"; )
+    num_images = final_image - init_image;
+    int combinations = num_images-1;
+    register int it = globalMatch.size();
     
-    for(register int cam = 0; cam < num_images - 1; ++cam)
+    for(register int cam = init_image; cam < combinations; ++cam)
     {
+        globalMatch.push_back( MatchQuery() );
+        reliableMatch.push_back( false );
+        
         int ft_per_im1 = int( (*descriptorsGPU)[cam].size()/128 );
         int ft_per_im2 = int( (*descriptorsGPU)[cam+1].size()/128 );
         matcher.SetDescriptors(0, ft_per_im1, &((*descriptorsGPU)[cam][0])); // prepare descriptor1
@@ -41,43 +40,33 @@ void MatchesMap::solveMatchesContinuous(std::vector< std::vector<float> > *descr
         
         int match_buf[num_goodmatch][2];
         int nmatch = matcher.GetSiftMatch(num_goodmatch, match_buf); // match descriptors
-        globalMatch[cam].matches.clear();
+        globalMatch[it].matches.clear();
         
         if (!continuous) // check if all continuous must be stored
         {
 	  if (nmatch < min_nmatch_reliable) // check reliability of match
 	  {
-	      reliableMatch[cam] = false;
+	      reliableMatch[it] = false;
 	      continue;
 	  }
         }
         
-        reliableMatch[cam] = true;
+        reliableMatch[it] = true;
         for (int i = 0; i < nmatch ; i++) // copy matches to internal match object
         {
-	  globalMatch[cam].matches.push_back(cv::DMatch( match_buf[i][0], match_buf[i][1], i ));
+	  globalMatch[it].matches.push_back(cv::DMatch( match_buf[i][0], match_buf[i][1], i ));
         }
-        globalMatch[cam].cam_id1 = cam;
-        globalMatch[cam].cam_id2 = cam+1;
+        globalMatch[it].cam_id1 = cam;
+        globalMatch[it].cam_id2 = cam+1;
         DEBUG_1( printf("MATCH: %04i -> %04i:\t#matches = %i\n", cam, cam+1, nmatch); )
+        it++;
     }
     DEBUG_2( std::cout << "End solveMatches\n"; )
 }
 
-void MatchesMap::solveMatches(std::vector< std::vector<float> > *descriptorsGPU)
+void MatchesMap::solveMatchesPairs_subgroup(std::vector< std::vector<float> > *descriptorsGPU, int init_image, int final_image )
 {
-    /** Example gratia how matches are stored. If I have n = 5 images then: \n
-     * The total number of possible matches is n*(n-1)/2 = 10 \n
-     * The matches are organized in a vector with a MatchQuery structure \n
-     * In a MatchQuery we have explicit camera number of matches: \n
-     * globalMatch[X].cam1 or globalMatch[X].cam2 ; where X is the combination number and cam1 is the first image matched with second image cam2 \n
-     * globalMatch[X].matches is a std::vector< cv::DMatch > \n
-     * The matches are organized as follows: \n
-     * Having,  globalMatch[0] => images 0-1 ;  From now it is defined the equivalent notation 0) => 0-1; \n
-     * Therefore, the 10 combinations are: \n
-     * 0) => 0-1; 1) => 1-2; 2) => 2-3; 3) => 3-4; 4) => 0-2; 5) => 1-3; 6) => 2-4; 7) => 0-3; 8) => 1-4; 9) => 0-4; \n
-     */
-//     std::cout << "Start solveMatches\n";
+    DEBUG_2( std::cout << "Start solveMatches\n"; )
     SiftMatchGPU matcher(num_goodmatch);
     
     if(matcher.VerifyContextGL() == 0)
@@ -86,21 +75,18 @@ void MatchesMap::solveMatches(std::vector< std::vector<float> > *descriptorsGPU)
         return;
     }
         
-    num_images = descriptorsGPU->size();
-    register int stride = 1;
-    register int cam = 0;
-    register int it = 0;
-
-//     int combinations = factorial(num_images)/(2*factorial(num_images-2)); // calculate combinations of matches
-    int combinations = (num_images*(num_images-1))/2; // calculate combinations of matches
+    num_images = final_image - init_image;
+    int combinations = (num_images*(num_images-1))/2;
+    register int cam = init_image;
+    register int it = globalMatch.size();
     
-    globalMatch.resize(combinations);
-    reliableMatch.resize(combinations);
-    DEBUG_1( std::cout << "\n================================ MATCH Features ==================================\n"; )
-    while(it < combinations)
+    for(int k = 0; k < combinations; ++k)
     {
-        for(cam = 0; cam + stride < num_images; cam++)
+        for(register int stride = 1; cam + stride < final_image; stride++)
         {
+	  globalMatch.push_back( MatchQuery() );
+	  reliableMatch.push_back( false );
+	  
 	  int ft_per_im1 = int( (*descriptorsGPU)[cam].size()/128 );
 	  int ft_per_im2 = int( (*descriptorsGPU)[cam+stride].size()/128 );
 	  matcher.SetDescriptors(0, ft_per_im1, &((*descriptorsGPU)[cam][0])); // prepare descriptor1
@@ -112,9 +98,9 @@ void MatchesMap::solveMatches(std::vector< std::vector<float> > *descriptorsGPU)
 
 	  if (nmatch < min_nmatch_reliable) // check reliability of match
 	  {
-	      if( !(continuous && (stride == 1)) )
+	      if( !(continuous && (stride == 1)) ) // if ICP is enabled do this
 	      {
-		reliableMatch[it] = false;
+// 		reliableMatch[it] = false;
 		it++;
 		continue;
 	      }
@@ -130,9 +116,185 @@ void MatchesMap::solveMatches(std::vector< std::vector<float> > *descriptorsGPU)
 	  DEBUG_1( printf("MATCH: %04i -> %04i:\t#matches = %i\n", cam, cam+stride, nmatch); )
 	  it++;
         }
-        stride++;
+        cam++;
     }
     DEBUG_2( std::cout << "End solveMatches\n"; )
+
+}
+
+void MatchesMap::solveMatchesOneElement_subgroupUp(std::vector< std::vector<float> > *descriptorsGPU, int element, int final_image )
+{
+    DEBUG_2( std::cout << "Start solveMatches\n"; )
+    SiftMatchGPU matcher(num_goodmatch);
+    
+    if(matcher.VerifyContextGL() == 0)
+    {
+        fprintf(stderr, "Can't open OpenGL context for Matcher in SiftGPU\n");
+        return;
+    }
+        
+    num_images = final_image - element;
+    int combinations = num_images-1;
+    register int base = element;
+    register int it = globalMatch.size();
+    int k = 0;
+    for(register int stride = 1 + base; k < combinations; ++stride, ++k)
+    {
+        globalMatch.push_back( MatchQuery() );
+        reliableMatch.push_back( false );
+        
+        int ft_per_im1 = int( (*descriptorsGPU)[base].size()/128 );
+        int ft_per_im2 = int( (*descriptorsGPU)[stride].size()/128 );
+        matcher.SetDescriptors(0, ft_per_im1, &((*descriptorsGPU)[base][0])); // prepare descriptor1
+        matcher.SetDescriptors(1, ft_per_im2, &((*descriptorsGPU)[stride][0])); // prepare descritor2
+        
+        int match_buf[num_goodmatch][2];
+        int nmatch = matcher.GetSiftMatch(num_goodmatch, match_buf); // match descriptors
+        globalMatch[it].matches.clear();
+        
+        if (nmatch < min_nmatch_reliable) // check reliability of match
+        {
+	  if( !(continuous && (stride - base == 1)) ) // if ICP is enabled do this
+	  {
+// 		reliableMatch[it] = false;
+	      it++;
+	      continue;
+	  }
+        }
+        
+        reliableMatch[it] = true;
+        for (int i = 0; i < nmatch ; i++) // copy matches to internal match object
+        {
+	  globalMatch[it].matches.push_back(cv::DMatch( match_buf[i][0], match_buf[i][1], i ));
+        }
+        globalMatch[it].cam_id1 = base;
+        globalMatch[it].cam_id2 = stride;
+        DEBUG_1( printf("MATCH: %04i -> %04i:\t#matches = %i\n", base, stride, nmatch); )
+        it++;
+    }
+    DEBUG_2( std::cout << "End solveMatches\n"; )
+}
+
+void MatchesMap::solveMatchesOneElement_subgroupDown(std::vector< std::vector<float> > *descriptorsGPU, int init_image, int element )
+{
+    DEBUG_2( std::cout << "Start solveMatches\n"; )
+    SiftMatchGPU matcher(num_goodmatch);
+    
+    if(matcher.VerifyContextGL() == 0)
+    {
+        fprintf(stderr, "Can't open OpenGL context for Matcher in SiftGPU\n");
+        return;
+    }
+        
+    num_images = element - init_image;
+    int combinations = num_images-1;
+    register int base = element;
+    register int it = globalMatch.size();
+    int k = 0;
+    for(register int cam = init_image; k < combinations; ++cam, ++k)
+    {
+        globalMatch.push_back( MatchQuery() );
+        reliableMatch.push_back( false );
+        
+        int ft_per_im1 = int( (*descriptorsGPU)[cam].size()/128 );
+        int ft_per_im2 = int( (*descriptorsGPU)[base].size()/128 );
+        matcher.SetDescriptors(0, ft_per_im1, &((*descriptorsGPU)[cam][0])); // prepare descriptor1
+        matcher.SetDescriptors(1, ft_per_im2, &((*descriptorsGPU)[base][0])); // prepare descritor2
+        
+        int match_buf[num_goodmatch][2];
+        int nmatch = matcher.GetSiftMatch(num_goodmatch, match_buf); // match descriptors
+        globalMatch[it].matches.clear();
+        
+        if (nmatch < min_nmatch_reliable) // check reliability of match
+        {
+	  if( !(continuous && (base - cam == 1)) ) // if ICP is enabled do this
+	  {
+// 		reliableMatch[it] = false;
+	      it++;
+	      continue;
+	  }
+        }
+        
+        reliableMatch[it] = true;
+        for (int i = 0; i < nmatch ; i++) // copy matches to internal match object
+        {
+	  globalMatch[it].matches.push_back(cv::DMatch( match_buf[i][0], match_buf[i][1], i ));
+        }
+        globalMatch[it].cam_id1 = cam;
+        globalMatch[it].cam_id2 = base;
+        DEBUG_1( printf("MATCH: %04i -> %04i:\t#matches = %i\n", cam, base, nmatch); )
+        it++;
+    }
+    DEBUG_2( std::cout << "End solveMatches\n"; )
+}
+
+void MatchesMap::solveMatchesOneElement_subgroup(std::vector< std::vector<float> > *descriptorsGPU, int element, int init_image, int final_image )
+{
+    solveMatchesOneElement_subgroupDown( descriptorsGPU, init_image, element );
+    solveMatchesOneElement_subgroupUp( descriptorsGPU, element, final_image );
+}
+
+void MatchesMap::solveMatchesOneElement(std::vector< std::vector<float> > *descriptorsGPU, int element)
+{
+    int start = 0;
+    int end = descriptorsGPU->size();
+    solveMatchesOneElement_subgroup( descriptorsGPU, element, start, end );
+}
+
+void MatchesMap::solveMatchesContinuous(std::vector< std::vector<float> > *descriptorsGPU)
+{
+    int init_image = 0;
+    int final_image = descriptorsGPU->size();
+    globalMatch.clear();
+    reliableMatch.clear();
+    DEBUG_1( std::cout << "\n================================ MATCH Features ==================================\n"; )
+    solveMatchesContinuous_subgroup( descriptorsGPU, init_image, final_image );
+    solveMatchesOneElement( descriptorsGPU, final_image - 1 ); // do this for loop closure
+}
+
+void MatchesMap::solveMatches(std::vector< std::vector<float> > *descriptorsGPU)
+{
+    /** Example gratia how matches are stored. If I have n = 5 images then: \n
+     * The total number of possible matches is n*(n-1)/2 = 10 \n
+     * The matches are organized in a vector with a MatchQuery structure \n
+     * In a MatchQuery we have explicit camera number of matches: \n
+     * globalMatch[X].cam1 or globalMatch[X].cam2 ; where X is the combination number and cam1 is the first image matched with second image cam2 \n
+     * globalMatch[X].matches is a std::vector< cv::DMatch > \n
+     * The matches are organized as follows: \n
+     * Having,  globalMatch[0] => images 0-1 ;  From now it is defined the equivalent notation 0) => 0-1; \n
+     * Therefore, the 10 combinations are: \n
+     * 0) => 0-1; 1) => 0-2; 2) => 0-3; 3) => 0-4; 4) => 1-2; 5) => 1-3; 6) => 1-4; 7) => 2-3; 8) => 2-4; 9) => 3-4; \n
+     * The combinations are computed in this order to get a good solution in solveDB where image features are introduced to achieve loop closure.
+     */ 
+    
+    int init = 0;
+    int final_image = descriptorsGPU->size();
+    globalMatch.clear();
+    reliableMatch.clear();
+    DEBUG_1( std::cout << "\n================================ MATCH Features ==================================\n"; )
+    solveMatchesPairs_subgroup( descriptorsGPU, init, final_image );
+}
+
+void MatchesMap::solveMatchesGroups(std::vector< std::vector<float> > *descriptorsGPU, int groupsize)
+{
+    if( groupsize < 1 )
+    {
+        DEBUG_E( ("Group Size must be equal or greater than one") ); 
+        exit(-1);
+    }
+    
+    int size = groupsize;
+    int init_image = 0;
+    int total_images = descriptorsGPU->size();
+    int groups = ceil( total_images/size );
+    DEBUG_1( std::cout << "\n================================ MATCH Features ==================================\n"; )
+    for(register int cam = init_image; cam < groups; ++cam)
+    {
+        int final_image = (cam + 1)*size + 1;
+        if( final_image >= total_images ) final_image = total_images;
+        solveMatchesPairs_subgroup( descriptorsGPU, cam*size, final_image );
+        solveMatchesOneElement( descriptorsGPU, final_image - 1 );
+    }
 }
 
 void MatchesMap::robustifyMatches(std::vector< std::vector< cv::KeyPoint > > *set_of_keypoints)
@@ -293,14 +455,9 @@ void MatchesMap::depthFilter(std::vector< std::vector< SiftGPU::SiftKeypoint > >
 void MatchesMap::solveDB( HandleDB *mydb, std::vector< std::vector<SiftGPU::SiftKeypoint> > *keypointsGPU )
 {
     actualfeature = 0;
-    int base = 0;
-    int cam = 1;
-    int count = 0;
-    int it = 0;
     // loop closure code
-    while(count < reliableMatch.size())
+    for (register int it = 0; it < reliableMatch.size(); ++it)
     {
-//         std::cout << "count = " << count << "\n";
 //         std::cout << "it = " << it << "\n";
         if (reliableMatch[it])
         {
@@ -336,82 +493,23 @@ void MatchesMap::solveDB( HandleDB *mydb, std::vector< std::vector<SiftGPU::Sift
 	      }
 	  }  
         }
-        
-        if (reliableMatch.size() > num_images ) // Condition to see how the matches were solved. If continuous it and count are the same
-        {
-	  it = it + (num_images - cam);
-	  cam++;
-	  if (num_images == cam+base)
-	  {
-	      base++;
-	      it = base;
-	      cam = 1;
-	  }
-        }
-        else it++;
-        count++;
     }
-    //open loop code
-//     for(int it = 0; it < reliableMatch.size(); it++)
-//     {
-//         if (reliableMatch[it])
-//         {
-// 	  for (int k = 0; k < globalMatch[it].matches.size(); k++)
-// 	  {
-// 	      int cam1 = globalMatch[it].cam_id1;
-// 	      int cam2 = globalMatch[it].cam_id2;
-// 	      int idft_c1 = globalMatch[it].matches[k].queryIdx;
-// 	      int idft_c2 = globalMatch[it].matches[k].trainIdx;
-// 	      int sf1, sf2;
-// 	      
-// 	      bool find1 = mydb->searchFeature(cam1, idft_c1, &sf1);
-// 	      bool find2 = mydb->searchFeature(cam2, idft_c2, &sf2);
-// 	      if (find1 && find2)
-// 	      {
-// 		continue;
-// 	      }
-// 	      else if (find1)
-// 	      {
-// 		mydb->insertRow( sf1, cam2, idft_c2,(*keypointsGPU)[cam2][idft_c2].x, (*keypointsGPU)[cam2][idft_c2].y );
-// // 		continue;
-// 	      }
-// 	      else if (find2)
-// 	      {
-// 		mydb->insertRow( sf2, cam1, idft_c1, (*keypointsGPU)[cam1][idft_c1].x, (*keypointsGPU)[cam1][idft_c1].y );
-// // 		continue;
-// 	      }
-// 	      else
-// 	      {
-// 		mydb->insertRow( actualfeature, cam1, idft_c1, (*keypointsGPU)[cam1][idft_c1].x, (*keypointsGPU)[cam1][idft_c1].y );
-// 		mydb->insertRow( actualfeature, cam2, idft_c2, (*keypointsGPU)[cam2][idft_c2].x, (*keypointsGPU)[cam2][idft_c2].y );
-// 		actualfeature++;
-// 	      }
-// 	  }  
-//         }
-//     }
 }
-	      
-	      // 	      bool inc1 = mydb->insertUnique(actualfeature, cam1, idft_c1, 
-	      // 				     (*keypointsGPU)[cam1][idft_c1].x, (*keypointsGPU)[cam1][idft_c1].y );
-	      // 	      
-	      // 	      bool inc2 = mydb->insertUnique(actualfeature, cam2, idft_c2, 
-	      // 				     (*keypointsGPU)[cam2][idft_c2].x, (*keypointsGPU)[cam2][idft_c2].y );
+
+// 	      bool inc1 = mydb->insertUnique(actualfeature, cam1, idft_c1, 
+// 				     (*keypointsGPU)[cam1][idft_c1].x, (*keypointsGPU)[cam1][idft_c1].y );
+// 	      
+// 	      bool inc2 = mydb->insertUnique(actualfeature, cam2, idft_c2, 
+// 				     (*keypointsGPU)[cam2][idft_c2].x, (*keypointsGPU)[cam2][idft_c2].y );
 
 
 void MatchesMap::solveDB3D( HandleDB *mydb, std::vector< std::vector<SiftGPU::SiftKeypoint> > *keypointsGPU,
 		        std::vector< std::string > *depth_list, Eigen::Matrix3d &calibration )
 {
-    
-    
     actualfeature = 0;
-    int base = 0;
-    int cam = 1;
-    int count = 0;
-    int it = 0;
     // loop closure code
-    while(count < reliableMatch.size())
+    for (register int it = 0; it < reliableMatch.size(); ++it)
     {
-//         std::cout << "count = " << count << "\n";
 //         std::cout << "it = " << it << "\n";
         if (reliableMatch[it])
         {
@@ -462,20 +560,6 @@ void MatchesMap::solveDB3D( HandleDB *mydb, std::vector< std::vector<SiftGPU::Si
 	      }
 	  }  
         }
-        
-        if (reliableMatch.size() > num_images ) // Condition to see how the matches were solved. If continuous it and count are the same
-        {
-	  it = it + (num_images - cam);
-	  cam++;
-	  if (num_images == cam+base)
-	  {
-	      base++;
-	      it = base;
-	      cam = 1;
-	  }
-        }
-        else it++;
-        count++;
     }
 }
 
