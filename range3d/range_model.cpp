@@ -233,6 +233,10 @@ int main(int argc, char* argv[])
     // ====================================================================================================
     // ========================================== Start execution =========================================
     // ====================================================================================================
+    typedef std::vector< Eigen::Quaternion<double> > Qd_vector;
+    typedef std::vector< Eigen::Vector3d > V3d_vector;
+    boost::shared_ptr< Qd_vector > Qn_global;
+    boost::shared_ptr< V3d_vector > tr_global;
     
     HandleDB mydb( (char*)filename_db.c_str() );
     mydb.openDB();
@@ -251,8 +255,11 @@ int main(int argc, char* argv[])
         MatchesMap my_mmap(400,35);
         my_mmap.setAllContinousOn(); // ENABLE CONTINOUS MATCHES ALWAYS TO ALLOW ICP WORK
 //         my_mmap.solveMatches(&myfeat.descriptorsGPU);
-//         my_mmap.solveMatchesGroups(&myfeat.descriptorsGPU, 5);
-        my_mmap.solveMatchesContinuous(&myfeat.descriptorsGPU);
+//         my_mmap.solveMatchesContinuous(&myfeat.descriptorsGPU);
+        my_mmap.solveMatchesGroups(&myfeat.descriptorsGPU, 10);
+/*        std::vector<int> bb;
+        bb.push_back(5); bb.push_back(10); bb.push_back(20), bb.push_back(imageList_rgb.size());
+        my_mmap.solveMatchesGroups(&myfeat.descriptorsGPU, &bb);  */      
         my_mmap.robustifyMatches(&myfeat.keypointsGPU);
         my_mmap.depthFilter(&myfeat.keypointsGPU, &imageList_depth, num_depth_filter);
         timer1.start();
@@ -264,11 +271,11 @@ int main(int argc, char* argv[])
 //         gp.run( &imageList_depth, &my_mmap.reliableMatch, &my_mmap.globalMatch, &myfeat.keypointsGPU, true ); // true for optimal
 // //         gp.solveLocalPoseAllNodes( &imageList_depth, &my_mmap.reliableMatch, &my_mmap.globalMatch, &myfeat.keypointsGPU );
 // //         gp.solveEdgesAllNodes();
-// //         
 // //         gp.solveGraph();
 // //         gp.solveGlobalPoseAllNodes();
-// // //         gp.solveGlobalPoseContinuous();
-        
+// // //         gp.solveGlobalPoseContinuous();        
+//         Qn_global = gp.getPtrGlobalQuaternion();
+//         tr_global = gp.getPtrGlobalTranslation();
         
 //         weights = gp.getWeights();
 //         edges_pairs = gp.getEdgesPairs();
@@ -301,32 +308,14 @@ int main(int argc, char* argv[])
     timer1.start();
     sr01.solvePose( &featM.visibility, &featM.coordinates3D, true ); // true for optimal
     std::cout << "Elapsed time to solve Pose: " << timer1.elapsed_s() << " [s]\n";
+    Qn_global = sr01.getPtrGlobalQuaternion();
+    tr_global = sr01.getPtrGlobalTranslation();
 //     
 //     // Print lin and opt
 //     SimpleRegistration sr02( num_cameras, num_features, K );
 //     timer1.start();
 //     sr02.solvePose( &featM.visibility, &featM.coordinates3D, false ); // true for optimal
 //     std::cout << "Elapsed time to solve Pose: " << timer1.elapsed_s() << " [s]\n";
-    
-    // Write files of global quaternion and translation
-//     if ( save_txt )
-//     {
-//         std::string txt_file1, txt_file2;
-//         txt_file1 = txt_file2 = base_filename;
-//         txt_file1.append("_rot");
-//         txt_file2.append("_tr");
-//         
-//         exportTXTQuaternionVector( (txt_file1 + "_gp.txt").c_str(), gp.Qn_global);
-//         exportTXTTranslationVector( (txt_file2 + "_gp.txt").c_str(), gp.tr_global);
-// //         exportTXTQuaternionVector( (txt_file1 + "_sr_opt.txt").c_str(), sr01.Qn_global);
-// //         exportTXTTranslationVector( (txt_file2 + "_sr_opt.txt").c_str(), sr01.tr_global);
-// //         exportTXTQuaternionVector( (txt_file1 + "_sr_lin.txt").c_str(), sr02.Qn_global);
-// //         exportTXTTranslationVector( (txt_file2 + "_sr_lin.txt").c_str(), sr02.tr_global);
-//         
-// //         exportTXTQuaternionVector( (txt_file1 + "_gl-opt.txt").c_str(), gp.Qn_global);
-// //         exportTXTTranslationVector( (txt_file2 + "_gl-opt.txt").c_str(), gp.tr_global);
-//     }
-    
     
     // Test one merge. Use to show in blue the proximity
 //     boost::shared_ptr< Eigen::MatrixXd > Cov1, Cov2, Cov_New;
@@ -340,47 +329,51 @@ int main(int argc, char* argv[])
     
     // RUN GLOBAL Optimization
     GlobalPose3D global01;
-//     global01.solve(&featM.visibility, &featM.coordinates3D, &K, &gp.Qn_global, &gp.tr_global);
-    global01.solve(&featM.visibility, &featM.coordinates3D, &K, &sr01.Qn_global, &sr01.tr_global);
+    global01.solve(&featM.visibility, &featM.coordinates3D, &K, Qn_global.get(), tr_global.get() );
     pcl::PointCloud<pcl::PointXYZ>::Ptr cloudE;
     eigen2pointcloud( global01.Structure, cloudE );
     
-//     setCoordinatestoOrigin(gp.Qn_global, gp.tr_global);
-    setCoordinatestoOrigin(sr01.Qn_global, sr01.tr_global);
-    
-    // Load ground truth
-//     std::vector< Eigen::Quaternion<double> > ground_qn_global;
-//     std::vector< Eigen::Vector3d > ground_tr_global;
-//     importTXTQuaternionVector( "freiburg3_ground_rot.txt", ground_qn_global );
-//     importTXTTranslationVector( "freiburg3_ground_tr.txt", ground_tr_global );
-//     setCoordinatestoOrigin(ground_qn_global, ground_tr_global);
-    
-    
+    setCoordinatestoOrigin(*Qn_global, *tr_global);
 //     Eigen::Quaternion<double> q_desired( 0.92388, 0.0, -0.38268, 0.0 ); // 45 degrees y axis
 //     Eigen::Vector3d t_desired(-0.70711, 0.0, -0.70711 ); // center = [1,0,0]
 //     setCoordinatestoDesiredPosition( gp.Qn_global, gp.tr_global, q_desired, t_desired, 4 ); // move camera 5 to desired point
     
+    // Load ground truth
+//     Qd_vector ground_qn_global;
+//     V3d_vector ground_tr_global;
+//     importTXTQuaternionVector( "freiburg3_ground_rot.txt", ground_qn_global );
+//     importTXTTranslationVector( "freiburg3_ground_tr.txt", ground_tr_global );
+//     setCoordinatestoOrigin(ground_qn_global, ground_tr_global);
     
-//     if ( save_txt )
-//     {
-//         std::string txt_file1, txt_file2;
-//         txt_file1 = txt_file2 = base_filename;
-//         txt_file1.append("_rot");
-//         txt_file2.append("_tr");
-//         exportTXTQuaternionVector( (txt_file1 + "_gl_opt.txt").c_str(), gp.Qn_global);
-//         exportTXTTranslationVector( (txt_file2 + "_gl_opt.txt").c_str(), gp.tr_global);
-//     }
+    // Write files of global quaternion and translation
+    if ( save_txt )
+    {
+        std::string txt_file1, txt_file2;
+        txt_file1 = txt_file2 = base_filename;
+        txt_file1.append("_rot");
+        txt_file2.append("_tr");
+        
+//         exportTXTQuaternionVector( (txt_file1 + "_gp.txt").c_str(), *gp.getPtrGlobalQuaternion() );
+//         exportTXTTranslationVector( (txt_file2 + "_gp.txt").c_str(), *gp.getPtrGlobalTranslation() );
+//         exportTXTQuaternionVector( (txt_file1 + "_sr_opt.txt").c_str(), *sr01.getPtrGlobalQuaternion() );
+//         exportTXTTranslationVector( (txt_file2 + "_sr_opt.txt").c_str(), *sr01.getPtrGlobalTranslation() );
+//         exportTXTQuaternionVector( (txt_file1 + "_sr_lin.txt").c_str(), *sr02.getPtrGlobalQuaternion() );
+//         exportTXTTranslationVector( (txt_file2 + "_sr_lin.txt").c_str(), *sr02.getPtrGlobalTranslation() );
+        exportTXTQuaternionVector( (txt_file1 + "_gl_opt.txt").c_str(), *Qn_global);
+        exportTXTTranslationVector( (txt_file2 + "_gl_opt.txt").c_str(), *tr_global);
+    }
     
     std::vector< pcl::PointCloud<pcl::PointXYZRGBA>::Ptr > set_cloud;
     std::vector< boost::shared_ptr< Eigen::MatrixXd > > set_covariance;
-//     cv2PointCloudSet(imageList_rgb, imageList_depth, K, gp.Qn_global, gp.tr_global, set_cloud, set_covariance);
-    cv2PointCloudSet(imageList_rgb, imageList_depth, K, sr01.Qn_global, sr01.tr_global, set_cloud, set_covariance);
+    cv2PointCloudSet(imageList_rgb, imageList_depth, K, *Qn_global, *tr_global, set_cloud, set_covariance);
     
     pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloud_join;
 //     mergeCloudSet( set_cloud, set_covariance, cloud_join );
 //     set2unique( set_cloud, cloud_join );
     
     // ============================================ Visualization ============================================
+//     Qd_vector qnl = *Qn_global;
+//     V3d_vector tnl = *tr_global;
     
     boost::shared_ptr<pcl::visualization::PCLVisualizer> viewer;
     
@@ -393,19 +386,20 @@ int main(int argc, char* argv[])
     viewer->setBackgroundColor (1.0, 1.0, 1.0);
     
     // Visualize Camera positions
-    visualizeCameras( viewer, sr01.Qn_global, sr01.tr_global );
-//     visualizeCameras( viewer, sr02.Qn_global, sr02.tr_global );
-//     visualizeCameras( viewer, gp.Qn_global, gp.tr_global );
-    
-//     visualizeCameras(viewer, imageList_rgb, sr01.Qn_global, sr01.tr_global );
-//     visualizeCameras(viewer, imageList_rgb, gp.Qn_global, gp.tr_global );
+//     visualizeCameras( viewer, *sr01.getPtrGlobalQuaternion(), *sr01.getPtrGlobalTranslation() );
+//     visualizeCameras( viewer, *sr02.getPtrGlobalQuaternion(), *sr02.getPtrGlobalTranslation() );
+//     visualizeCameras( viewer, *gp.getPtrGlobalQuaternion(), *gp.getPtrGlobalTranslation() );
+    visualizeCameras( viewer, *Qn_global, *tr_global );
+
+//     visualizeCameras(viewer, imageList_rgb, *Qn_global, *tr_global );
     
     // Other visualizations
-//     visualizeTrack( viewer, gp.Qn_global, gp.tr_global );
-    visualizeTrack( viewer, sr01.Qn_global, sr01.tr_global );
+    visualizeTrack( viewer, *Qn_global, *tr_global );
+//     visualizeTrack( viewer, *gp.getPtrGlobalQuaternion(), *gp.getPtrGlobalTranslation() );
+//     visualizeTrack( viewer, *sr01.getPtrGlobalQuaternion(), *sr01.getPtrGlobalTranslation() );
 //     visualizeTrack( viewer, ground_qn_global, ground_tr_global, Eigen::Vector3d( 0.9, 0.0, 0.0 ) );
     
-//     visualizeNoise(viewer, sr01.Xmodel, sr01.Variance, sr01.Qn_global, sr01.tr_global, 500 );
+//     visualizeNoise(viewer, *sr01.getPtrXmodel(), *sr01.getPtrVariance(), *sr01.getPtrGlobalQuaternion(), *sr01.getPtrGlobalTranslation(), 500 );
     
 //     visualizeGraph( num_vertex, num_edges, weights, edges_pairs );
     

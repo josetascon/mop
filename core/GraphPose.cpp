@@ -145,13 +145,13 @@ void GraphPose::solveGraph( int initbfs )
 void GraphPose::solveGlobalPose( std::vector< std::string > *list_depth, std::vector< MatchQuery > *globalMatch, 
 		        std::vector< std::vector< SiftGPU::SiftKeypoint > > *set_of_keypoints, bool optimal )
 {
-    Qn_global.clear();
-    tr_global.clear();
-    Qn_global.resize(vertices);
-    tr_global.resize(vertices);
+    Qn_global->clear();
+    tr_global->clear();
+    Qn_global->resize(vertices);
+    tr_global->resize(vertices);
     
-    Qn_global[ discover_time[0] ] = Eigen::Quaternion<double>::Identity();
-    tr_global[ discover_time[0] ] = Eigen::Vector3d::Zero();
+    Qn_global->at( discover_time[0] ) = Eigen::Quaternion<double>::Identity();
+    tr_global->at( discover_time[0] ) = Eigen::Vector3d::Zero();
     DEBUG_1( std::cout << "\n================================ GRAPH, Solution to relative poses ==================================\n"; )
     for (register int k = 1; k < discover_time.size(); ++k)
     {
@@ -168,8 +168,8 @@ void GraphPose::solveGlobalPose( std::vector< std::string > *list_depth, std::ve
 	  poseInID( idp, list_depth, globalMatch, set_of_keypoints, optimal );
 	  Eigen::Quaternion<double> quat(Rot);
 	  
-	  Qn_global[v2] = quat.conjugate()*Qn_global[v1];
-	  tr_global[v2] = quat.conjugate()*(tr_global[v1] - tr);
+	  Qn_global->at(v2) = quat.conjugate()*Qn_global->at(v1);
+	  tr_global->at(v2) = quat.conjugate()*(tr_global->at(v1) - tr);
         }
         else
         {
@@ -180,21 +180,21 @@ void GraphPose::solveGlobalPose( std::vector< std::string > *list_depth, std::ve
 	  poseInID( idp, list_depth, globalMatch, set_of_keypoints, optimal );
 	  Eigen::Quaternion<double> quat(Rot);
 	  
-	  Qn_global[v2] = quat*Qn_global[v1];
-	  tr_global[v2] = quat*tr_global[v1] + tr;
+	  Qn_global->at(v2) = quat*Qn_global->at(v1);
+	  tr_global->at(v2) = quat*tr_global->at(v1) + tr;
         }
     }
 }
 
 void GraphPose::solveGlobalPoseAllNodes()
 {
-    Qn_global.clear();
-    tr_global.clear();
-    Qn_global.resize(vertices);
-    tr_global.resize(vertices);
+    Qn_global->clear();
+    tr_global->clear();
+    Qn_global->resize(vertices);
+    tr_global->resize(vertices);
     
-    Qn_global[ discover_time[0] ] = Eigen::Quaternion<double>::Identity();
-    tr_global[ discover_time[0] ] = Eigen::Vector3d::Zero();
+    Qn_global->at( discover_time[0] ) = Eigen::Quaternion<double>::Identity();
+    tr_global->at( discover_time[0] ) = Eigen::Vector3d::Zero();
     DEBUG_1( std::cout << "\n================================ GRAPH, Solution to relative poses ==================================\n"; )
     for (register int k = 1; k < discover_time.size(); ++k)
     {
@@ -208,8 +208,8 @@ void GraphPose::solveGlobalPoseAllNodes()
 	  // Debug
 	  DEBUG_1( std::cout << "Find: " << v1 << " -> " << v2 << "\t||\tEdge: "<< idp <<"\n"; )
 	  
-	  Qn_global[v2] = localPose[idp].quaternion.conjugate()*Qn_global[v1];
-	  tr_global[v2] = localPose[idp].quaternion.conjugate()*(tr_global[v1] - localPose[idp].translation);
+	  Qn_global->at(v2) = localPose[idp].quaternion.conjugate()*Qn_global->at(v1);
+	  tr_global->at(v2) = localPose[idp].quaternion.conjugate()*(tr_global->at(v1) - localPose[idp].translation);
         }
         else
         {
@@ -217,21 +217,21 @@ void GraphPose::solveGlobalPoseAllNodes()
 	  // Debug
 	  DEBUG_1( std::cout << "Find: " << v1 << " -> " << v2 << "\t||\tEdge: "<< idp <<"\n"; )
 	  
-	  Qn_global[v2] = localPose[idp].quaternion*Qn_global[v1];
-	  tr_global[v2] = localPose[idp].quaternion*tr_global[v1] + localPose[idp].translation;
+	  Qn_global->at(v2) = localPose[idp].quaternion*Qn_global->at(v1);
+	  tr_global->at(v2) = localPose[idp].quaternion*tr_global->at(v1) + localPose[idp].translation;
         }
     }
 }
 
 void GraphPose::solveGlobalPoseContinuous()
 {
-    Qn_global.clear();
-    tr_global.clear();
-    Qn_global.resize(vertices);
-    tr_global.resize(vertices);
+    Qn_global->clear();
+    tr_global->clear();
+    Qn_global->resize(vertices);
+    tr_global->resize(vertices);
     
-    Qn_global[0] = Eigen::Quaternion<double>::Identity();
-    tr_global[0] = Eigen::Vector3d::Zero();
+    Qn_global->at(0) = Eigen::Quaternion<double>::Identity();
+    tr_global->at(0) = Eigen::Vector3d::Zero();
 
 //     std::cout << "Global Vertex Pose " << "\n";
 //     std::cout << "Vertex size: " << vertices << "\n";
@@ -241,8 +241,8 @@ void GraphPose::solveGlobalPoseContinuous()
         int idx = find_id_pair(edges_pairs, k, k+1 );
 //         std::cout << "idx: " << idx << "\n";
 //         std::cout << "k: " << k << "\n";
-        Qn_global[k+1] = localPose[idx].quaternion*Qn_global[k];
-        tr_global[k+1] = localPose[idx].quaternion*tr_global[k] + localPose[idx].translation;
+        Qn_global->at(k+1) = localPose[idx].quaternion*Qn_global->at(k);
+        tr_global->at(k+1) = localPose[idx].quaternion*tr_global->at(k) + localPose[idx].translation;
     }
 //     std::cout << "End | Global Vertex Pose " << "\n";
 }
@@ -254,10 +254,10 @@ void GraphPose::exportGRAPH( const char *filename )
     myfile1.open (filename);
     myfile1.precision(12);
 
-    for(int it = 0; it < Qn_global.size(); it++)
+    for(int it = 0; it < Qn_global->size(); it++)
     {
-        Eigen::Matrix3d rr = Qn_global[it].toRotationMatrix();
-        Eigen::Vector3d tr = rr.transpose()*(-tr_global[it]);
+        Eigen::Matrix3d rr = Qn_global->at(it).toRotationMatrix();
+        Eigen::Vector3d tr = rr.transpose()*(-tr_global->at(it));
         Eigen::Vector3d angles;
         rotation2angles( rr, angles, false ); //false for radians units
         

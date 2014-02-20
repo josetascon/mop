@@ -550,6 +550,14 @@ void rotation2angles_DetectZero(Eigen::Matrix< Tp, 3, 3 > &Rot, Eigen::Matrix< T
     return;
 }
 
+template< typename Tp >
+Eigen::Matrix< Tp, 4, 4 > transformationMatrix( Eigen::Quaternion< Tp > &quaternion, Eigen::Matrix< Tp, 3, 1 > &translation)
+{
+    Eigen::Matrix< Tp, 3, 3 > rr = quaternion.toRotationMatrix();
+    Eigen::Matrix< Tp, 4, 4 > ttmm;
+    ttmm << rr, translation, 0.0, 0.0, 0.0, 1.0;
+    return ttmm;
+}
 
 Eigen::Vector3d radialDistortionCorrection( Eigen::Vector3d &pt2d, Eigen::Matrix3d &kalib, Eigen::VectorXd &distCoeff );
 

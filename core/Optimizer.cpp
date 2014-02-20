@@ -72,7 +72,7 @@ void GlobalOptimizer::setParameters( Eigen::Matrix<bool,-1,-1> *view_matrix,
 void GlobalOptimizer::update()
 {
     vector_vector2quaternion_vector( qv_internal, *quaternion );
-//     (*translation)[1].normalize();
+//     translation->at(1).normalize();
 }
 
 /**
@@ -104,14 +104,14 @@ void GlobalOptimizer::runBA()//char *argv0)
         {
 	  CostFunction* cost_function0 = new AutoDiffCostFunction<RE_constKDQT_S, 2, 3>( 
 	      new RE_constKDQT_S( (*coordinates)(0,ft)(0), (*coordinates)(0,ft)(1), intrinsics->data(), distortion->data(), 
-			      qv_internal[0].data(), (*translation)[0].data() ));
+			      qv_internal[0].data(), translation->at(0).data() ));
 	  problem.AddResidualBlock(cost_function0, loss_function, (structure->data()+step*ft) );
         }
 //         if( (*visibility)(1,ft) == true && (*structure)(3,ft) )
 //         {
 // 	  CostFunction* cost_function1 = new AutoDiffCostFunction<RE_constKD_normT_QTS, 2, 4, 3, 3>( 
 // 	      new RE_constKD_normT_QTS( (*coordinates)(1,ft)(0), (*coordinates)(1,ft)(1), intrinsics->data(), distortion->data() ));
-// 	  problem.AddResidualBlock(cost_function1, loss_function, qv_internal[1].data(), (*translation)[1].data(), (structure->data()+step*ft) );
+// 	  problem.AddResidualBlock(cost_function1, loss_function, qv_internal[1].data(), translation->at(1).data(), (structure->data()+step*ft) );
 //         }
     }
     for (register int cam = 1; cam < num_cams; ++cam)
@@ -122,7 +122,7 @@ void GlobalOptimizer::runBA()//char *argv0)
 	  {
 	      CostFunction* cost_function = new AutoDiffCostFunction<RE_constKD_QTS, 2, 4, 3, 3>( 
 		new RE_constKD_QTS( (*coordinates)(cam,ft)(0), (*coordinates)(cam,ft)(1), intrinsics->data(), distortion->data() ));
-	      problem.AddResidualBlock(cost_function, loss_function, qv_internal[cam].data(), (*translation)[cam].data(), (structure->data()+step*ft) );
+	      problem.AddResidualBlock(cost_function, loss_function, qv_internal[cam].data(), translation->at(cam).data(), (structure->data()+step*ft) );
 	  }
         }
     }
@@ -203,10 +203,10 @@ void OptimizeG3D::pose_Covariance()
 	  {
 	      CostFunction* cost_function = new AutoDiffCostFunction<RE3D_QTS_Cov, 3, 4, 3, 3>( 
 		        new RE3D_QTS_Cov( ((*coordinates)(cam,ft).data()), (Variance->data()+step*ft)));
-	      problem.AddResidualBlock(cost_function, loss_function, qv_internal[cam].data(), (*trs)[cam].data(), (Pts->data()+step*ft) );
+	      problem.AddResidualBlock(cost_function, loss_function, qv_internal[cam].data(), trs->at(cam).data(), (Pts->data()+step*ft) );
 // 	      CostFunction* cost_function = new AutoDiffCostFunction<RE3D_constS_QT_Cov, 3, 4, 3>( 
 // 		        new RE3D_constS_QT_Cov( (Pts->data()+step*ft), ((*coordinates)(cam,ft).data()), (Variance->data()+step*ft)));
-// 	      problem.AddResidualBlock(cost_function, loss_function, qv_internal[cam].data(), (*trs)[cam].data() );
+// 	      problem.AddResidualBlock(cost_function, loss_function, qv_internal[cam].data(), trs->at(cam).data() );
 	  }
         }
         DEBUG_3( std::cout << "Camera: " << cam << "\n"; )
@@ -555,8 +555,8 @@ void PartialIncremental::update(int constant_cam, int num_cams)
 {
     for (register int cam = constant_cam; cam < num_cams; ++cam)
     {
-        eigen2quaternion(q_vector[cam],(*quaternion)[cam]);
-        (*quaternion)[cam].normalize();
+        eigen2quaternion(q_vector[cam],quaternion->at(cam));
+        quaternion->at(cam).normalize();
     }
 }
 
@@ -584,7 +584,7 @@ void PartialIncremental::run(int constant_cam, int num_cams)
 	  {
 	      CostFunction* cost_function0 = new AutoDiffCostFunction<RE_constKDQT_S, 2, 3>( 
 	      new RE_constKDQT_S( (*coordinates)(cam,ft)(0), (*coordinates)(cam,ft)(1), intrinsics->data(), distortion->data(), 
-			      q_vector[cam].data(), (*translation)[cam].data() ));
+			      q_vector[cam].data(), translation->at(cam).data() ));
 	      problem.AddResidualBlock(cost_function0, loss_function, (structure->data()+step*ft) );
 	  }
         }
@@ -597,7 +597,7 @@ void PartialIncremental::run(int constant_cam, int num_cams)
 	  {
     	      CostFunction* cost_function = new AutoDiffCostFunction<RE_constKD_QTS, 2, 4, 3, 3>( 
 		new RE_constKD_QTS( (*coordinates)(cam,ft)(0), (*coordinates)(cam,ft)(1), intrinsics->data(), distortion->data() ));
-	      problem.AddResidualBlock(cost_function, loss_function, q_vector[cam].data(), (*translation)[cam].data(), (structure->data()+step*ft) );
+	      problem.AddResidualBlock(cost_function, loss_function, q_vector[cam].data(), translation->at(cam).data(), (structure->data()+step*ft) );
 	  }
         }
     }
@@ -672,8 +672,8 @@ void BALOptimizer::update()
 {
     for (register int cam = 0; cam < q_vector.size(); ++cam)
     {
-        eigen2quaternion(q_vector[cam],(*quaternion)[cam]);
-        (*quaternion)[cam].normalize();
+        eigen2quaternion(q_vector[cam],quaternion->at(cam));
+        quaternion->at(cam).normalize();
     }
 }
 
@@ -705,7 +705,7 @@ double reprojectionErrorCalculation(Eigen::Matrix<bool,-1,-1> *visibility, Eigen
 	  {
     	      CostFunction* cost_function = new AutoDiffCostFunction<RE_constK_QTS, 2, 4, 3, 3>( 
 		new RE_constK_QTS( (*coordinates)(cam,ft)(0), (*coordinates)(cam,ft)(1), intrinsics->data()));
-	      problem.AddResidualBlock(cost_function, NULL, q_vector[cam].data(), (*translation)[cam].data(), (structure->data()+step*ft) );
+	      problem.AddResidualBlock(cost_function, NULL, q_vector[cam].data(), translation->at(cam).data(), (structure->data()+step*ft) );
 	  }
         }
     }

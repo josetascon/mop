@@ -79,26 +79,42 @@ private:
     void poseInID( int id, std::vector< std::string > *list_depth, 
 	std::vector< MatchQuery > *globalMatch, std::vector< std::vector< SiftGPU::SiftKeypoint > > *set_of_keypoints, bool optimal = true );
     
-public:
     PoseQuery::vector localPose;
-    std::vector< Eigen::Quaternion<double> > Qn_global;
-    std::vector< Eigen::Vector3d > tr_global;
+//     std::vector< Eigen::Quaternion<double> > Qn_global;
+//     std::vector< Eigen::Vector3d > tr_global;
     
+    typedef std::vector< Eigen::Quaternion<double> > Qd_vector;
+    typedef std::vector< Eigen::Vector3d > V3d_vector;
+    
+    boost::shared_ptr< Qd_vector > Qn_global;
+    boost::shared_ptr< V3d_vector > tr_global;
+    
+public:
     //Constructor
-    GraphPose() { load_calib = false; fallback_icp = false; };
-    //Destructor
-    ~GraphPose() { };
-    
+    GraphPose() 
+    {
+        load_calib = false;
+        fallback_icp = false;
+        initializePtrs();
+    };
     GraphPose( Eigen::Matrix3d &Calib )
     {
         setCalibration( Calib );
         fallback_icp = false;
+        initializePtrs();
+    };
+    //Destructor
+    ~GraphPose() { };
+    
+    void initializePtrs()
+    {
+        Qn_global = boost::shared_ptr< Qd_vector >( new Qd_vector());
+        tr_global = boost::shared_ptr< V3d_vector >( new V3d_vector());
     };
     
     void run( std::vector< std::string > *list_depth,
 	    std::vector<bool> *reliableMatch, std::vector< MatchQuery > *globalMatch,
 	    std::vector< std::vector< SiftGPU::SiftKeypoint > > *set_of_keypoints, bool optimal = true );
-    
     
     void solveLocalPoseAllNodes( std::vector< std::string > *list_depth,
 		    std::vector<bool> *reliableMatch, std::vector< MatchQuery > *globalMatch,
@@ -137,6 +153,18 @@ public:
     int getNumEdges() { return edges; }
     std::vector< float > getWeights() { return weights; }
     std::vector< std::pair <int,int> > getEdgesPairs() { return edges_pairs; }
+    
+    boost::shared_ptr< std::vector< Eigen::Quaternion<double> > > getPtrGlobalQuaternion()
+    {
+//         return boost::shared_ptr< std::vector< Eigen::Quaternion<double> > >( &Qn_global );
+        return Qn_global;
+    }
+    
+    boost::shared_ptr< std::vector< Eigen::Vector3d > > getPtrGlobalTranslation()
+    {
+//         return boost::shared_ptr< std::vector< Eigen::Vector3d > >( &tr_global );
+        return tr_global;
+    }
 };
 
 

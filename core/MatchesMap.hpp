@@ -18,7 +18,8 @@
 
 // Std Libraries
 #include <iostream>
-#include <fstream>				// ofstream and/or ifstream 
+#include <fstream>				// ofstream and/or ifstream
+// #include <math.h>
 
 // SiftGPU Library
 #include <SiftGPU.h>
@@ -80,6 +81,7 @@ public:
     void solveMatches( std::vector< std::vector<float> > *descriptorsGPU );
     void solveMatchesContinuous( std::vector< std::vector<float> > *descriptorsGPU );
     void solveMatchesGroups(std::vector< std::vector<float> > *descriptorsGPU, int groupsize);
+    void solveMatchesGroups(std::vector< std::vector<float> > *descriptorsGPU, std::vector<int> *cluster);
     
     void robustifyMatches( std::vector< std::vector< cv::KeyPoint > > *set_of_keypoints );
     void robustifyMatches(std::vector< std::vector< SiftGPU::SiftKeypoint > > *set_of_keypoints);

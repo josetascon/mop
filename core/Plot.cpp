@@ -595,10 +595,13 @@ void visualizeCameras(boost::shared_ptr<pcl::visualization::PCLVisualizer> &view
         Eigen::Matrix3d rot = quaternion[k].toRotationMatrix();
         Eigen::Vector3d orientation, center;
         Eigen::Matrix3d rot_inv = rot.transpose();
-        rotation2angles_DetectZero(rot_inv, orientation); // TODO NO use this. use transformation matrix in plotcamera (create function)
+        rotation2angles_DetectZero(rot_inv, orientation);
         center = -rot_inv*translation[k];
+//         Eigen::Matrix4d transform_matrix = transformationMatrix( quaternion[k], center );
+        
         double ratio = 1.333333;
         vtkSmartPointer<vtkActor> act02 = plotCamera(center, orientation, ratio, 0.04, 1.5);
+//         vtkSmartPointer<vtkActor> act02 = plotCamera( transform_matrix, ratio, 0.04, 1.5);
         act02->GetProperty()->SetColor( color(0), color(1), color(2) );
         
         std::stringstream ss;
@@ -1047,6 +1050,85 @@ vtkSmartPointer<vtkActor> plotCamera( const Eigen::Vector3d center, const Eigen:
     t->RotateZ(orientation(2));
     t->RotateY(orientation(1));
     t->RotateX(orientation(0));
+    
+    vtkSmartPointer<vtkTransformPolyDataFilter> tf = vtkSmartPointer<vtkTransformPolyDataFilter>::New ();
+    tf->SetTransform (t);
+    tf->SetInput(linesPolyData);
+    tf->Update();
+    
+    // Visualize
+    vtkSmartPointer<vtkPolyDataMapper> mapper = vtkSmartPointer<vtkPolyDataMapper>::New();
+    mapper->SetInputConnection(tf->GetOutputPort());
+    mapper->ScalarVisibilityOff();
+    
+    // Create an actor for the contours
+    vtkSmartPointer<vtkActor> actor = vtkSmartPointer<vtkActor>::New();
+    actor->SetMapper(mapper);
+    actor->GetProperty()->SetColor(0.2,0.8,0.8);
+    actor->GetProperty()->SetLineWidth(2);
+//     actor->GetProperty()->SetLighting (false);
+    return actor;
+}
+
+vtkSmartPointer<vtkActor> plotCamera( const Eigen::Matrix4d transform, 
+			        double proportion, double vertix, double depth)
+{
+//     double vertix = 0.15;
+//     double depth = 2.0;
+//     double proportion = 1.3333;
+    
+    // Create five points. 
+    double origin[3] = {0.0, 0.0, 0.0};
+    double p0[3] = {proportion*vertix, vertix, depth*vertix};
+    double p1[3] = {proportion*vertix, -vertix, depth*vertix};
+    double p2[3] = {-proportion*vertix, -vertix, depth*vertix};
+    double p3[3] = {-proportion*vertix, vertix, depth*vertix};
+    
+    // Create a vtkPoints object and store the points in it
+    vtkSmartPointer<vtkPoints> points = vtkSmartPointer<vtkPoints>::New();
+    points->InsertNextPoint(origin);
+    points->InsertNextPoint(p0);
+    points->InsertNextPoint(p1);
+    points->InsertNextPoint(p2);
+    points->InsertNextPoint(p3);
+    
+    // Create a cell array to store the lines in and add the lines to it
+    vtkSmartPointer<vtkCellArray> lines = vtkSmartPointer<vtkCellArray>::New();
+    
+    for (int i = 1; i < 5; i++)
+    {
+        vtkSmartPointer<vtkLine> line = vtkSmartPointer<vtkLine>::New();
+        line->GetPointIds()->SetId(0,0); 		// i is the number of the point in points. This plot lines from origin to i
+        line->GetPointIds()->SetId(1,i); 		// i is the number of the point in points. This plot lines from origin to i
+        lines->InsertNextCell(line);
+        
+        vtkSmartPointer<vtkLine> line2 = vtkSmartPointer<vtkLine>::New();
+//         line2->GetPointIds()->SetNumberOfIds(2); 		// two id to be inserted, 0 and 1
+        line2->GetPointIds()->SetId(0,i-1); 		// i is the number of the point in points, as the first point of the line
+        line2->GetPointIds()->SetId(1,i); 		// i+1 is the number of the point in points, as the second point of the line
+        lines->InsertNextCell(line2);
+    }
+    
+    vtkSmartPointer<vtkLine> line3 = vtkSmartPointer<vtkLine>::New();
+    line3->GetPointIds()->SetNumberOfIds(2);
+    line3->GetPointIds()->SetId(0,4);
+    line3->GetPointIds()->SetId(1,1);
+    lines->InsertNextCell(line3);
+    
+    // Create a polydata to store everything in
+    vtkSmartPointer<vtkPolyData> linesPolyData = vtkSmartPointer<vtkPolyData>::New();
+    linesPolyData->SetPoints(points);			// Add the points to the dataset
+    linesPolyData->SetLines(lines);			// Add the lines to the dataset
+    
+    // Transfrom the polydata (move)
+    vtkSmartPointer<vtkMatrix4x4> Tmatrix = vtkSmartPointer<vtkMatrix4x4>::New ();
+    for(register int i = 0; i < 4; ++i)
+        for(register int j = 0; j < 4; ++j)
+	  Tmatrix->SetElement (i, j, transform(i,j));
+    
+    vtkSmartPointer<vtkTransform> t = vtkSmartPointer<vtkTransform>::New ();
+    t->Identity(); 
+    t->SetMatrix(Tmatrix);
     
     vtkSmartPointer<vtkTransformPolyDataFilter> tf = vtkSmartPointer<vtkTransformPolyDataFilter>::New ();
     tf->SetTransform (t);

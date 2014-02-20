@@ -31,6 +31,7 @@
 #include <vtkPolyData.h>
 #include <vtkContourFilter.h>
 #include <vtkPolyDataMapper.h>
+#include <vtkMatrix4x4.h>
 #include <vtkTransform.h>
 #include <vtkTransformPolyDataFilter.h>
 #include <vtkRendererCollection.h>
@@ -188,6 +189,8 @@ vtkSmartPointer<vtkActor> actorEllipsoid(const Eigen::Vector3d center, const Eig
 vtkSmartPointer<vtkActor> actorEllipsoidContour(const Eigen::Vector3d center, const Eigen::Vector3d radius, int num_contours = 15, int normal = 0);
 vtkSmartPointer<vtkActor> plotCamera( const Eigen::Vector3d center, const Eigen::Vector3d orientation, 
 			        double proportion = 1.33333, double vertix = 0.15, double depth = 2.0);
+vtkSmartPointer<vtkActor> plotCamera( const Eigen::Matrix4d transform, 
+			        double proportion, double vertix, double depth);
 vtkSmartPointer<vtkActor> plotText( const std::string text,  const Eigen::Vector3d center, 
 				  const Eigen::Vector3d orientation, const Eigen::Vector3f color, float fontsize = 1.0);
 vtkSmartPointer<vtkImageActor> plotCameraImage(const char* filename, const Eigen::Vector3d center, const Eigen::Vector3d orientation, 

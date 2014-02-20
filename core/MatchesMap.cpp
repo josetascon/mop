@@ -33,10 +33,10 @@ void MatchesMap::solveMatchesContinuous_subgroup(std::vector< std::vector<float>
         globalMatch.push_back( MatchQuery() );
         reliableMatch.push_back( false );
         
-        int ft_per_im1 = int( (*descriptorsGPU)[cam].size()/128 );
-        int ft_per_im2 = int( (*descriptorsGPU)[cam+1].size()/128 );
-        matcher.SetDescriptors(0, ft_per_im1, &((*descriptorsGPU)[cam][0])); // prepare descriptor1
-        matcher.SetDescriptors(1, ft_per_im2, &((*descriptorsGPU)[cam+1][0])); // prepare descritor2
+        int ft_per_im1 = int( descriptorsGPU->at(cam).size()/128 );
+        int ft_per_im2 = int( descriptorsGPU->at(cam+1).size()/128 );
+        matcher.SetDescriptors(0, ft_per_im1, &(descriptorsGPU->at(cam)[0])); // prepare descriptor1
+        matcher.SetDescriptors(1, ft_per_im2, &(descriptorsGPU->at(cam+1)[0])); // prepare descritor2
         
         int match_buf[num_goodmatch][2];
         int nmatch = matcher.GetSiftMatch(num_goodmatch, match_buf); // match descriptors
@@ -87,10 +87,10 @@ void MatchesMap::solveMatchesPairs_subgroup(std::vector< std::vector<float> > *d
 	  globalMatch.push_back( MatchQuery() );
 	  reliableMatch.push_back( false );
 	  
-	  int ft_per_im1 = int( (*descriptorsGPU)[cam].size()/128 );
-	  int ft_per_im2 = int( (*descriptorsGPU)[cam+stride].size()/128 );
-	  matcher.SetDescriptors(0, ft_per_im1, &((*descriptorsGPU)[cam][0])); // prepare descriptor1
-	  matcher.SetDescriptors(1, ft_per_im2, &((*descriptorsGPU)[cam+stride][0])); // prepare descritor2
+	  int ft_per_im1 = int( descriptorsGPU->at(cam).size()/128 );
+	  int ft_per_im2 = int( descriptorsGPU->at(cam+stride).size()/128 );
+	  matcher.SetDescriptors(0, ft_per_im1, &(descriptorsGPU->at(cam)[0])); // prepare descriptor1
+	  matcher.SetDescriptors(1, ft_per_im2, &(descriptorsGPU->at(cam+stride)[0])); // prepare descritor2
 
 	  int match_buf[num_goodmatch][2];
 	  int nmatch = matcher.GetSiftMatch(num_goodmatch, match_buf); // match descriptors
@@ -143,10 +143,10 @@ void MatchesMap::solveMatchesOneElement_subgroupUp(std::vector< std::vector<floa
         globalMatch.push_back( MatchQuery() );
         reliableMatch.push_back( false );
         
-        int ft_per_im1 = int( (*descriptorsGPU)[base].size()/128 );
-        int ft_per_im2 = int( (*descriptorsGPU)[stride].size()/128 );
-        matcher.SetDescriptors(0, ft_per_im1, &((*descriptorsGPU)[base][0])); // prepare descriptor1
-        matcher.SetDescriptors(1, ft_per_im2, &((*descriptorsGPU)[stride][0])); // prepare descritor2
+        int ft_per_im1 = int( descriptorsGPU->at(base).size()/128 );
+        int ft_per_im2 = int( descriptorsGPU->at(stride).size()/128 );
+        matcher.SetDescriptors(0, ft_per_im1, &(descriptorsGPU->at(base)[0])); // prepare descriptor1
+        matcher.SetDescriptors(1, ft_per_im2, &(descriptorsGPU->at(stride)[0])); // prepare descritor2
         
         int match_buf[num_goodmatch][2];
         int nmatch = matcher.GetSiftMatch(num_goodmatch, match_buf); // match descriptors
@@ -196,10 +196,10 @@ void MatchesMap::solveMatchesOneElement_subgroupDown(std::vector< std::vector<fl
         globalMatch.push_back( MatchQuery() );
         reliableMatch.push_back( false );
         
-        int ft_per_im1 = int( (*descriptorsGPU)[cam].size()/128 );
-        int ft_per_im2 = int( (*descriptorsGPU)[base].size()/128 );
-        matcher.SetDescriptors(0, ft_per_im1, &((*descriptorsGPU)[cam][0])); // prepare descriptor1
-        matcher.SetDescriptors(1, ft_per_im2, &((*descriptorsGPU)[base][0])); // prepare descritor2
+        int ft_per_im1 = int( descriptorsGPU->at(cam).size()/128 );
+        int ft_per_im2 = int( descriptorsGPU->at(base).size()/128 );
+        matcher.SetDescriptors(0, ft_per_im1, &(descriptorsGPU->at(cam)[0])); // prepare descriptor1
+        matcher.SetDescriptors(1, ft_per_im2, &(descriptorsGPU->at(base)[0])); // prepare descritor2
         
         int match_buf[num_goodmatch][2];
         int nmatch = matcher.GetSiftMatch(num_goodmatch, match_buf); // match descriptors
@@ -238,7 +238,7 @@ void MatchesMap::solveMatchesOneElement(std::vector< std::vector<float> > *descr
 {
     int start = 0;
     int end = descriptorsGPU->size();
-    solveMatchesOneElement_subgroup( descriptorsGPU, element, start, end );
+    if ( element < end ) solveMatchesOneElement_subgroup( descriptorsGPU, element, start, end ); //verify boundary
 }
 
 void MatchesMap::solveMatchesContinuous(std::vector< std::vector<float> > *descriptorsGPU)
@@ -283,19 +283,53 @@ void MatchesMap::solveMatchesGroups(std::vector< std::vector<float> > *descripto
         exit(-1);
     }
     
-    int size = groupsize;
-    int init_image = 0;
+    int gsize = groupsize;
     int total_images = descriptorsGPU->size();
-    int groups = ceil( total_images/size );
+    int groups = ceil( (float)total_images/ float(gsize) );
     DEBUG_1( std::cout << "\n================================ MATCH Features ==================================\n"; )
-    for(register int cam = init_image; cam < groups; ++cam)
+    for(register int cam = 0; cam < groups; ++cam)
     {
-        int final_image = (cam + 1)*size + 1;
-        if( final_image >= total_images ) final_image = total_images;
-        solveMatchesPairs_subgroup( descriptorsGPU, cam*size, final_image );
-        solveMatchesOneElement( descriptorsGPU, final_image - 1 );
+        int final_image = (cam + 1)*gsize + 1;
+        int element = final_image;
+        if( final_image >= total_images )
+        {
+	  final_image = total_images;
+	  element = final_image - 1;
+        }
+        DEBUG_2( printf("Group: %i - %i, size: %i\n", cam*gsize, final_image, groups ); )
+        solveMatchesPairs_subgroup( descriptorsGPU, cam*gsize, final_image );
+        solveMatchesOneElement( descriptorsGPU, element );
     }
 }
+
+
+void MatchesMap::solveMatchesGroups(std::vector< std::vector<float> > *descriptorsGPU, std::vector<int> *cluster)
+{
+    if( cluster->size() < 1 )
+    {
+        DEBUG_E( ("Group Size must be equal or greater than one") ); 
+        exit(-1);
+    }
+    
+    int previous_image = 0;
+    int total_images = descriptorsGPU->size();
+    DEBUG_1( std::cout << "\n================================ MATCH Features ==================================\n"; )
+    for(int cam = 0; cam < cluster->size(); ++cam)
+    {
+        int final_image = cluster->at(cam);
+        int element = final_image;
+        if( final_image >= total_images )
+        {
+	  final_image = total_images;
+	  element = final_image - 1;
+        }
+        solveMatchesPairs_subgroup( descriptorsGPU, previous_image, final_image );
+        solveMatchesOneElement( descriptorsGPU, element );
+        previous_image = final_image - 1;
+    }
+}
+    
+    
 
 void MatchesMap::robustifyMatches(std::vector< std::vector< cv::KeyPoint > > *set_of_keypoints)
 {
@@ -307,8 +341,8 @@ void MatchesMap::robustifyMatches(std::vector< std::vector< cv::KeyPoint > > *se
 	  int cam1 = globalMatch[it].cam_id1;
 	  int cam2 = globalMatch[it].cam_id2;
 	  
-	  std::vector<cv::KeyPoint> kps1 = (*set_of_keypoints)[cam1];
-	  std::vector<cv::KeyPoint> kps2 = (*set_of_keypoints)[cam2];
+	  std::vector<cv::KeyPoint> kps1 = set_of_keypoints->at(cam1);
+	  std::vector<cv::KeyPoint> kps2 = set_of_keypoints->at(cam2);
 	  std::vector< cv::Point2d > pts1, pts2;
 	  extractPointsfromMatches( globalMatch[it].matches, kps1, kps2, pts1, pts2);
  	  DEBUG_3( std::cout << "matches size = " << globalMatch[it].matches.size() << "\n"; )
@@ -337,8 +371,8 @@ void MatchesMap::robustifyMatches(std::vector< std::vector< SiftGPU::SiftKeypoin
 	  int cam1 = globalMatch[it].cam_id1;
 	  int cam2 = globalMatch[it].cam_id2;
 	  
-	  std::vector<SiftGPU::SiftKeypoint> kps1 = (*set_of_keypoints)[cam1];
-	  std::vector<SiftGPU::SiftKeypoint> kps2 = (*set_of_keypoints)[cam2];
+	  std::vector<SiftGPU::SiftKeypoint> kps1 = set_of_keypoints->at(cam1);
+	  std::vector<SiftGPU::SiftKeypoint> kps2 = set_of_keypoints->at(cam2);
 	  std::vector< cv::Point2d > pts1, pts2;
 	  extractPointsfromMatches( globalMatch[it].matches, kps1, kps2, pts1, pts2);
  	  DEBUG_3( std::cout << "matches size = " << globalMatch[it].matches.size() << "\n"; )
@@ -373,11 +407,11 @@ void MatchesMap::depthFilter(std::vector< std::vector< SiftGPU::SiftKeypoint > >
 	  {
 	      int qid = globalMatch[it].matches[ft].queryIdx;
 	      int tid = globalMatch[it].matches[ft].trainIdx;
-	      pts1.push_back( cv::Point2d((*set_of_keypoints)[cam1][qid].x, (*set_of_keypoints)[cam1][qid].y) );
-	      pts2.push_back( cv::Point2d((*set_of_keypoints)[cam2][tid].x, (*set_of_keypoints)[cam2][tid].y) );
+	      pts1.push_back( cv::Point2d( set_of_keypoints->at(cam1)[qid].x, set_of_keypoints->at(cam1)[qid].y) );
+	      pts2.push_back( cv::Point2d( set_of_keypoints->at(cam2)[tid].x, set_of_keypoints->at(cam2)[tid].y) );
 	  }
 	  // Remove bad points with depth projection
-            std::vector<int> goodpt = removeBadPointsDual(pts1, pts2, (*set_of_depth)[cam1], (*set_of_depth)[cam2]);
+            std::vector<int> goodpt = removeBadPointsDual(pts1, pts2, set_of_depth->at(cam1), set_of_depth->at(cam2));
 	  int sum = sumVector(goodpt);
 	  if (sum < reliable)
 	  {
@@ -414,15 +448,15 @@ void MatchesMap::depthFilter(std::vector< std::vector< SiftGPU::SiftKeypoint > >
 	  int cam1 = globalMatch[it].cam_id1;
 	  int cam2 = globalMatch[it].cam_id2;
 	  std::vector< cv::Point2d > pts1, pts2;
-	  cv::Mat depth1 = cv::imread((*depth_list)[cam1], -1);
-	  cv::Mat depth2 = cv::imread((*depth_list)[cam2], -1);
+	  cv::Mat depth1 = cv::imread( depth_list->at(cam1), -1);
+	  cv::Mat depth2 = cv::imread(depth_list->at(cam2), -1);
         
 	  for (register int ft = 0; ft < globalMatch[it].matches.size(); ++ft)	//Extract pts1 from matches
 	  {
 	      int qid = globalMatch[it].matches[ft].queryIdx;
 	      int tid = globalMatch[it].matches[ft].trainIdx;
-	      pts1.push_back( cv::Point2d((*set_of_keypoints)[cam1][qid].x, (*set_of_keypoints)[cam1][qid].y) );
-	      pts2.push_back( cv::Point2d((*set_of_keypoints)[cam2][tid].x, (*set_of_keypoints)[cam2][tid].y) );
+	      pts1.push_back( cv::Point2d( set_of_keypoints->at(cam1)[qid].x, set_of_keypoints->at(cam1)[qid].y) );
+	      pts2.push_back( cv::Point2d( set_of_keypoints->at(cam2)[tid].x, set_of_keypoints->at(cam2)[tid].y) );
 	  }
 	  // Remove bad points with depth projection
             std::vector<int> goodpt = removeBadPointsDual( pts1, pts2, depth1, depth2 );
@@ -477,18 +511,18 @@ void MatchesMap::solveDB( HandleDB *mydb, std::vector< std::vector<SiftGPU::Sift
 	      }
 	      else if (find1)
 	      {
-		mydb->insertRow( sf1, cam2, idft_c2,(*keypointsGPU)[cam2][idft_c2].x, (*keypointsGPU)[cam2][idft_c2].y );
+		mydb->insertRow( sf1, cam2, idft_c2, keypointsGPU->at(cam2)[idft_c2].x, keypointsGPU->at(cam2)[idft_c2].y );
 // 		continue;
 	      }
 	      else if (find2)
 	      {
-		mydb->insertRow( sf2, cam1, idft_c1, (*keypointsGPU)[cam1][idft_c1].x,(*keypointsGPU)[cam1][idft_c1].y );
+		mydb->insertRow( sf2, cam1, idft_c1, keypointsGPU->at(cam1)[idft_c1].x, keypointsGPU->at(cam1)[idft_c1].y );
 // 		continue;
 	      }
 	      else
 	      {
-		mydb->insertRow( actualfeature, cam1, idft_c1, (*keypointsGPU)[cam1][idft_c1].x, (*keypointsGPU)[cam1][idft_c1].y );
-		mydb->insertRow( actualfeature, cam2, idft_c2, (*keypointsGPU)[cam2][idft_c2].x, (*keypointsGPU)[cam2][idft_c2].y );
+		mydb->insertRow( actualfeature, cam1, idft_c1, keypointsGPU->at(cam1)[idft_c1].x, keypointsGPU->at(cam1)[idft_c1].y );
+		mydb->insertRow( actualfeature, cam2, idft_c2, keypointsGPU->at(cam2)[idft_c2].x, keypointsGPU->at(cam2)[idft_c2].y );
 		actualfeature++; // A new feature is added
 	      }
 	  }  
@@ -497,10 +531,10 @@ void MatchesMap::solveDB( HandleDB *mydb, std::vector< std::vector<SiftGPU::Sift
 }
 
 // 	      bool inc1 = mydb->insertUnique(actualfeature, cam1, idft_c1, 
-// 				     (*keypointsGPU)[cam1][idft_c1].x, (*keypointsGPU)[cam1][idft_c1].y );
+// 				     keypointsGPU->at(cam1)[idft_c1].x, keypointsGPU->at(cam1)[idft_c1].y );
 // 	      
 // 	      bool inc2 = mydb->insertUnique(actualfeature, cam2, idft_c2, 
-// 				     (*keypointsGPU)[cam2][idft_c2].x, (*keypointsGPU)[cam2][idft_c2].y );
+// 				     keypointsGPU->at(cam2)[idft_c2].x, keypointsGPU->at(cam2)[idft_c2].y );
 
 
 void MatchesMap::solveDB3D( HandleDB *mydb, std::vector< std::vector<SiftGPU::SiftKeypoint> > *keypointsGPU,
@@ -515,8 +549,8 @@ void MatchesMap::solveDB3D( HandleDB *mydb, std::vector< std::vector<SiftGPU::Si
         {
 	  int cam1 = globalMatch[it].cam_id1;
 	  int cam2 = globalMatch[it].cam_id2;
-	  cv::Mat depth1 = cv::imread( (*depth_list)[cam1], -1 );
-	  cv::Mat depth2 = cv::imread( (*depth_list)[cam2], -1 );
+	  cv::Mat depth1 = cv::imread( depth_list->at(cam1), -1 );
+	  cv::Mat depth2 = cv::imread( depth_list->at(cam2), -1 );
 	  
 	  for (register int k = 0; k < globalMatch[it].matches.size(); ++k)
 	  {
@@ -532,27 +566,27 @@ void MatchesMap::solveDB3D( HandleDB *mydb, std::vector< std::vector<SiftGPU::Si
 	      }
 	      else if (find1)
 	      {
-		int u = (int) round( (*keypointsGPU)[cam2][idft_c2].x );
-		int v = (int) round( (*keypointsGPU)[cam2][idft_c2].y );
+		int u = (int) round( keypointsGPU->at(cam2)[idft_c2].x );
+		int v = (int) round( keypointsGPU->at(cam2)[idft_c2].y );
 		Eigen::Vector3f vv = projection<int,double,float>( u, v, depth2, calibration);
 		mydb->insertRow3D( sf1, cam2, idft_c2, vv(0), vv(1), vv(2) );
 // 		continue;
 	      }
 	      else if (find2)
 	      {
-		int u = (int) round( (*keypointsGPU)[cam1][idft_c1].x );
-		int v = (int) round( (*keypointsGPU)[cam1][idft_c1].y );
+		int u = (int) round( keypointsGPU->at(cam1)[idft_c1].x );
+		int v = (int) round( keypointsGPU->at(cam1)[idft_c1].y );
 		Eigen::Vector3f vv = projection<int,double,float>( u, v, depth1, calibration);
 		mydb->insertRow3D( sf2, cam1, idft_c1, vv(0), vv(1), vv(2) );
 // 		continue;
 	      }
 	      else
 	      {
-		int u1 = (int) round( (*keypointsGPU)[cam1][idft_c1].x );
-		int v1 = (int) round( (*keypointsGPU)[cam1][idft_c1].y );
+		int u1 = (int) round( keypointsGPU->at(cam1)[idft_c1].x );
+		int v1 = (int) round( keypointsGPU->at(cam1)[idft_c1].y );
 		Eigen::Vector3f vv1 = projection<int,double,float>( u1, v1, depth1, calibration);
-		int u2 = (int) round( (*keypointsGPU)[cam2][idft_c2].x );
-		int v2 = (int) round( (*keypointsGPU)[cam2][idft_c2].y );
+		int u2 = (int) round( keypointsGPU->at(cam2)[idft_c2].x );
+		int v2 = (int) round( keypointsGPU->at(cam2)[idft_c2].y );
 		Eigen::Vector3f vv2 = projection<int,double,float>( u2, v2, depth2, calibration);
 		mydb->insertRow3D( actualfeature, cam1, idft_c1, vv1(0), vv1(1), vv1(2) );
 		mydb->insertRow3D( actualfeature, cam2, idft_c2, vv2(0), vv2(1), vv2(2) );
@@ -584,10 +618,10 @@ void MatchesMap::exportTXT(const char *file_txt, std::vector< std::vector<SiftGP
 	      int idft_c1 = globalMatch[it].matches[k].queryIdx;
 	      int idft_c2 = globalMatch[it].matches[k].trainIdx;
 	      
-	      myfile1 << cam1 << "\t" <<  idft_c1 << "\t" << (*keypointsGPU)[cam1][idft_c1].x
-		        << "\t" <<(*keypointsGPU)[cam1][idft_c1].y << "\n";
-	      myfile1 << cam2 << "\t" <<  idft_c2 << "\t" << (*keypointsGPU)[cam2][idft_c2].x
-		        << "\t" <<(*keypointsGPU)[cam2][idft_c2].y << "\n";
+	      myfile1 << cam1 << "\t" <<  idft_c1 << "\t" << keypointsGPU->at(cam1)[idft_c1].x
+		        << "\t" << keypointsGPU->at(cam1)[idft_c1].y << "\n";
+	      myfile1 << cam2 << "\t" <<  idft_c2 << "\t" << keypointsGPU->at(cam2)[idft_c2].x
+		        << "\t" << keypointsGPU->at(cam2)[idft_c2].y << "\n";
 	       
 	  }
         }
@@ -607,7 +641,7 @@ void MatchesMap::plot( std::vector< cv::Mat > *images, std::vector< std::vector<
 	  int cam1 = globalMatch[i].cam_id1;
 	  int cam2 = globalMatch[i].cam_id2;
 	  std::cout << "TOTAL MATCHES = " << match00.size() << '\n';
-	  drawMatches( (*images)[cam1], (*set_of_keypoints)[cam1], (*images)[cam2], (*set_of_keypoints)[cam2],
+	  drawMatches( images->at(cam1), set_of_keypoints->at(cam1), images->at(cam2), set_of_keypoints->at(cam2),
 		        match00, draw_match, cv::Scalar::all(-1), cv::Scalar::all(-1),
 		        std::vector<char>(), cv::DrawMatchesFlags::NOT_DRAW_SINGLE_POINTS );
 	  std::stringstream ss;
