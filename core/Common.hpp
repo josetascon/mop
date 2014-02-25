@@ -23,6 +23,9 @@
 #include <iostream>
 #include <string>
 
+// Local Libraries
+#include "Debug.hpp"
+
 #ifndef CONSTANT_PI
 #define CONSTANT_PI 3.14159265358979323846
 #endif
@@ -147,6 +150,8 @@ std::string number2string(Tp number)
  * @date Dec/11/2013
  */
 std::string baseFileName (const std::string& str);
+std::string extensionFileName (const std::string& str);
+bool verifyFileExtension( const char *file_name, std::string& extension, bool stop_execution = true );
 
 /**
  * ******************************************************************

@@ -77,7 +77,7 @@ void SimpleRegistration::solvePose(std::vector< MatchQuery > *globalMatch, std::
 }
 
 
-void SimpleRegistration::solvePose(Eigen::Matrix<bool,-1,-1> *visibility, Eigen::Matrix<Eigen::Vector3d,-1,-1> *coordinates, 
+void SimpleRegistration::solvePose( boost::shared_ptr< MXb > visibility, boost::shared_ptr< MX_V3d > coordinates, 
 		std::vector< std::string > &depth_list, bool optimal)
 {
     // Initialization
@@ -146,7 +146,7 @@ void SimpleRegistration::solvePose(Eigen::Matrix<bool,-1,-1> *visibility, Eigen:
     }
 }
 
-void SimpleRegistration::solvePose(Eigen::Matrix<bool,-1,-1> *visibility, Eigen::Matrix<Eigen::Vector4d,-1,-1> *coordinates, bool optimal)
+void SimpleRegistration::solvePose( boost::shared_ptr< MXb > visibility, boost::shared_ptr< MX_V4d > coordinates, bool optimal)
 {
     // initialization
     initializeGlobalVariables();

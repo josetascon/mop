@@ -95,6 +95,15 @@ void cv2PointCloudDense(cv::Mat &image, cv::Mat &depth, Eigen::Matrix3d &calibra
 void computeCovariance(pcl::PointCloud<pcl::PointXYZRGBA>::Ptr &cloud, Eigen::Matrix3d &calibration,
 		   boost::shared_ptr< Eigen::MatrixXd > &covariance);
 
+void cv2PointCloud_Pose( cv::Mat &image, cv::Mat &depth, Eigen::Matrix3d &calibration, 
+		Eigen::Quaternion<double> &Qn, Eigen::Vector3d &tr,
+		pcl::PointCloud<pcl::PointXYZRGBA>::Ptr &cloud );
+
+void cv2PointCloud_Pose( cv::Mat &image, cv::Mat &depth, Eigen::Matrix3d &calibration, 
+		Eigen::Quaternion<double> &Qn, Eigen::Vector3d &tr,
+		pcl::PointCloud<pcl::PointXYZRGBA>::Ptr &cloud,
+		boost::shared_ptr< Eigen::MatrixXd > &covariance );
+
 void cv2PointCloudSet(std::vector<cv::Mat> &image, std::vector<cv::Mat> &depth, Eigen::Matrix3d &calibration, 
 		std::vector<Eigen::Quaternion<double> > &Qn, std::vector< Eigen::Vector3d > &tr,
 		std::vector< pcl::PointCloud<pcl::PointXYZRGBA>::Ptr > &set_cloud);

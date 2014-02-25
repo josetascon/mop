@@ -25,17 +25,19 @@
 #include <opencv2/core/core.hpp>
 #include <opencv2/core/eigen.hpp>
 
+// Boost
+#include <boost/shared_ptr.hpp>
+
 // Std Libraries
 #include <iostream>
 #include <vector>
 
 // Local Libraries
 #include "Debug.hpp"
-// #include "Common.hpp"
 #include "Pose3D.hpp"
 #include "PoseICP.hpp"
 #include "FeaturesEDM.hpp"
-// #include "DepthProjection.hpp"
+
 
 // ================================================================================================
 // ================================= CLASS SimpleRegistration =====================================
@@ -65,6 +67,10 @@ private:
     typedef std::vector< Eigen::Vector3d > V3d_vector;
     typedef std::vector< Eigen::Matrix3d > M3d_vector;
     typedef std::vector< Eigen::MatrixXd > MXd_vector;
+    
+    typedef Eigen::Matrix<bool,-1,-1> MXb;
+    typedef Eigen::Matrix<Eigen::Vector3d,-1,-1> MX_V3d;
+    typedef Eigen::Matrix<Eigen::Vector4d,-1,-1> MX_V4d;
     
 //     std::vector< Eigen::MatrixXd > Cameras_RCV;
 //     std::vector< Eigen::Matrix3d > Rot_global;
@@ -110,13 +116,13 @@ public:
     void setFallBackICPOff() { fallback_icp = false; };
     
     //solve Pose, use continuous matches
-    void solvePose(std::vector< MatchQuery > *globalMatch, std::vector< std::vector< cv::KeyPoint > > *set_of_keypoints, 
-		std::vector< cv::Mat > *set_of_depth);
+    void solvePose( std::vector< MatchQuery > *globalMatch, std::vector< std::vector< cv::KeyPoint > > *set_of_keypoints, 
+		std::vector< cv::Mat > *set_of_depth );
     
-    void solvePose(Eigen::Matrix<bool,-1,-1> *visibility, Eigen::Matrix<Eigen::Vector3d,-1,-1> *coordinates, 
-		std::vector< std::string > &depth_list, bool optimal = true);
+    void solvePose( boost::shared_ptr< MXb > visibility, boost::shared_ptr< MX_V3d > coordinates,
+		std::vector< std::string > &depth_list, bool optimal = true );
     
-    void solvePose(Eigen::Matrix<bool,-1,-1> *visibility, Eigen::Matrix<Eigen::Vector4d,-1,-1> *coordinates, bool optimal = true);
+    void solvePose( boost::shared_ptr< MXb > visibility, boost::shared_ptr< MX_V4d > coordinates, bool optimal = true );
     
     void updateQuaternion();
     

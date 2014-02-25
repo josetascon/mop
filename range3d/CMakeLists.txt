@@ -62,10 +62,10 @@ target_link_libraries ( mop ${LINK_TARGETS} )
 
 # add_executable (capture_pcd capture_pcd.cpp)
 # target_link_libraries (capture_pcd ${PCL_LIBRARIES})
-# 
+#  
 # add_executable (sparse2dense sparse2dense.cpp)
 # target_link_libraries (sparse2dense ${PCL_LIBRARIES})
-# 
+#  
 # add_executable( test_cloud test_cloud.cpp )
 # target_link_libraries( test_cloud "mop" ${LINK_TARGETS} )
 

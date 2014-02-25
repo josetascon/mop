@@ -62,12 +62,27 @@ void help()
 	
 }
 
+void readMultipleFiles( std::vector< std::string > &files_input, std::vector< std::string > &image_list, std::vector<int> &boundaries )
+{
+    std::cout << "Reading\n";
+    std::string ext = "xml";
+    for(int k = 0; k < files_input.size(); k++)
+    {
+        verifyFileExtension( files_input[k].c_str(), ext, true );
+        importXMLImageList( files_input[k].c_str(), image_list, false); // false for unclear the vector
+        boundaries.push_back(image_list.size());
+        std::cout << "Number: " << image_list.size() << "\n";
+    }
+//     exit(0);
+}
+
 // ================================================= MAIN ==============================================
 int main(int argc, char* argv[])
 {
     // ========================================== Parameters ===========================================
     bool ram_db = true;
     bool verbose = false;
+    bool multiple = false;
     bool load_k = false;
     bool save_ply = false;
     bool save_txt = false;
@@ -78,8 +93,11 @@ int main(int argc, char* argv[])
     const char* inputFilename_rgb;
     const char* inputFilename_depth;
     const char* outputFilename;
-    std::string filename_db = ":memory:";
     
+    std::vector< std::string > files_input_rgb;
+    std::vector< std::string > files_input_depth;
+    
+    std::string filename_db = ":memory:";
     std::vector< std::string > imageList_rgb;
     std::vector< std::string > imageList_depth;
     
@@ -105,6 +123,21 @@ int main(int argc, char* argv[])
 	      i++;
 	      inputFilename_depth = argv[i];
 	  }
+	  else if( strcmp( s, "-im" ) == 0 )
+	  {
+	      i++;
+	      int input = pchar2number<int>( argv[i] );
+	      for(int k = 0; k < input; k++)
+	      {
+		i++;
+		files_input_rgb.push_back( argv[i] );
+	      }
+	      multiple = true;
+	  }
+// 	  else if( strcmp( s, "-dm" ) == 0 )
+// 	  {
+// 	      
+// 	  }
 	  else if( strcmp( s, "-op" ) == 0 )
 	  {
 	      i++;
@@ -150,8 +183,11 @@ int main(int argc, char* argv[])
         }
         
     }
-    if (verbose) cout << "Parameters read...\t\t[OK]" << '\n';
-    if (verbose) cout << "Data init...\t\t\t";
+    if (verbose) std::cout << "Parameters read...\t\t[OK]" << '\n';
+    if (verbose) std::cout << "Data init...\t\t\t";
+    
+    std::vector<int> bb;
+    if( multiple ) readMultipleFiles(files_input_rgb , imageList_rgb, bb );
     
     // ========================================== Varible declaration ==========================================
     int num_goodmatch = 35;
@@ -160,7 +196,11 @@ int main(int argc, char* argv[])
     timer_wall timer1;
     std::string base_filename = basename((char*)inputFilename_rgb);
     base_filename = base_filename.substr(0, base_filename.rfind("."));
-
+    
+    std::string ext = "xml";
+    verifyFileExtension( inputFilename_rgb, ext, true );
+    verifyFileExtension( inputFilename_depth, ext, true );
+    
     // ========================================== Read Images ==========================================
     if (verbose)
     {
@@ -249,36 +289,36 @@ int main(int argc, char* argv[])
     
 //     if ( ram_db )						// If database is in ram, solve features map and store in db
 //     {
-        SiftED myfeat(imageList_rgb);
-        myfeat.solveSift();
+        boost::shared_ptr< SiftED > myfeat( new SiftED(&imageList_rgb) );
+        myfeat->solveSift();
         
-        MatchesMap my_mmap(400,35);
-        my_mmap.setAllContinousOn(); // ENABLE CONTINOUS MATCHES ALWAYS TO ALLOW ICP WORK
-//         my_mmap.solveMatches(&myfeat.descriptorsGPU);
-//         my_mmap.solveMatchesContinuous(&myfeat.descriptorsGPU);
-        my_mmap.solveMatchesGroups(&myfeat.descriptorsGPU, 10);
+        boost::shared_ptr< MatchesMap > my_mmap( new MatchesMap(500,35) );
+        my_mmap->setAllContinousOn(); // ENABLE CONTINOUS MATCHES ALWAYS TO ALLOW ICP WORK
+        my_mmap->solveMatches(myfeat->getDescriptorsGPU());
+//         my_mmap->solveMatchesContinuous(myfeat->getDescriptorsGPU());
+//         my_mmap->solveMatchesGroups(myfeat->getDescriptorsGPU(), 10);
 /*        std::vector<int> bb;
         bb.push_back(5); bb.push_back(10); bb.push_back(20), bb.push_back(imageList_rgb.size());
-        my_mmap.solveMatchesGroups(&myfeat.descriptorsGPU, &bb);  */      
-        my_mmap.robustifyMatches(&myfeat.keypointsGPU);
-        my_mmap.depthFilter(&myfeat.keypointsGPU, &imageList_depth, num_depth_filter);
+        my_mmap->solveMatchesGroups(myfeat->getDescriptorsGPU(), &bb);  */      
+        my_mmap->robustifyMatches(myfeat->getKeypointsGPU());
+        my_mmap->depthFilter(myfeat->getKeypointsGPU(), &imageList_depth, num_depth_filter);
         timer1.start();
-        my_mmap.solveDB3D( &mydb, &myfeat.keypointsGPU, &imageList_depth, K );
+        my_mmap->solveDB3D( &mydb, myfeat->getKeypointsGPU(), &imageList_depth, K );
         DEBUG_1( std::cout << "Elapsed time to solve DB: " << timer1.elapsed_s() << " [s]\n"; )
         
-//         GraphPose gp( K );
-//         gp.setFallBackICPOn( &imageList_rgb, &imageList_depth );
-//         gp.run( &imageList_depth, &my_mmap.reliableMatch, &my_mmap.globalMatch, &myfeat.keypointsGPU, true ); // true for optimal
-// //         gp.solveLocalPoseAllNodes( &imageList_depth, &my_mmap.reliableMatch, &my_mmap.globalMatch, &myfeat.keypointsGPU );
-// //         gp.solveEdgesAllNodes();
-// //         gp.solveGraph();
-// //         gp.solveGlobalPoseAllNodes();
-// // //         gp.solveGlobalPoseContinuous();        
-//         Qn_global = gp.getPtrGlobalQuaternion();
-//         tr_global = gp.getPtrGlobalTranslation();
+//         boost::shared_ptr< GraphPose > gp(new GraphPose(K) );
+//         gp->setFallBackICPOn( &imageList_rgb, &imageList_depth );
+//         gp->run( &imageList_depth, &my_mmap->reliableMatch, &my_mmap->globalMatch, (myfeat->getKeypointsGPU()).get(), true ); // true for optimal
+// //         gp->solveLocalPoseAllNodes( &imageList_depth, &my_mmap->reliableMatch, &my_mmap->globalMatch, myfeat->getKeypointsGPU() );
+// //         gp->solveEdgesAllNodes();
+// //         gp->solveGraph();
+// //         gp->solveGlobalPoseAllNodes();
+// // //         gp->solveGlobalPoseContinuous();        
+//         Qn_global = gp->getPtrGlobalQuaternion();
+//         tr_global = gp->getPtrGlobalTranslation();
         
-//         weights = gp.getWeights();
-//         edges_pairs = gp.getEdgesPairs();
+//         weights = gp->getWeights();
+//         edges_pairs = gp->getEdgesPairs();
 //         
 //         DOTWriter dotw("graph");
 //         char buf[256];
@@ -289,32 +329,32 @@ int main(int argc, char* argv[])
 //         
 //         std::string graph_file1, graph_file2;
 //         graph_file1 = graph_file2 = base_filename;
-//         graph_file1.append("_gp.graph");
+//         graph_file1.append("_gp->graph");
 //         graph_file2.append("_ex.graph");
-//         gp.exportGRAPH( graph_file1.c_str() );
-//         exportGRAPH( graph_file2.c_str(), gp.Qn_global, gp.tr_global );
+//         gp->exportGRAPH( graph_file1.c_str() );
+//         exportGRAPH( graph_file2.c_str(), gp->Qn_global, gp->tr_global );
 //         
 //     }
     
-    FeaturesMap featM;
-    featM.solveVisibility3D( &mydb );
-    printf("Visibility Matrix [%d x %d]\n",featM.visibility.rows(),featM.visibility.cols());
-    num_cameras = featM.cameras();
-    num_features = featM.features();
+    boost::shared_ptr< FeaturesMap > featM (new FeaturesMap());
+    featM->solveVisibility3D( &mydb );
+    printf("Visibility Matrix [%d x %d]\n",featM->getVisibility()->rows(),featM->getVisibility()->cols());
+    num_cameras = featM->getNumberCameras();
+    num_features = featM->getNumberFeatures();
     mydb.closeDB();
     
-    SimpleRegistration sr01( num_cameras, num_features, K );
-    sr01.setFallBackICPOn( &imageList_rgb, &imageList_depth, num_depth_filter );
+    boost::shared_ptr< SimpleRegistration > sr01( new SimpleRegistration( num_cameras, num_features, K ) );
+    sr01->setFallBackICPOn( &imageList_rgb, &imageList_depth, num_depth_filter );
     timer1.start();
-    sr01.solvePose( &featM.visibility, &featM.coordinates3D, true ); // true for optimal
+    sr01->solvePose( featM->getVisibility(), featM->getCoordinates3D(), true ); // true for optimal
     std::cout << "Elapsed time to solve Pose: " << timer1.elapsed_s() << " [s]\n";
-    Qn_global = sr01.getPtrGlobalQuaternion();
-    tr_global = sr01.getPtrGlobalTranslation();
+    Qn_global = sr01->getPtrGlobalQuaternion();
+    tr_global = sr01->getPtrGlobalTranslation();
 //     
 //     // Print lin and opt
 //     SimpleRegistration sr02( num_cameras, num_features, K );
 //     timer1.start();
-//     sr02.solvePose( &featM.visibility, &featM.coordinates3D, false ); // true for optimal
+//     sr02.solvePose( &featM->visibility, &featM->coordinates3D, false ); // true for optimal
 //     std::cout << "Elapsed time to solve Pose: " << timer1.elapsed_s() << " [s]\n";
     
     // Test one merge. Use to show in blue the proximity
@@ -329,21 +369,23 @@ int main(int argc, char* argv[])
     
     // RUN GLOBAL Optimization
     GlobalPose3D global01;
-    global01.solve(&featM.visibility, &featM.coordinates3D, &K, Qn_global.get(), tr_global.get() );
+    global01.solve(featM->getVisibility(), featM->getCoordinates3D(), &K, Qn_global, tr_global );
     pcl::PointCloud<pcl::PointXYZ>::Ptr cloudE;
     eigen2pointcloud( global01.Structure, cloudE );
     
     setCoordinatestoOrigin(*Qn_global, *tr_global);
 //     Eigen::Quaternion<double> q_desired( 0.92388, 0.0, -0.38268, 0.0 ); // 45 degrees y axis
 //     Eigen::Vector3d t_desired(-0.70711, 0.0, -0.70711 ); // center = [1,0,0]
-//     setCoordinatestoDesiredPosition( gp.Qn_global, gp.tr_global, q_desired, t_desired, 4 ); // move camera 5 to desired point
+//     setCoordinatestoDesiredPosition( gp->Qn_global, gp->tr_global, q_desired, t_desired, 4 ); // move camera 5 to desired point
     
     // Load ground truth
-//     Qd_vector ground_qn_global;
-//     V3d_vector ground_tr_global;
+    Qd_vector ground_qn_global;
+    V3d_vector ground_tr_global;
+    importTXTQuaternionVector( "freiburg1_room_ground_rot.txt", ground_qn_global );
+    importTXTTranslationVector( "freiburg1_room_ground_tr.txt", ground_tr_global );
 //     importTXTQuaternionVector( "freiburg3_ground_rot.txt", ground_qn_global );
 //     importTXTTranslationVector( "freiburg3_ground_tr.txt", ground_tr_global );
-//     setCoordinatestoOrigin(ground_qn_global, ground_tr_global);
+    setCoordinatestoOrigin(ground_qn_global, ground_tr_global);
     
     // Write files of global quaternion and translation
     if ( save_txt )
@@ -353,23 +395,32 @@ int main(int argc, char* argv[])
         txt_file1.append("_rot");
         txt_file2.append("_tr");
         
-//         exportTXTQuaternionVector( (txt_file1 + "_gp.txt").c_str(), *gp.getPtrGlobalQuaternion() );
-//         exportTXTTranslationVector( (txt_file2 + "_gp.txt").c_str(), *gp.getPtrGlobalTranslation() );
-//         exportTXTQuaternionVector( (txt_file1 + "_sr_opt.txt").c_str(), *sr01.getPtrGlobalQuaternion() );
-//         exportTXTTranslationVector( (txt_file2 + "_sr_opt.txt").c_str(), *sr01.getPtrGlobalTranslation() );
+//         exportTXTQuaternionVector( (txt_file1 + "_gp->txt").c_str(), *gp->getPtrGlobalQuaternion() );
+//         exportTXTTranslationVector( (txt_file2 + "_gp->txt").c_str(), *gp->getPtrGlobalTranslation() );
+//         exportTXTQuaternionVector( (txt_file1 + "_sr_opt.txt").c_str(), *sr01->getPtrGlobalQuaternion() );
+//         exportTXTTranslationVector( (txt_file2 + "_sr_opt.txt").c_str(), *sr01->getPtrGlobalTranslation() );
 //         exportTXTQuaternionVector( (txt_file1 + "_sr_lin.txt").c_str(), *sr02.getPtrGlobalQuaternion() );
 //         exportTXTTranslationVector( (txt_file2 + "_sr_lin.txt").c_str(), *sr02.getPtrGlobalTranslation() );
         exportTXTQuaternionVector( (txt_file1 + "_gl_opt.txt").c_str(), *Qn_global);
         exportTXTTranslationVector( (txt_file2 + "_gl_opt.txt").c_str(), *tr_global);
     }
     
+    // Free memory
+    myfeat.reset();
+    my_mmap.reset();
+    featM.reset();
+    
+    // Model
+    pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloud_join;
     std::vector< pcl::PointCloud<pcl::PointXYZRGBA>::Ptr > set_cloud;
     std::vector< boost::shared_ptr< Eigen::MatrixXd > > set_covariance;
     cv2PointCloudSet(imageList_rgb, imageList_depth, K, *Qn_global, *tr_global, set_cloud, set_covariance);
-    
-    pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloud_join;
 //     mergeCloudSet( set_cloud, set_covariance, cloud_join );
 //     set2unique( set_cloud, cloud_join );
+    
+//     MergeClouds mrg( &imageList_rgb, &imageList_depth, K);
+//     mrg.mergeSet( *Qn_global, *tr_global );
+//     cloud_join = mrg.getCloud();
     
     // ============================================ Visualization ============================================
 //     Qd_vector qnl = *Qn_global;
@@ -383,23 +434,23 @@ int main(int argc, char* argv[])
 //     viewer = visualizeCloud(cloudE);
 //     viewer = visualizeCloud(set_cloud[0]);
 //     viewer = visualizeCloud(cloud_join);
-    viewer->setBackgroundColor (1.0, 1.0, 1.0);
+//     viewer->setBackgroundColor (1.0, 1.0, 1.0);
     
     // Visualize Camera positions
-//     visualizeCameras( viewer, *sr01.getPtrGlobalQuaternion(), *sr01.getPtrGlobalTranslation() );
+//     visualizeCameras( viewer, *sr01->getPtrGlobalQuaternion(), *sr01->getPtrGlobalTranslation() );
 //     visualizeCameras( viewer, *sr02.getPtrGlobalQuaternion(), *sr02.getPtrGlobalTranslation() );
-//     visualizeCameras( viewer, *gp.getPtrGlobalQuaternion(), *gp.getPtrGlobalTranslation() );
+//     visualizeCameras( viewer, *gp->getPtrGlobalQuaternion(), *gp->getPtrGlobalTranslation() );
     visualizeCameras( viewer, *Qn_global, *tr_global );
 
 //     visualizeCameras(viewer, imageList_rgb, *Qn_global, *tr_global );
     
     // Other visualizations
     visualizeTrack( viewer, *Qn_global, *tr_global );
-//     visualizeTrack( viewer, *gp.getPtrGlobalQuaternion(), *gp.getPtrGlobalTranslation() );
-//     visualizeTrack( viewer, *sr01.getPtrGlobalQuaternion(), *sr01.getPtrGlobalTranslation() );
-//     visualizeTrack( viewer, ground_qn_global, ground_tr_global, Eigen::Vector3d( 0.9, 0.0, 0.0 ) );
+//     visualizeTrack( viewer, *gp->getPtrGlobalQuaternion(), *gp->getPtrGlobalTranslation() );
+//     visualizeTrack( viewer, *sr01->getPtrGlobalQuaternion(), *sr01->getPtrGlobalTranslation() );
+    visualizeTrack( viewer, ground_qn_global, ground_tr_global, Eigen::Vector3d( 0.9, 0.0, 0.0 ) );
     
-//     visualizeNoise(viewer, *sr01.getPtrXmodel(), *sr01.getPtrVariance(), *sr01.getPtrGlobalQuaternion(), *sr01.getPtrGlobalTranslation(), 500 );
+//     visualizeNoise(viewer, *sr01->getPtrXmodel(), *sr01->getPtrVariance(), *sr01->getPtrGlobalQuaternion(), *sr01->getPtrGlobalTranslation(), 500 );
     
 //     visualizeGraph( num_vertex, num_edges, weights, edges_pairs );
     

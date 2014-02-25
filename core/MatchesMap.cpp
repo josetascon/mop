@@ -13,7 +13,7 @@ std::vector<cv::DMatch> MatchesMap::match(int nmatch)
     return globalMatch[nmatch].matches;
 }
 
-void MatchesMap::solveMatchesContinuous_subgroup(std::vector< std::vector<float> > *descriptorsGPU, int init_image, int final_image)
+void MatchesMap::solveMatchesContinuous_subgroup(boost::shared_ptr< float_vv > descriptorsGPU, int init_image, int final_image)
 {
     DEBUG_2( std::cout << "Start solveMatches\n"; )
     SiftMatchGPU matcher(num_goodmatch);
@@ -64,7 +64,7 @@ void MatchesMap::solveMatchesContinuous_subgroup(std::vector< std::vector<float>
     DEBUG_2( std::cout << "End solveMatches\n"; )
 }
 
-void MatchesMap::solveMatchesPairs_subgroup(std::vector< std::vector<float> > *descriptorsGPU, int init_image, int final_image )
+void MatchesMap::solveMatchesPairs_subgroup(boost::shared_ptr< float_vv > descriptorsGPU, int init_image, int final_image )
 {
     DEBUG_2( std::cout << "Start solveMatches\n"; )
     SiftMatchGPU matcher(num_goodmatch);
@@ -122,7 +122,7 @@ void MatchesMap::solveMatchesPairs_subgroup(std::vector< std::vector<float> > *d
 
 }
 
-void MatchesMap::solveMatchesOneElement_subgroupUp(std::vector< std::vector<float> > *descriptorsGPU, int element, int final_image )
+void MatchesMap::solveMatchesOneElement_subgroupUp(boost::shared_ptr< float_vv > descriptorsGPU, int element, int final_image )
 {
     DEBUG_2( std::cout << "Start solveMatches\n"; )
     SiftMatchGPU matcher(num_goodmatch);
@@ -175,7 +175,7 @@ void MatchesMap::solveMatchesOneElement_subgroupUp(std::vector< std::vector<floa
     DEBUG_2( std::cout << "End solveMatches\n"; )
 }
 
-void MatchesMap::solveMatchesOneElement_subgroupDown(std::vector< std::vector<float> > *descriptorsGPU, int init_image, int element )
+void MatchesMap::solveMatchesOneElement_subgroupDown(boost::shared_ptr< float_vv > descriptorsGPU, int init_image, int element )
 {
     DEBUG_2( std::cout << "Start solveMatches\n"; )
     SiftMatchGPU matcher(num_goodmatch);
@@ -228,20 +228,20 @@ void MatchesMap::solveMatchesOneElement_subgroupDown(std::vector< std::vector<fl
     DEBUG_2( std::cout << "End solveMatches\n"; )
 }
 
-void MatchesMap::solveMatchesOneElement_subgroup(std::vector< std::vector<float> > *descriptorsGPU, int element, int init_image, int final_image )
+void MatchesMap::solveMatchesOneElement_subgroup(boost::shared_ptr< float_vv > descriptorsGPU, int element, int init_image, int final_image )
 {
     solveMatchesOneElement_subgroupDown( descriptorsGPU, init_image, element );
     solveMatchesOneElement_subgroupUp( descriptorsGPU, element, final_image );
 }
 
-void MatchesMap::solveMatchesOneElement(std::vector< std::vector<float> > *descriptorsGPU, int element)
+void MatchesMap::solveMatchesOneElement(boost::shared_ptr< float_vv > descriptorsGPU, int element)
 {
     int start = 0;
     int end = descriptorsGPU->size();
     if ( element < end ) solveMatchesOneElement_subgroup( descriptorsGPU, element, start, end ); //verify boundary
 }
 
-void MatchesMap::solveMatchesContinuous(std::vector< std::vector<float> > *descriptorsGPU)
+void MatchesMap::solveMatchesContinuous(boost::shared_ptr< float_vv > descriptorsGPU)
 {
     int init_image = 0;
     int final_image = descriptorsGPU->size();
@@ -252,7 +252,7 @@ void MatchesMap::solveMatchesContinuous(std::vector< std::vector<float> > *descr
     solveMatchesOneElement( descriptorsGPU, final_image - 1 ); // do this for loop closure
 }
 
-void MatchesMap::solveMatches(std::vector< std::vector<float> > *descriptorsGPU)
+void MatchesMap::solveMatches(boost::shared_ptr< float_vv > descriptorsGPU)
 {
     /** Example gratia how matches are stored. If I have n = 5 images then: \n
      * The total number of possible matches is n*(n-1)/2 = 10 \n
@@ -275,7 +275,7 @@ void MatchesMap::solveMatches(std::vector< std::vector<float> > *descriptorsGPU)
     solveMatchesPairs_subgroup( descriptorsGPU, init, final_image );
 }
 
-void MatchesMap::solveMatchesGroups(std::vector< std::vector<float> > *descriptorsGPU, int groupsize)
+void MatchesMap::solveMatchesGroups(boost::shared_ptr< float_vv > descriptorsGPU, int groupsize)
 {
     if( groupsize < 1 )
     {
@@ -303,7 +303,7 @@ void MatchesMap::solveMatchesGroups(std::vector< std::vector<float> > *descripto
 }
 
 
-void MatchesMap::solveMatchesGroups(std::vector< std::vector<float> > *descriptorsGPU, std::vector<int> *cluster)
+void MatchesMap::solveMatchesGroups(boost::shared_ptr< float_vv > descriptorsGPU, std::vector<int> *cluster)
 {
     if( cluster->size() < 1 )
     {
@@ -331,7 +331,7 @@ void MatchesMap::solveMatchesGroups(std::vector< std::vector<float> > *descripto
     
     
 
-void MatchesMap::robustifyMatches(std::vector< std::vector< cv::KeyPoint > > *set_of_keypoints)
+void MatchesMap::robustifyMatches(boost::shared_ptr< kpCV_vv > set_of_keypoints)
 {
     DEBUG_1( std::cout << "\nRobustify matches with fundamental matrix:\n"; )
     for(register int it = 0; it < reliableMatch.size(); ++it)
@@ -361,7 +361,7 @@ void MatchesMap::robustifyMatches(std::vector< std::vector< cv::KeyPoint > > *se
     }
 }
 
-void MatchesMap::robustifyMatches(std::vector< std::vector< SiftGPU::SiftKeypoint > > *set_of_keypoints)
+void MatchesMap::robustifyMatches(boost::shared_ptr< kpGPU_vv > set_of_keypoints)
 {
     DEBUG_1( std::cout << "\nRobustify matches with fundamental matrix:\n"; )
     for(register int it = 0; it < reliableMatch.size(); ++it)
@@ -391,7 +391,7 @@ void MatchesMap::robustifyMatches(std::vector< std::vector< SiftGPU::SiftKeypoin
     }
 }
 
-void MatchesMap::depthFilter(std::vector< std::vector< SiftGPU::SiftKeypoint > > *set_of_keypoints,
+void MatchesMap::depthFilter(boost::shared_ptr< kpGPU_vv > set_of_keypoints,
 		         std::vector< cv::Mat > *set_of_depth, const int reliable )
 {
     DEBUG_1( std::cout << "\nFilter matches with valid depth values:\n"; )
@@ -437,7 +437,7 @@ void MatchesMap::depthFilter(std::vector< std::vector< SiftGPU::SiftKeypoint > >
     }
 }
 
-void MatchesMap::depthFilter(std::vector< std::vector< SiftGPU::SiftKeypoint > > *set_of_keypoints,
+void MatchesMap::depthFilter(boost::shared_ptr< kpGPU_vv > set_of_keypoints,
 		         std::vector< std::string > *depth_list, const int reliable )
 {
     DEBUG_1( std::cout << "\nFilter matches with valid depth values:\n"; )
@@ -486,7 +486,7 @@ void MatchesMap::depthFilter(std::vector< std::vector< SiftGPU::SiftKeypoint > >
 }
 
 
-void MatchesMap::solveDB( HandleDB *mydb, std::vector< std::vector<SiftGPU::SiftKeypoint> > *keypointsGPU )
+void MatchesMap::solveDB( HandleDB *mydb, boost::shared_ptr< kpGPU_vv > keypointsGPU )
 {
     actualfeature = 0;
     // loop closure code
@@ -537,7 +537,7 @@ void MatchesMap::solveDB( HandleDB *mydb, std::vector< std::vector<SiftGPU::Sift
 // 				     keypointsGPU->at(cam2)[idft_c2].x, keypointsGPU->at(cam2)[idft_c2].y );
 
 
-void MatchesMap::solveDB3D( HandleDB *mydb, std::vector< std::vector<SiftGPU::SiftKeypoint> > *keypointsGPU,
+void MatchesMap::solveDB3D( HandleDB *mydb, boost::shared_ptr< kpGPU_vv > keypointsGPU,
 		        std::vector< std::string > *depth_list, Eigen::Matrix3d &calibration )
 {
     actualfeature = 0;
@@ -598,7 +598,7 @@ void MatchesMap::solveDB3D( HandleDB *mydb, std::vector< std::vector<SiftGPU::Si
 }
 
 
-void MatchesMap::exportTXT(const char *file_txt, std::vector< std::vector<SiftGPU::SiftKeypoint> > *keypointsGPU)
+void MatchesMap::exportTXT( const char *file_txt, boost::shared_ptr< kpGPU_vv > keypointsGPU )
 {
     std::ofstream myfile1;
     myfile1.open (file_txt);
@@ -630,7 +630,7 @@ void MatchesMap::exportTXT(const char *file_txt, std::vector< std::vector<SiftGP
     return;
 }
 
-void MatchesMap::plot( std::vector< cv::Mat > *images, std::vector< std::vector< cv::KeyPoint > > *set_of_keypoints )
+void MatchesMap::plot( std::vector< cv::Mat > *images, boost::shared_ptr< kpCV_vv > set_of_keypoints )
 {
     cv::Mat draw_match;
     for (register int i=0; i < reliableMatch.size(); ++i)

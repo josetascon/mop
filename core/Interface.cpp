@@ -22,9 +22,9 @@ void exportXMLImageList(const char *file_xml, std::vector< std::string > &files_
     myfile1.close();
 }
 
-bool importXMLImageList(const char *file_xml, std::vector< std::string > &files_names)		//Read XML Files
+bool importXMLImageList(const char *file_xml, std::vector< std::string > &files_names, bool clear)		//Read XML Files
 {
-    files_names.clear();
+    if( clear ) files_names.clear();
     cv::FileStorage fs(file_xml, cv::FileStorage::READ);
     if( !fs.isOpened() )
         return false;

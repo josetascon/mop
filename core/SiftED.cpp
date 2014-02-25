@@ -7,40 +7,35 @@
 // ================================================================================================
 // ================================= FUNCTIONS of CLASS SiftED ====================================
 // ================================================================================================
-SiftED::SiftED( std::vector< std::string > filenameIms )
-{
-    nameImages = filenameIms;
-    num_images = nameImages.size();
-    descriptorsGPU.resize(num_images);
-    keypointsGPU.resize(num_images);
-    
-    set_of_images.resize(num_images);
-    set_of_keypoints.resize(num_images);
-    set_of_descriptors.resize(num_images);
-};
-
-SiftED::~SiftED()
-{
-//     nameImages.clear();
-};   
-
 void SiftED::loadImages()
 {
-    set_of_images.clear();
-    for (int i = 0; i < nameImages.size(); i++ )	//Store all images in std::vector<cv::Mat>
+//     set_of_images = boost::shared_ptr< std::vector< cv::Mat > >( new std::vector< cv::Mat >());
+    set_of_images->clear();
+    for (int i = 0; i < nameImages->size(); i++ )	//Store all images in std::vector<cv::Mat>
     {
-        set_of_images.push_back( cv::imread(nameImages[i], 1) );
+        set_of_images->push_back( cv::imread(nameImages->at(i), 1) );
+    }
+    load_images = true;
+}
+
+cv::Mat SiftED::getImage(int num)
+{
+    if( load_images ) return set_of_images->at(num);
+    else
+    {
+        DEBUG_E( ("Images are not loaded yet. Try loadImages() first") ); 
+        exit(-1);
     }
 }
 
-cv::Mat SiftED::image(int num)
+std::vector<cv::KeyPoint> SiftED::getKeyPoint(int num)
 {
-    return set_of_images[num];
-}
-
-std::vector<cv::KeyPoint> SiftED::KeyPoint(int num)
-{
-    return set_of_keypoints[num];
+    if( keypoint_available ) return set_of_keypoints->at(num);
+    else
+    {
+        DEBUG_E( ("Keypoints unavailable. Try enableKeyPoint() first") ); 
+        exit(-1);
+    }
 }
 
 void SiftED::solveSift()
@@ -75,7 +70,7 @@ void SiftED::solveSift()
         return;
     }
     
-    for (int k = 0; k < num_images; k++) files[k] = nameImages[k].c_str();
+    for (int k = 0; k < num_images; k++) files[k] = nameImages->at(k).c_str();
     
     sift.SetImageList(num_images, files);
     DEBUG_1( std::cout << "\n================================ SIFT Features E&D ==================================\n"; )
@@ -84,13 +79,13 @@ void SiftED::solveSift()
     {
         sift.RunSIFT(k); //process an image
         ft_per_im[k] = sift.GetFeatureNum(); //get feature count
-        keypointsGPU[k].resize(ft_per_im[k]);
-        descriptorsGPU[k].resize(128*ft_per_im[k]);
+        keypointsGPU->at(k).resize(ft_per_im[k]);
+        descriptorsGPU->at(k).resize(128*ft_per_im[k]);
         
-        sift.GetFeatureVector(&keypointsGPU[k][0], &descriptorsGPU[k][0]); //specify NULL if you don’t need keypoints or descriptors
+        sift.GetFeatureVector(&keypointsGPU->at(k)[0], &descriptorsGPU->at(k)[0]); //specify NULL if you don’t need keypoints or descriptors
 //         DEBUG_1( printf("SIFT: Image %04i, \t#features = %i\n", k, ft_per_im[k]); )
         DEBUG_1( std::string str = "SIFT: Image %04i, ";
-	  str.append( basename(strdup(nameImages[k].c_str())) );
+	  str.append( basename(strdup(nameImages->at(k).c_str())) );
 	  str.append("\t #f = %i\n");
 	  printf(str.c_str(),k,ft_per_im[k]);
         )
@@ -99,24 +94,17 @@ void SiftED::solveSift()
 
 void SiftED::enableKeyPoint()
 {
+//     set_of_keypoints = boost::shared_ptr< kpCV_vv >( new kpCV_vv());
     for (register int k = 0; k < num_images; ++k)
     {
-        int ft_per_im = keypointsGPU[k].size();
-        set_of_keypoints[k].resize(ft_per_im);
+        int ft_per_im = keypointsGPU->at(k).size();
+        set_of_keypoints->at(k).resize(ft_per_im);
         for (int i = 0; i < ft_per_im ; i++)
         {
-	  set_of_keypoints[k][i] = cv::KeyPoint( cv::Point2f(keypointsGPU[k][i].x, keypointsGPU[k][i].y),
-			  keypointsGPU[k][i].s, keypointsGPU[k][i].o );
+	  set_of_keypoints->at(k)[i] = cv::KeyPoint( cv::Point2f(keypointsGPU->at(k)[i].x, keypointsGPU->at(k)[i].y),
+			  keypointsGPU->at(k)[i].s, keypointsGPU->at(k)[i].o );
         }
     }
+    keypoint_available = true;
 }
 
-// std::vector< std::vector<float> > SiftED::get_descriptorsGPU()
-// {
-//     return descriptorsGPU;
-// }
-//     
-// std::vector< std::vector<SiftGPU::SiftKeypoint> > SiftED::get_keypointsGPU()
-// {
-//     return keypointsGPU;
-// }

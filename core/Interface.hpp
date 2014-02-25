@@ -25,6 +25,7 @@
 #include <fstream>		// ofstream and/or ifstream
 #include <string>
 #include <vector>
+#include <libgen.h>
 
 // Local Libraries
 #include "Common.hpp"
@@ -159,7 +160,7 @@ void importTXTTranslationVector(const char *filename, std::vector< Eigen::Matrix
  * 
  * @date Jul/12/2013
  */
-bool importXMLImageList(const char *file_xml, std::vector< std::string > &files_names);
+bool importXMLImageList(const char *file_xml, std::vector< std::string > &files_names, bool clear = true);
 
 void exportXMLImageList(const char *file_xml, std::vector< std::string > &files_names);
 

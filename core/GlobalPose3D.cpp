@@ -3,9 +3,9 @@
 
 #include "GlobalPose3D.hpp"
 
-void GlobalPose3D::solve(Eigen::Matrix<bool,-1,-1> *visibility, Eigen::Matrix<Eigen::Vector4d,-1,-1> *coordinates,
+void GlobalPose3D::solve( boost::shared_ptr< MXb > visibility, boost::shared_ptr< MX_V4d > coordinates,
 		     Eigen::Matrix3d *Calibration,
-		     std::vector< Eigen::Quaternion<double> > *Qn_global, std::vector< Eigen::Vector3d > *tr_global)
+		     boost::shared_ptr< Qd_vector > Qn_global, boost::shared_ptr< V3d_vector > tr_global)
 {
     //TODO CHANGE coordinates3d to vector3d to save memory, is ba style (projective geometry) and unnecesary here
     num_cameras = visibility->rows();
@@ -63,7 +63,7 @@ void GlobalPose3D::solve(Eigen::Matrix<bool,-1,-1> *visibility, Eigen::Matrix<Ei
     
     // Form hera, a global pose+structure to be optimized
     OptimizeG3D gopt;
-    gopt.setParameters( &Structure, &Covariance, visibility, coordinates, Qn_global, tr_global );
+    gopt.setParameters( &Structure, &Covariance, visibility.get(), coordinates.get(), Qn_global.get(), tr_global.get() );
     gopt.pose_Covariance();
     
 }

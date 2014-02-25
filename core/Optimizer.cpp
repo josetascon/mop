@@ -186,7 +186,7 @@ void OptimizeG3D::pose_Covariance()
     options.gradient_tolerance = 1e-16;
     options.function_tolerance = 1e-16;
     options.num_threads = 8;
-    options.max_num_iterations = 40;
+    options.max_num_iterations = 50;
     
     DEBUG_2( std::cout << "Total cams: " << num_cams << "\n"; )
     DEBUG_2( std::cout << "Total features: " << num_features << "\n"; )
