@@ -156,6 +156,12 @@ void poseEssential( Eigen::Matrix3d &Essential, Eigen::Matrix3d &Rot1, Eigen::Ma
 Eigen::MatrixXd linearCamera( Eigen::MatrixXd &xpt, Eigen::MatrixXd &Xpt)
 {
     int n = xpt.cols();
+    if (n < 6)
+    {
+        DEBUG_E( ("Camera Matrix can't be estimated in linearCamera(). Minimun required points are 6") ); 
+        exit(-1);
+    }
+    
     Eigen::MatrixXd A = Eigen::MatrixXd::Zero(2*n,12);
     
     for (register int k = 0; k < n; ++k)

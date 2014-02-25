@@ -110,15 +110,6 @@ int main(int argc, char* argv[])
     
     // ========================================== Varible declaration ==========================================
     
-//     // Modify this to read calibration matrix from xml file
-//     double cx = 328.59418282611989; // optical center x
-//     double cy = 265.23529733631955; // optical center y
-//     double fx = 520.28075824744883; // focal length x
-//     double fy = 517.35099060486289; // focal length y
-//     
-//     Eigen::Matrix3d K;
-//     K << fx, 0.0, cx, 0.0, fy, cy, 0.0, 0.0, 1.0;		// Camera Matrix (intrinsics)
-    
     int num_features;
     int num_cameras;
     timer_wall timer1;
@@ -183,33 +174,33 @@ int main(int argc, char* argv[])
     
     if ( ram_db )						// If database is in ram, solve features map and store in db
     {
-        SiftED myfeat(imageList_rgb);
-        myfeat.solveSift();
-    //     myfeat.loadImages();
-        if( drawM ) myfeat.enableKeyPoint();
+        boost::shared_ptr< SiftED > myfeat( new SiftED(&imageList_rgb) );
+        myfeat->solveSift();
+//         myfeat->loadImages();
+        if( drawM ) myfeat->enableKeyPoint();
         
-        MatchesMap my_mmap(400,35);
-        my_mmap.solveMatches(&myfeat.descriptorsGPU);
-        my_mmap.robustifyMatches(&myfeat.keypointsGPU);
+        boost::shared_ptr< MatchesMap > my_mmap( new MatchesMap(500,35) );
+        my_mmap->solveMatches(myfeat->getDescriptorsGPU());
+        my_mmap->robustifyMatches(myfeat->getKeypointsGPU());
         timer1.start();
-        my_mmap.solveDB( &mydb, &myfeat.keypointsGPU );
+        my_mmap->solveDB( &mydb, myfeat->getKeypointsGPU() );
         std::cout << "Elapsed time to solve DB: " << timer1.elapsed_s() << " [s]\n";
-    //     my_mmap.txt((char*)"./match.txt", &myfeat.keypointsGPU);
-        if( drawM ) my_mmap.plot( &images, &myfeat.set_of_keypoints );
+//         my_mmap.txt((char*)"./match.txt", myfeat->getKeypointsGPU());
+        if( drawM ) my_mmap->plot( &images, myfeat->getKeypointsSet() );
     }
     
-    FeaturesMap featM;
-    featM.solveVisibility( &mydb );
-//     std::cout << "Visibility =\n" << featM.visibility << "\n";
-    printf("Visibility Matrix [%d x %d]\n",featM.visibility.rows(),featM.visibility.cols());
-    featM.exportTXT((char*)"./visibility.txt");
-    num_cameras = featM.cameras();
-    num_features = featM.features();
+    boost::shared_ptr< FeaturesMap > featM (new FeaturesMap());
+    featM->solveVisibility( &mydb );
+    printf("Visibility Matrix [%d x %d]\n",featM->getVisibility()->rows(),featM->getVisibility()->cols());
+    num_cameras = featM->getNumberCameras();
+    num_features = featM->getNumberFeatures();
+    mydb.closeDB();
+    
     
 //     SfM sfm01( num_cameras, num_features, K );
 // //     sfm01.solvePose( &my_mmap.globalMatch, &myfeat.set_of_keypoints);
-//     sfm01.solvePose( &featM.visibility, &featM.coordinates );
-//     sfm01.solveStructure( &featM.visibility, &featM.coordinates );
+//     sfm01.solvePose( (featM->getVisibility()).get(), (featM->getCoordinates()).get() );
+//     sfm01.solveStructure( (featM->getVisibility()).get(), (featM->getCoordinates()).get() );
         
 //     std::cout << "Structure =\n" << sfm01.Structure.transpose() << "\n";
     mydb.closeDB();
@@ -223,7 +214,7 @@ int main(int argc, char* argv[])
 //     std::vector< double > coefficients(5,0.0);/// active for dinosaur
     /*
     GlobalOptimizer opt01;
-    opt01.setParameters( &featM.visibility, &featM.coordinates, &sfm01.Quat_cumulative, &sfm01.tr_global, &sfm01.Structure );
+    opt01.setParameters( (featM->getVisibility()).get(), (featM->getCoordinates()).get(), &sfm01.Quat_cumulative, &sfm01.tr_global, &sfm01.Structure );
     opt01.setIntrinsics( &intrinsics_param );
     opt01.setDistortion( &coefficients );
     opt01.runBA();// argv[0] );// bundle adjustment to all data
@@ -235,13 +226,13 @@ int main(int argc, char* argv[])
     writePMVS("./pmvs", imageList_rgb, sfm01.Cameras_RCV, K, coefficients);
     */
     timer1.start();
-    IncrementalBA opt01( &featM.visibility, &featM.coordinates );
+    IncrementalBA opt01( (featM->getVisibility()).get(), (featM->getCoordinates()).get() );
     opt01.setIntrinsics( &intrinsics_param );
     opt01.setDistortion( &coefficients );
     opt01.runC();
     
     GlobalOptimizer opt03;
-    opt03.setParameters( &featM.visibility, &featM.coordinates, &opt01.quaternion, &opt01.translation, &opt01.structure );
+    opt03.setParameters( (featM->getVisibility()).get(), (featM->getCoordinates()).get(), &opt01.quaternion, &opt01.translation, &opt01.structure );
     opt03.setIntrinsics( &intrinsics_param );
     opt03.setDistortion( &coefficients );
     opt03.runBA();// argv[0] );// bundle adjustment to all data

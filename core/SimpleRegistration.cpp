@@ -47,7 +47,7 @@ void SimpleRegistration::printGlobal( int iteration )
     std::cout << "Camera Matrix Recover " <<  k << ":\n" << Cameras_RCV->at(k) << "\n\n";
 }
 
-void SimpleRegistration::solvePose(std::vector< MatchQuery > *globalMatch, std::vector< std::vector< cv::KeyPoint > > *set_of_keypoints, 
+void SimpleRegistration::solvePose_Matches(std::vector< MatchQuery > *globalMatch, std::vector< std::vector< cv::KeyPoint > > *set_of_keypoints, 
 		std::vector< cv::Mat > *set_of_depth)
 {
     initializeGlobalVariables();
@@ -146,7 +146,7 @@ void SimpleRegistration::solvePose( boost::shared_ptr< MXb > visibility, boost::
     }
 }
 
-void SimpleRegistration::solvePose( boost::shared_ptr< MXb > visibility, boost::shared_ptr< MX_V4d > coordinates, bool optimal)
+void SimpleRegistration::solvePose3D( boost::shared_ptr< MXb > visibility, boost::shared_ptr< MX_V4d > coordinates, bool optimal)
 {
     // initialization
     initializeGlobalVariables();

@@ -44,7 +44,7 @@
 // ================================================================================================
 class SimpleRegistration		// Registration Aligment of Points based on Image Features
 {
-private:
+protected:
     bool fallback_icp;
     int valid_min_points;
     int num_cameras;
@@ -116,13 +116,14 @@ public:
     void setFallBackICPOff() { fallback_icp = false; };
     
     //solve Pose, use continuous matches
-    void solvePose( std::vector< MatchQuery > *globalMatch, std::vector< std::vector< cv::KeyPoint > > *set_of_keypoints, 
+    void solvePose_Matches( std::vector< MatchQuery > *globalMatch, std::vector< std::vector< cv::KeyPoint > > *set_of_keypoints, 
 		std::vector< cv::Mat > *set_of_depth );
     
-    void solvePose( boost::shared_ptr< MXb > visibility, boost::shared_ptr< MX_V3d > coordinates,
+    virtual void solvePose( boost::shared_ptr< MXb > visibility, boost::shared_ptr< MX_V3d > coordinates,
 		std::vector< std::string > &depth_list, bool optimal = true );
     
-    void solvePose( boost::shared_ptr< MXb > visibility, boost::shared_ptr< MX_V4d > coordinates, bool optimal = true );
+    /// Solve Pose 3D points, Fall back to ICP works here
+    void solvePose3D( boost::shared_ptr< MXb > visibility, boost::shared_ptr< MX_V4d > coordinates, bool optimal = true );
     
     void updateQuaternion();
     

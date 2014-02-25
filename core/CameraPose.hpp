@@ -19,6 +19,10 @@
 // Std Libraries
 #include <iostream>
 
+// Local Libraries
+#include "Debug.hpp"
+#include "Common.hpp"
+
 // ====================================================================================================================================
 // =======================================================  FUNCTIONS  ================================================================
 // ====================================================================================================================================
@@ -177,6 +181,44 @@ void poseArun( Eigen::Matrix<Teig,-1,-1> &WorldData1, Eigen::Matrix<Teig,-1,-1> 
     translation = Eigen::Matrix<Teig,3,1>(-Rotation*centroidA + centroidB); //Recover translation
 }
 
+/// Estimate a Camera matrix with 2D (xpt) and 3D points (Xpt) with a linear SVD algorithm
 Eigen::MatrixXd linearCamera( Eigen::MatrixXd &xpt, Eigen::MatrixXd &Xpt);
+
+/// Given a camera matrix P (with input Calibration) extract Rotation and translation.
+template < typename Teig >
+void poseCameraMatrix3x4( Eigen::Matrix<Teig,-1,-1> &Pmatrix, Eigen::Matrix<Teig,3,3> &Calibration, 
+	  Eigen::Matrix<Teig,3,3> &Rotation, Eigen::Matrix<Teig,3,1> &translation )
+{
+    Eigen::Matrix<Teig,-1,-1> P = Pmatrix;
+    Eigen::Matrix<Teig,3,3> RR, R_angle;
+    Eigen::Matrix<Teig,3,1> tt, angles_vec;
+    
+    P = Calibration.inverse()*P;
+//     RR << P(0,0), P(0,1), P(0,2), P(1,0), P(1,1), P(1,2), P(2,0), P(2,1), P(2,2);	// Extract rotation [0:2 x 0:2]
+    RR = P.block(0,0,3,3);		// Extract rotation [0:2 x 0:2]
+    tt = P.col(3); 			// Extract translation, last column
+    
+    // Procedure to achieve a consistent Rotation with det = 1
+    Teig sd = sign(RR.determinant());
+    Eigen::JacobiSVD< Eigen::Matrix<Teig,-1,-1> > svd(RR, Eigen::ComputeThinU | Eigen::ComputeThinV); // Normalize with the greatest singular value
+    Teig nv = 1/((svd.singularValues())(0));
+    tt = sd*nv*tt; 				// Normalization is also applied to tt 
+    RR = sd*nv*RR; 				// Rotation matrix must have 3 singular values = to 1, in order to achieve a det = 1;
+    rotation2angles<Teig>(RR, angles_vec);	// Find Euler angles.
+					// Do not use direct conversion from RR to Quaternion because the det of RR at this point is not 1
+    R_angle = Eigen::AngleAxisd(angles_vec(0)*CONSTANT_PI/180, Eigen::Vector3d::UnitX()) * 
+    Eigen::AngleAxisd(angles_vec(1)*CONSTANT_PI/180,  Eigen::Vector3d::UnitY())
+    * Eigen::AngleAxisd(angles_vec(2)*CONSTANT_PI/180, Eigen::Vector3d::UnitZ());
+    //Debug
+//     std::cout << "nv = " << nv << "\n";
+//     std::cout << "sd = " << sd << "\n";
+//     std::cout << "P3\n" << P2 << "\n";
+//     std::cout << "Rot\n" << RR << "\n";
+    DEBUG_3( std::cout << "Rotation angles:\n" << angles_vec.transpose() << "\n"; )
+    DEBUG_3( std::cout << "translation:\n" << tt.transpose() << "\n"; )
+    
+    Rotation = R_angle;
+    translation = tt;
+}
 
 #endif

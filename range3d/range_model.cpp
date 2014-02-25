@@ -346,7 +346,7 @@ int main(int argc, char* argv[])
     boost::shared_ptr< SimpleRegistration > sr01( new SimpleRegistration( num_cameras, num_features, K ) );
     sr01->setFallBackICPOn( &imageList_rgb, &imageList_depth, num_depth_filter );
     timer1.start();
-    sr01->solvePose( featM->getVisibility(), featM->getCoordinates3D(), true ); // true for optimal
+    sr01->solvePose3D( featM->getVisibility(), featM->getCoordinates3D(), true ); // true for optimal
     std::cout << "Elapsed time to solve Pose: " << timer1.elapsed_s() << " [s]\n";
     Qn_global = sr01->getPtrGlobalQuaternion();
     tr_global = sr01->getPtrGlobalTranslation();
@@ -354,7 +354,7 @@ int main(int argc, char* argv[])
 //     // Print lin and opt
 //     SimpleRegistration sr02( num_cameras, num_features, K );
 //     timer1.start();
-//     sr02.solvePose( &featM->visibility, &featM->coordinates3D, false ); // true for optimal
+//     sr02.solvePose3D( &featM->visibility, &featM->coordinates3D, false ); // true for optimal
 //     std::cout << "Elapsed time to solve Pose: " << timer1.elapsed_s() << " [s]\n";
     
     // Test one merge. Use to show in blue the proximity
@@ -379,13 +379,13 @@ int main(int argc, char* argv[])
 //     setCoordinatestoDesiredPosition( gp->Qn_global, gp->tr_global, q_desired, t_desired, 4 ); // move camera 5 to desired point
     
     // Load ground truth
-    Qd_vector ground_qn_global;
-    V3d_vector ground_tr_global;
-    importTXTQuaternionVector( "freiburg1_room_ground_rot.txt", ground_qn_global );
-    importTXTTranslationVector( "freiburg1_room_ground_tr.txt", ground_tr_global );
-//     importTXTQuaternionVector( "freiburg3_ground_rot.txt", ground_qn_global );
-//     importTXTTranslationVector( "freiburg3_ground_tr.txt", ground_tr_global );
-    setCoordinatestoOrigin(ground_qn_global, ground_tr_global);
+//     Qd_vector ground_qn_global;
+//     V3d_vector ground_tr_global;
+//     importTXTQuaternionVector( "freiburg1_room_ground_rot.txt", ground_qn_global );
+//     importTXTTranslationVector( "freiburg1_room_ground_tr.txt", ground_tr_global );
+// //     importTXTQuaternionVector( "freiburg3_ground_rot.txt", ground_qn_global );
+// //     importTXTTranslationVector( "freiburg3_ground_tr.txt", ground_tr_global );
+//     setCoordinatestoOrigin(ground_qn_global, ground_tr_global);
     
     // Write files of global quaternion and translation
     if ( save_txt )
@@ -448,7 +448,7 @@ int main(int argc, char* argv[])
     visualizeTrack( viewer, *Qn_global, *tr_global );
 //     visualizeTrack( viewer, *gp->getPtrGlobalQuaternion(), *gp->getPtrGlobalTranslation() );
 //     visualizeTrack( viewer, *sr01->getPtrGlobalQuaternion(), *sr01->getPtrGlobalTranslation() );
-    visualizeTrack( viewer, ground_qn_global, ground_tr_global, Eigen::Vector3d( 0.9, 0.0, 0.0 ) );
+//     visualizeTrack( viewer, ground_qn_global, ground_tr_global, Eigen::Vector3d( 0.9, 0.0, 0.0 ) );
     
 //     visualizeNoise(viewer, *sr01->getPtrXmodel(), *sr01->getPtrVariance(), *sr01->getPtrGlobalQuaternion(), *sr01->getPtrGlobalTranslation(), 500 );
     

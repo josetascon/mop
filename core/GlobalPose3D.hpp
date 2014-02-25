@@ -26,7 +26,8 @@
 // Local Libraries
 #include "Debug.hpp"
 #include "DepthProjection.hpp"
-#include "Optimizer.hpp" 
+#include "Optimizer.hpp"
+#include "LinearEstimator.hpp"
 
 // ================================================================================================
 // ==================================== CLASS GlobalPose3D ========================================

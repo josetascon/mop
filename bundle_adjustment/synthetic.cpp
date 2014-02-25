@@ -183,7 +183,7 @@ int main(int argc, char* argv[])
 	  for(register int cam = 1; cam < num_cameras; ++cam)
 	  {
 	      double ax = 0.0;
-	      double ay = -(cam)*(2*pi/num_cameras);
+	      double ay = -(cam)*(2*CONSTANT_PI/num_cameras);
 	      double az = 0.0;
 	      Eigen::Matrix3d Rtmp;
 	      Rtmp = Eigen::AngleAxisd(ax, Eigen::Vector3d::UnitX()) * 

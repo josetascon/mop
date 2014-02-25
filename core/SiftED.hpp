@@ -97,6 +97,7 @@ public:
     // Get functions
     boost::shared_ptr< kpGPU_vv > getKeypointsGPU() { return keypointsGPU; };
     boost::shared_ptr< float_vv > getDescriptorsGPU() { return descriptorsGPU; };
+    boost::shared_ptr< kpCV_vv > getKeypointsSet() { return set_of_keypoints; };
     
     cv::Mat getImage( int num );
     std::vector<cv::KeyPoint> getKeyPoint( int num );

@@ -23,38 +23,23 @@ void GlobalPose3D::solve( boost::shared_ptr< MXb > visibility, boost::shared_ptr
         {
 	  if ( (*visibility)(k,ft) )
 	  {
-	      Eigen::Vector4d temp = (*coordinates)(k,ft);
-	      Eigen::Vector3d pt = temp.head(3);
+	      Eigen::Vector3d pa, va_tmp, pv, vv_temp;
 	      
-	      Eigen::Vector3d pen, pa, pv;
-	      Eigen::Matrix3d Cen, Ca, Cv;
-	      
-	      // use varianceKinect
-	      Eigen::Vector3d v1temp;
-	      Eigen::Matrix3d Ctmp;
-	      varianceKinect( pt, *Calibration, v1temp);
-	      Ctmp = Eigen::Matrix3d( v1temp.asDiagonal() );
-	      DEBUG_3( std::cout << "pt = " << pt.transpose() << "\n"; )
-	      DEBUG_3( std::cout << "Cov = " << v1temp.transpose() << "\n"; )
-	      
-	      // Put point and covariance to reference frame
-	      pv = R.transpose()*(pt - t);
-	      Cv = R*Ctmp*R.transpose();
-	      
-	      // BLUE estimator
-	      Eigen::Vector3d v2temp = Covariance.col(ft);
-	      Ca = Eigen::Matrix3d( v2temp.asDiagonal() );
+	      // Point1: actual
 	      pa = Structure.col(ft);
-	      if ( v2temp(0) != 0) Cen = (Ca.inverse() + Cv.inverse()).inverse();
-	      else Cen = Cv;
-	      pen = pa + Cen*Cv.inverse()*(pv - pa);
+	      va_tmp = Covariance.col(ft);
 	      
-	      DEBUG_3( std::cout << "pen = " << pen.transpose() << "\n"; )
-	      DEBUG_3( std::cout << "Cen = " << (Cen.diagonal()).transpose() << "\n"; )
+	      // Point2: viewed
+	      Eigen::Vector4d temp = (*coordinates)(k,ft);
+	      pv = temp.head(3);
+	      varianceKinect( pv, *Calibration, vv_temp); 	// Use varianceKinect for variance2
+	      
+	      LinearEstimator<double> blue( pa, va_tmp, pv, vv_temp, R, t );
+	      blue.estimate();
 	      
 	      //Update
-	      Structure.col(ft) = pen;
-	      Covariance.col(ft) = Cen.diagonal();
+	      Structure.col(ft) = blue.getPoint();
+	      Covariance.col(ft) = blue.getVariance();
 	  }
         }
     }

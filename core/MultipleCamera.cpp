@@ -295,32 +295,11 @@ void IncrementalBA::runC()
 //         std::cout << "structure temp\n" << Xtemp.transpose() << "\n";
 //         std::cout << "structure\n" << structure.transpose() << "\n";
 
-        // Initialize new camera, solve R and t
-        P2 = K.inverse()*P2;
         Eigen::Matrix3d RR;
-        RR << P2(0,0), P2(0,1), P2(0,2), P2(1,0), P2(1,1), P2(1,2), P2(2,0), P2(2,1), P2(2,2);
-        
         Eigen::Vector3d tt;
-        tt = P2.col(3);
-        double sd = sign(RR.determinant());
-        Eigen::JacobiSVD<Eigen::MatrixXd> svd(RR, Eigen::ComputeThinU | Eigen::ComputeThinV); // Normalize with the greatest singular value
-        double nv = 1/((svd.singularValues())(0));
-        tt = sd*nv*tt; 				// Normalization is also applied to 
-        RR = sd*nv*RR; 				// Rotation matrix must have 3 singular values = to 1, in order to achieve a det = 1;
-        rotation2angles(RR, angles_vec1); 	// Find Euler angles
-        Eigen::Matrix3d R_angle; 			// Do not use direct conversion from RR to Quaternion because the det of RR at this point is not 1
-        R_angle = Eigen::AngleAxisd(angles_vec1(0)*CONSTANT_PI/180, Eigen::Vector3d::UnitX()) * 
-        Eigen::AngleAxisd(angles_vec1(1)*CONSTANT_PI/180,  Eigen::Vector3d::UnitY())
-        * Eigen::AngleAxisd(angles_vec1(2)*CONSTANT_PI/180, Eigen::Vector3d::UnitZ());
-        //Debug
-//         std::cout << "nv = " << nv << "\n";
-//         std::cout << "sd = " << sd << "\n";
-//         std::cout << "P3\n" << P2 << "\n";
-//         std::cout << "Rot\n" << RR << "\n";
-        std::cout << "Rotation angles:\n" << angles_vec1.transpose() << "\n";
-        std::cout << "translation:\n" << tt.transpose() << "\n";
-
-        quaternion.push_back(Eigen::Quaternion<double>(R_angle));
+        poseCameraMatrix3x4( P2, K, RR, tt );
+        
+        quaternion.push_back(Eigen::Quaternion<double>(RR));
         translation.push_back(tt);
         
         // Optimization
