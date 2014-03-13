@@ -258,13 +258,13 @@ int main(int argc, char* argv[])
 	  std::vector< double > coefficients(5,0.0);
 	  
 	  IncrementalBA opt01( &visibility, &coordinates_noise );
-	  opt01.setIntrinsics( &intrinsics_param );
+	  opt01.setIntrinsics( K );
 	  opt01.setDistortion( &coefficients );
 	  opt01.runC();
 	  
-	  GlobalOptimizer opt02;
+	  GlobalOptimizerSfM opt02;
 	  opt02.setParameters( &visibility, &coordinates_noise, &opt01.quaternion, &opt01.translation, &opt01.structure );
-	  opt02.setIntrinsics( &intrinsics_param );
+	  opt02.setIntrinsics( &K );
 	  opt02.setDistortion( &coefficients );
 	  opt02.runBA();
         //     std::cout << "Incrementel BA time: "<< timer1.elapsed_s() << " [s]\n"; 

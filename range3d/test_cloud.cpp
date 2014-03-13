@@ -137,6 +137,11 @@ int main(int argc, char* argv[])
     int num_cameras;
     timer_wall timer1;
     std::vector< cv::Mat > images, images_depth;//, images_matches;
+    
+    typedef std::vector< Eigen::Quaternion<double> > Qd_vector;
+    typedef std::vector< Eigen::Vector3d > V3d_vector;
+    boost::shared_ptr< Qd_vector > Qn_global;
+    boost::shared_ptr< V3d_vector > tr_global;
 
     // ========================================== Read Images ==========================================
     if (verbose)
@@ -200,43 +205,44 @@ int main(int argc, char* argv[])
     
     if ( ram_db )						// If database is in ram, solve features map and store in db
     {
-        SiftED myfeat(imageList_rgb);
-        myfeat.solveSift();
-    //     myfeat.loadImages();
-        if( drawM ) myfeat.enableKeyPoint();
+        boost::shared_ptr< SiftED > myfeat( new SiftED(&imageList_rgb) );
+        myfeat->solveSift();
+//         myfeat->loadImages();
+        if( drawM ) myfeat->enableKeyPoint();
         
-        MatchesMap my_mmap(400,35);
-        my_mmap.solveMatches(&myfeat.descriptorsGPU);
-        my_mmap.robustifyMatches(&myfeat.keypointsGPU);
-        my_mmap.depthFilter(&myfeat.keypointsGPU, &images_depth, 3);
+        boost::shared_ptr< MatchesMap > my_mmap( new MatchesMap(500,35) );
+        my_mmap->solveMatches(myfeat->getDescriptorsGPU());
+        my_mmap->robustifyMatches(myfeat->getKeypointsGPU());
+        my_mmap->depthFilter(myfeat->getKeypointsGPU(), &imageList_depth, 3);
         timer1.start();
-        my_mmap.solveDB( &mydb, &myfeat.keypointsGPU );
-        std::cout << "Elapsed time to solve DB: " << timer1.elapsed_s() << " [s]\n";
-    //     my_mmap.txt((char*)"./match.txt", &myfeat.keypointsGPU);
-        if( drawM ) my_mmap.plot( &images, &myfeat.set_of_keypoints );
+        my_mmap->solveDB( &mydb, myfeat->getKeypointsGPU() );
+        DEBUG_1( std::cout << "Elapsed time to solve DB: " << timer1.elapsed_s() << " [s]\n"; )
+//         my_mmap.txt((char*)"./match.txt", &myfeat.keypointsGPU);
+        if( drawM ) my_mmap->plot( &images, myfeat->getKeypointsSet() );    
     }
     
-    FeaturesMap featM;
-    featM.solveVisibility( &mydb );
-//     std::cout << "Visibility =\n" << featM.visibility << "\n";
-    printf("Visibility Matrix [%d x %d]\n",featM.visibility.rows(),featM.visibility.cols());
-//     featM.txt((char*)"./visibility.txt");
-    num_cameras = featM.cameras();
-    num_features = featM.features();
+    
+    boost::shared_ptr< FeaturesMap > featM (new FeaturesMap());
+    featM->solveVisibility( &mydb );
+    printf("Visibility Matrix [%d x %d]\n",featM->getVisibility()->rows(),featM->getVisibility()->cols());
+    num_cameras = featM->getNumberCameras();
+    num_features = featM->getNumberFeatures();
     mydb.closeDB();
     
     // ============================================ Registration ============================================
     
-    SimpleRegistration sr01( num_cameras, num_features, K );
+    boost::shared_ptr< SimpleRegistration > sr01( new SimpleRegistration( num_cameras, num_features, K ) );
     timer1.start();
-    sr01.solvePose( &featM.visibility, &featM.coordinates, imageList_depth );
+    sr01->solvePose( featM->getVisibility(), featM->getCoordinates(), imageList_depth, true ); // true for optimal
     std::cout << "Elapsed time to solve Pose: " << timer1.elapsed_s() << " [s]\n";
-//     sr01.solvePose( &my_mmap.globalMatch, &myfeat.set_of_keypoints, &images_depth );
-//     std::cout << "Recover structure matrix:\n" << sr01.Structure.transpose() << "\n";
-
-    std::vector< pcl::PointCloud<pcl::PointXYZRGBA>::Ptr > set_cloud;
-    cv2PointCloudSet(images, images_depth, K, sr01.Qn_global, sr01.tr_global, set_cloud);
+    Qn_global = sr01->getPtrGlobalQuaternion();
+    tr_global = sr01->getPtrGlobalTranslation();
+    
     pcl::PointCloud<pcl::PointXYZRGBA>::Ptr model;
+    std::vector< pcl::PointCloud<pcl::PointXYZRGBA>::Ptr > set_cloud;
+    std::vector< boost::shared_ptr< Eigen::MatrixXd > > set_covariance;
+    
+    cv2PointCloudSet(imageList_rgb, imageList_depth, K, *Qn_global, *tr_global, set_cloud, set_covariance);
     set2unique( set_cloud, model );
     
     // ========================================== END Registration ==========================================

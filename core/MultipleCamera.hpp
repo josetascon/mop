@@ -28,6 +28,7 @@
 #include "CameraPose.hpp"
 #include "Triangulation.hpp"
 #include "Optimizer.hpp"
+#include "LinearEstimator.hpp"
 
 // ================================================================================================
 // ============================================ CLASS SfM =========================================
@@ -74,15 +75,24 @@ class IncrementalBA
 {
 private:
     // Variables
-    Eigen::Matrix<bool,-1,-1> *visibility; // [num_cams x num_features]
-    Eigen::Matrix<Eigen::Vector3d,-1,-1> *coordinates; // [num_cams x num_features]
-    std::vector<double> *intrinsics;
+    Eigen::Matrix<bool,-1,-1> *visibility; 		// [num_cams x num_features]
+    Eigen::Matrix<Eigen::Vector3d,-1,-1> *coordinates; 	// [num_cams x num_features]
+    Eigen::Matrix3d K;		 		// Calibration matrix
     std::vector<double> *distortion;
+    
+    int num_cams;
+    int num_features;
+    double variance_xyz;
+    std::vector<int> index;
+    std::vector< cv::Point2d > pts1, pts2;
+    Eigen::Matrix3d Rot;
+    Eigen::Vector3d tr;
     
 public:
     std::vector< Eigen::Quaternion<double> > quaternion;
     std::vector< Eigen::Vector3d > translation;
     Eigen::MatrixXd structure;
+    Eigen::MatrixXd covariance;
     std::vector< Eigen::MatrixXd > Camera;
     
     //Constructor
@@ -91,10 +101,15 @@ public:
     //Destructor
     ~IncrementalBA() { ; };
     
-    void setIntrinsics( std::vector<double> *internal_param ) { intrinsics = internal_param; };
+    void setIntrinsics( Eigen::Matrix3d &Calibration ) { K = Calibration; };
     void setDistortion( std::vector<double> *coefficients) { distortion = coefficients; };
     
+    void initialize();
+    void updateStructure( std::vector< Eigen::Vector3d > &xx1, std::vector< Eigen::Vector3d > &xx2,
+		        Eigen::MatrixXd &P1, Eigen::MatrixXd &P2 );
+    /// Run with linearCamera estimation (resectioning)
     void runC();
+    /// Run with essential matrix estimation
     void runF();
     void updateCamera();
 };

@@ -188,25 +188,21 @@ void SfM::updateCamera()
 // ================================================================================================
 // ============================== FUNCTIONS of CLASS IncrementalBA ================================
 // ================================================================================================
-void IncrementalBA::runC()
+void IncrementalBA::initialize()
 {
-    int num_cams = visibility->rows();
-    int num_features = visibility->cols();
+    num_cams = visibility->rows();
+    num_features = visibility->cols();
     structure = Eigen::MatrixXd::Zero(4,visibility->cols());
-    
-    Eigen::Matrix3d K, F;
-    K << (*intrinsics)[0], 0.0, (*intrinsics)[2], 0.0, (*intrinsics)[1], (*intrinsics)[3], 0.0, 0.0, 1.0;
+    covariance = Eigen::MatrixXd::Zero(3,visibility->cols());
+    variance_xyz = 0.4*0.4; // 40cm of std
     
     // ========================================== Two View Initialization ==========================================
     Eigen::MatrixXd x1data, x2data, x1hom, x2hom;
-    std::vector< cv::Point2d > pts1, pts2;
-    Eigen::Matrix3d Rot;
-    Eigen::Vector3d tr, angles_vec1;
+    Eigen::Matrix3d F;
     
     int cam1 = 0;
     int cam2 = 1;
-    std::vector<int> index;
-    std::cout << "Actual camera Iteration = " << cam1 << "-" << cam2 << "/" << num_cams-1 << "\n";
+    DEBUG_1( std::cout << "Actual camera Iteration = " << cam1 << "-" << cam2 << "/" << num_cams-1 << "\n"; )
     for (register int ft = 0; ft < num_features; ++ft)
     {
         if ( (*visibility)(cam1,ft) && (*visibility)(cam2,ft) )
@@ -235,12 +231,16 @@ void IncrementalBA::runC()
     // Initial optimization for two views
     LocalOptimizer opt01;
     opt01.setParameters3Dto2D( &x1data, &x2data, &Rot, &tr, &Xtemp );
-    opt01.setIntrinsics( intrinsics );
+    opt01.setIntrinsics( &K );
     opt01.setDistortion( distortion );
     opt01.pose3Dto2D();
     
-    for (register int i = 0; i < index.size(); ++i) structure.col(index[i]) = Xtemp.col(i);
     
+    for (register int i = 0; i < index.size(); ++i)
+    {
+        structure.col(index[i]) = Xtemp.col(i);
+        covariance.col(index[i]) = Eigen::Vector3d( variance_xyz, variance_xyz, variance_xyz );
+    }
     quaternion.push_back(Eigen::Quaternion<double>::Identity());
     quaternion.push_back(Eigen::Quaternion<double>(Rot));
     
@@ -250,9 +250,45 @@ void IncrementalBA::runC()
     Camera.push_back( P1 );
     Camera.push_back( buildProjectionMatrix(K, Rot, tr) );
     
-    
     // ========================================== END Two View Initialization ==========================================
+}
+
+void IncrementalBA::updateStructure( std::vector< Eigen::Vector3d > &xx1, std::vector< Eigen::Vector3d > &xx2,
+			      Eigen::MatrixXd &P1, Eigen::MatrixXd &P2 )
+{
+    Eigen::Matrix3d R = Eigen::Matrix3d::Identity(); // Initialize to zero coordinates due to absolute values from P1 and P2
+    Eigen::Vector3d t = Eigen::Vector3d::Zero();
     
+    for (register int i = 0; i < index.size(); ++i)	// using internal variable index
+    {
+        Eigen::Vector3d pa, va_tmp, pv, vv_temp;
+        
+        // Point1: actual
+        Eigen::Vector4d temp1 = structure.col(index[i]);
+        pa = temp1.head(3);
+        va_tmp = covariance.col(index[i]);
+        
+        // Point2: viewed
+        Eigen::Vector4d temp2 = linearTriangulation( xx1[i], xx2[i], P1, P2 );
+        pv = temp2.head(3);
+        vv_temp = Eigen::Vector3d( variance_xyz, variance_xyz, variance_xyz );
+        
+        LinearEstimator<double> blue( pa, va_tmp, pv, vv_temp, R, t );
+        blue.estimate();
+        
+        //Update
+        Eigen::Vector3d temp3 = blue.getPoint();
+        structure.col(index[i]) = Eigen::Vector4d( temp3(0), temp3(1), temp3(2), 1.0 );
+        covariance.col(index[i]) = blue.getVariance();
+    }
+}
+
+
+void IncrementalBA::runC()
+{
+    initialize();
+    Eigen::MatrixXd x3data, Xtemp;
+    Eigen::MatrixXd P1, P2;
     
     // ========================================== Adding new cameras ==========================================
     for (int cam2 = 2; cam2 < num_cams; cam2++)
@@ -281,23 +317,28 @@ void IncrementalBA::runC()
         }
         
         // Finding new camera from 3D point to 2D relation
-        point3_vector2eigen( pts3, x1data );
+        point3_vector2eigen( pts3, x3data );
         eigen_vector2eigen(common_st, Xtemp);
         P1 = Camera[cam1];
-        P2 = linearCamera( x1data, Xtemp); //Actual camera from 3D point to 2D relation
+        P2 = linearCamera( x3data, Xtemp); //Actual camera from 3D point to 2D relation
         //Debug
-        std::cout << "Actual camera Iteration = " << cam2 << "/" << num_cams-1 << "\n";
-        std::cout << "Pts to calc new camera = " << pts3.size() << "\n";
+        DEBUG_1( std::cout << "Actual camera Iteration = " << cam2 << "/" << num_cams-1 << "\n"; )
+        DEBUG_1( std::cout << "Pts to calc new camera = " << pts3.size() << "\n"; )
 //         std::cout << "common_st\n" << common_st.size() << "\n";
-//         std::cout << "x1data size\n" << x1data.cols() << "\n";
+//         std::cout << "x3data size\n" << x3data.cols() << "\n";
 //         std::cout << "Xtemp size\n" << Xtemp.cols() << "\n";
-//         std::cout << "x1data \n" << x1data.transpose() << "\n";
+//         std::cout << "x3data \n" << x3data.transpose() << "\n";
 //         std::cout << "structure temp\n" << Xtemp.transpose() << "\n";
 //         std::cout << "structure\n" << structure.transpose() << "\n";
 
         Eigen::Matrix3d RR;
         Eigen::Vector3d tt;
         poseCameraMatrix3x4( P2, K, RR, tt );
+        
+        LocalOptimizer opt01;
+        opt01.setParameters( &x3data, &Xtemp, &RR, &tt);
+        opt01.setIntrinsics( &K );
+        opt01.poseCamera();
         
         quaternion.push_back(Eigen::Quaternion<double>(RR));
         translation.push_back(tt);
@@ -306,83 +347,24 @@ void IncrementalBA::runC()
         int max_feature = 0;
         for (register int i = 0; i < visibility->cols(); ++i) if ((*visibility)(cam2,i)) max_feature = i;
         Eigen::Matrix<bool,-1,-1> view = visibility->block(0,0,cam2+1,max_feature); 		// Reduce the matrix to search
-        PartialIncremental opt02( &view, coordinates, &quaternion, &translation, &structure, intrinsics, distortion  );
+        IncrementalOptimizer opt02( &view, coordinates, &quaternion, &translation, &structure, &K, distortion  );
         opt02.run(cam2,cam2+1);
         RR = quaternion[cam2].toRotationMatrix();
         Camera.push_back( buildProjectionMatrix(K, RR, translation[cam2]) );
         
         //Initialize additional 3D points. This is at the end to allow the camera to be optimized
         P2 = Camera[cam2];
-        for (register int i = 0; i < index.size(); ++i)  structure.col(index[i]) = linearTriangulation( xx1[i], xx2[i], P1, P2 );
-//         std::cout << "End = " << cam2 << "\n\n";
+        
+//         for (register int i = 0; i < index.size(); ++i)  structure.col(index[i]) = linearTriangulation( xx1[i], xx2[i], P1, P2 );
+        updateStructure( xx1, xx2, P1, P2 );
     }
 }
 
 void IncrementalBA::runF()
 {
-    int num_cams = visibility->rows();
-    int num_features = visibility->cols();
-    structure = Eigen::MatrixXd::Zero(4,visibility->cols());
-    
-    Eigen::Matrix3d K, F;
-    K << (*intrinsics)[0], 0.0, (*intrinsics)[2], 0.0, (*intrinsics)[1], (*intrinsics)[3], 0.0, 0.0, 1.0;
-    
-    // ========================================== Two View Initialization ==========================================
-    Eigen::MatrixXd x1data, x2data, x1hom, x2hom;
-    std::vector< cv::Point2d > pts1, pts2;
-    Eigen::Matrix3d Rot;
-    Eigen::Vector3d tr, angles_vec1;
-    
-    int cam1 = 0;
-    int cam2 = 1;
-    std::vector<int> index;
-    std::cout << "Actual camera Iteration = " << cam1 << "-" << cam2 << "/" << num_cams-1 << "\n";
-    for (register int ft = 0; ft < num_features; ++ft)
-    {
-        if ( (*visibility)(cam1,ft) && (*visibility)(cam2,ft) )
-        {
-	  Eigen::Vector3d point1 = (*coordinates)(cam1,ft);
-	  Eigen::Vector3d point2 = (*coordinates)(cam2,ft);
-	  pts1.push_back( cv::Point2d(point1(0), point1(1)) );
-	  pts2.push_back( cv::Point2d(point2(0), point2(1)) );
-	  index.push_back(ft);
-        }
-    }
-//     printf("POSE: %04i -> %04i:\n", cam1, cam2);
-    findCameraExtrinsics(pts1, pts2, K, F, Rot, tr);
-    point_vector2eigen( pts1, x1data );
-    point_vector2eigen( pts2, x2data );
-    homogeneous( x1data, x1hom );
-    homogeneous( x2data, x2hom );
-    
-    Eigen::MatrixXd P1(3,4);
-    Eigen::MatrixXd P2(3,4);
-    P1 << K, Eigen::Vector3d::Zero(3);
-    P2 << buildProjectionMatrix( K, Rot, tr);
-    Eigen::MatrixXd Xtemp = linearTriangulationNormalized( x1hom, x2hom, P1, P2);
-//     structure.block(0,0,4,Xtemp.cols()) = Xtemp;
-    
-    // Initial optimization for two views
-    LocalOptimizer opt01;
-    opt01.setParameters3Dto2D( &x1data, &x2data, &Rot, &tr, &Xtemp );
-    opt01.setIntrinsics( intrinsics );
-    opt01.setDistortion( distortion );
-    opt01.pose3Dto2D();
-    
-    for (register int i = 0; i < index.size(); ++i) structure.col(index[i]) = Xtemp.col(i);
-    
-    quaternion.push_back(Eigen::Quaternion<double>::Identity());
-    quaternion.push_back(Eigen::Quaternion<double>(Rot));
-    
-    translation.push_back(Eigen::Vector3d::Zero(3));
-    translation.push_back(tr);
-    
-    Camera.push_back( P1 );
-    Camera.push_back( buildProjectionMatrix(K, Rot, tr) );
-    
-    
-    // ========================================== END Two View Initialization ==========================================
-    
+    initialize();
+    Eigen::MatrixXd P1, P2;
+    Eigen::Matrix3d F;
     
     // ========================================== Adding new cameras ==========================================
     for (int cam2 = 2; cam2 < num_cams; cam2++)
@@ -408,7 +390,7 @@ void IncrementalBA::runF()
 	      }
 	  }
         }
-        std::cout << "Actual camera Iteration = " << cam2 << "/" << num_cams-1 << "\n";
+        DEBUG_1(  std::cout << "Actual camera Iteration = " << cam2 << "/" << num_cams-1 << "\n"; )
         // Finding new camera from Fundamental
         findCameraExtrinsics(pts1, pts2, K, F, Rot, tr);
         tr = Rot*translation[cam1] + tr;
@@ -423,20 +405,19 @@ void IncrementalBA::runF()
         int max_feature = 0;
         for (register int i = 0; i < visibility->cols(); ++i) if ((*visibility)(cam2,i)) max_feature = i;
         Eigen::Matrix<bool,-1,-1> view = visibility->block(0,0,cam2+1,max_feature); 		// Reduce the matrix to search
-        PartialIncremental opt02( &view, coordinates, &quaternion, &translation, &structure, intrinsics, distortion  );
+        IncrementalOptimizer opt02( &view, coordinates, &quaternion, &translation, &structure, &K, distortion  );
         opt02.run(cam2,cam2+1);
         Eigen::Matrix3d RR = quaternion[cam2].toRotationMatrix();
         Camera.push_back( buildProjectionMatrix(K, RR, translation[cam2]) );
         
         //Initialize additional 3D points
-        for (register int i = 0; i < index.size(); ++i)  structure.col(index[i]) = linearTriangulation( xx1[i], xx2[i], P1, P2 );
+//         for (register int i = 0; i < index.size(); ++i)  structure.col(index[i]) = linearTriangulation( xx1[i], xx2[i], P1, P2 );
+        updateStructure( xx1, xx2, P1, P2 );
     }
 }
 
 void IncrementalBA::updateCamera()
 {
-    Eigen::Matrix3d K;
-    K << (*intrinsics)[0], 0.0, (*intrinsics)[2], 0.0, (*intrinsics)[1], (*intrinsics)[3], 0.0, 0.0, 1.0;
     for (int cam = 0; cam < quaternion.size(); cam++)
     {
         quaternion[cam].normalize();

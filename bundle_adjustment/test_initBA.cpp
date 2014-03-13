@@ -203,19 +203,18 @@ int main(int argc, char* argv[])
 //     sfm01.solveStructure( (featM->getVisibility()).get(), (featM->getCoordinates()).get() );
         
 //     std::cout << "Structure =\n" << sfm01.Structure.transpose() << "\n";
-    mydb.closeDB();
     
     // ========================================== Optimization ==========================================
     
-    double intrinsics[4] = { K(0,0), K(1,1), K(0,2), K(1,2) };
-    std::vector< double > intrinsics_param(&intrinsics[0], &intrinsics[4]);
+//     double intrinsics[4] = { K(0,0), K(1,1), K(0,2), K(1,2) };
+//     std::vector< double > intrinsics_param(&intrinsics[0], &intrinsics[4]);
     double distcoeff[5] = {2.5552679187075661e-01, -5.8740292343503686e-01, -3.0863014649845459e-04, 1.9066445284294834e-03, 5.1108649981093257e-01};
     std::vector< double > coefficients(&distcoeff[0], &distcoeff[5]);
 //     std::vector< double > coefficients(5,0.0);/// active for dinosaur
     /*
-    GlobalOptimizer opt01;
+    GlobalOptimizerSfM opt01;
     opt01.setParameters( (featM->getVisibility()).get(), (featM->getCoordinates()).get(), &sfm01.Quat_cumulative, &sfm01.tr_global, &sfm01.Structure );
-    opt01.setIntrinsics( &intrinsics_param );
+    opt01.setIntrinsics( &K );
     opt01.setDistortion( &coefficients );
     opt01.runBA();// argv[0] );// bundle adjustment to all data
     
@@ -227,13 +226,13 @@ int main(int argc, char* argv[])
     */
     timer1.start();
     IncrementalBA opt01( (featM->getVisibility()).get(), (featM->getCoordinates()).get() );
-    opt01.setIntrinsics( &intrinsics_param );
+    opt01.setIntrinsics( K );
     opt01.setDistortion( &coefficients );
     opt01.runC();
     
-    GlobalOptimizer opt03;
+    GlobalOptimizerSfM opt03;
     opt03.setParameters( (featM->getVisibility()).get(), (featM->getCoordinates()).get(), &opt01.quaternion, &opt01.translation, &opt01.structure );
-    opt03.setIntrinsics( &intrinsics_param );
+    opt03.setIntrinsics( &K );
     opt03.setDistortion( &coefficients );
     opt03.runBA();// argv[0] );// bundle adjustment to all data
     std::cout << "Incrementel BA time: "<< timer1.elapsed_s() << " [s]\n"; 

@@ -179,17 +179,18 @@ void SimpleRegistration::solvePose3D( boost::shared_ptr< MXb > visibility, boost
         X1 = Xtmp1.block(0,0,3,count_ft);
         X2 = Xtmp2.block(0,0,3,count_ft);
         
-        bool check_metric = checkMetricBoundary( X1, X2 );
+        bool check_metric = true;
         bool is_solved = false;
-        DEBUG_3( std::cout << "Check data: " << check_metric << "\n"; )
+        
+        Pose3D pose( X1, X2, Calibration );
         
         if (fallback_icp)
         {
+	  check_metric = checkMetricBoundary( X1, X2 );
+	  DEBUG_3( std::cout << "Check data: " << check_metric << "\n"; )
 	  if ( (X1.cols() < valid_min_points) || (X2.cols() < valid_min_points)) check_metric = false;
+	  pose.setFallBackPoseOn();
         }  
-        
-        Pose3D pose( X1, X2, Calibration );
-        if (fallback_icp) pose.setFallBackPoseOn();
         
         if (check_metric)
         {

@@ -49,6 +49,7 @@ void MergeClouds::mergeSet( std::vector< Eigen::Quaternion<double> > &Qn_global,
     cumulative_points += cloud1->width*cloud1->height;
     for ( register int k = 1; k < image_list->size(); ++k )
     {
+        DEBUG_1( std::cout << k << "\n"; )
         loadDenseCloud( (*image_list)[k], (*depth_list)[k], Qn_global[k], tr_global[k], cloud2, covariance2 );
         cumulative_points += cloud2->width*cloud2->height;
         mergeTwo_PCL( cloud1, cloud2, covariance1, covariance2, model_cloud, model_covariance );
@@ -56,7 +57,7 @@ void MergeClouds::mergeSet( std::vector< Eigen::Quaternion<double> > &Qn_global,
         covariance1 = model_covariance;
     }
     int final_points = model_cloud->width*model_cloud->height;
-    DEBUG_1( std::cout << "Merged cloud size = " << final_points << "\n"; )
+    DEBUG_1( std::cout << "\nMerged cloud size = " << final_points << "\n"; )
     DEBUG_1( printf( "Saving: [%i / %i] => %f%%\n\n", final_points, cumulative_points, ((float)final_points/(float)cumulative_points)*100.0); )
 }
 

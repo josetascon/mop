@@ -20,7 +20,6 @@
 #include "InterfacePCL.hpp"
 #include "DepthProjection.hpp"
 #include "SimpleRegistration.hpp"
-#include "Optimizer.hpp"
 #include "Plot.hpp"
 
 // using namespace std;
@@ -200,7 +199,7 @@ int main(int argc, char* argv[])
 	  for(register int cam = 1; cam < num_cameras; ++cam)
 	  {
 	      double ax = 0.0;
-	      double ay = -(cam)*(2*pi/num_cameras);
+	      double ay = -(cam)*(2*CONSTANT_PI/num_cameras);
 	      double az = 0.0;
 	      Eigen::Matrix3d Rtmp;
 	      Rtmp = Eigen::AngleAxisd(ax, Eigen::Vector3d::UnitX()) * 
@@ -296,12 +295,12 @@ int main(int argc, char* argv[])
 	  
 	  SimpleRegistration sr01( num_cameras + 1, num_features, K );
 	  timer1.start();
-	  sr01.solvePose( visibility.get(), coordinates.get(), true ); // true for optimal
+	  sr01.solvePose3D( visibility, coordinates, true ); // true for optimal
 	  std::cout << "Elapsed time to solve Pose: " << timer1.elapsed_s() << " [s]\n";
 	  
 	  SimpleRegistration sr02( num_cameras + 1, num_features, K );
 	  timer1.start();
-	  sr02.solvePose( visibility.get(), coordinates_noise.get(), false ); // false for linear
+	  sr02.solvePose3D( visibility, coordinates_noise, false ); // false for linear
 	  std::cout << "Elapsed time to solve Pose: " << timer1.elapsed_s() << " [s]\n";
 	  
 	  visibility.reset();
@@ -314,14 +313,14 @@ int main(int argc, char* argv[])
 	  // ========================================== Error Calculation ==========================================
 	  // Final error, Final - First camera
 	  Eigen::Vector3d cf, angle_opt, angle_lin;
-	  cf = sr01.Qn_global[num_cameras].conjugate()*(-sr01.tr_global[num_cameras]);	// center final - cinit (0)
+	  cf = sr01.getPtrGlobalQuaternion()->at(num_cameras).conjugate()*(-sr01.getPtrGlobalTranslation()->at(num_cameras));	// center final - cinit (0)
 	  double opt_euclidean_error = cf.norm();
-	  cf = sr02.Qn_global[num_cameras].conjugate()*(-sr02.tr_global[num_cameras]);	// center final - cinit (0)
+	  cf = sr02.getPtrGlobalQuaternion()->at(num_cameras).conjugate()*(-sr02.getPtrGlobalTranslation()->at(num_cameras));	// center final - cinit (0)
 	  double lin_euclidean_error = cf.norm();
 	  
-	  Eigen::Matrix3d rot = sr01.Qn_global[num_cameras].toRotationMatrix();
+	  Eigen::Matrix3d rot = sr01.getPtrGlobalQuaternion()->at(num_cameras).toRotationMatrix();
 	  rotation2angles_DetectZero( rot, angle_opt );
-	  rot = sr02.Qn_global[num_cameras].toRotationMatrix();
+	  rot = sr02.getPtrGlobalQuaternion()->at(num_cameras).toRotationMatrix();
 	  rotation2angles_DetectZero( rot, angle_lin );
 	  
 	  std::cout << "\n================================ Error Stats ==================================\n";
@@ -345,8 +344,8 @@ int main(int argc, char* argv[])
 	  for (register int cam = 0; cam < num_cameras + 1; ++cam)
 	  {
 	      Eigen::Vector3d center = qu_synthetic[cam].conjugate()*(-tr_synthetic[cam]);
-	      Eigen::Vector3d center_opt = sr01.Qn_global[cam].conjugate()*(-sr01.tr_global[cam]);
-	      Eigen::Vector3d center_lin = sr02.Qn_global[cam].conjugate()*(-sr02.tr_global[cam]);
+	      Eigen::Vector3d center_opt = sr01.getPtrGlobalQuaternion()->at(cam).conjugate()*(-sr01.getPtrGlobalTranslation()->at(cam));
+	      Eigen::Vector3d center_lin = sr02.getPtrGlobalQuaternion()->at(cam).conjugate()*(-sr02.getPtrGlobalTranslation()->at(cam));
 	      
 	      double drift_dist_opt = (center - center_opt).norm();
 	      double drift_dist_lin = (center - center_lin).norm();
@@ -357,9 +356,9 @@ int main(int argc, char* argv[])
 	      
 	      rot = qu_synthetic[cam].toRotationMatrix();
 	      rotation2angles_DetectZero( rot, angle );
-	      rot = sr01.Qn_global[cam].toRotationMatrix();
+	      rot = sr01.getPtrGlobalQuaternion()->at(cam).toRotationMatrix();
 	      rotation2angles_DetectZero( rot, angle_opt );
-	      rot = sr02.Qn_global[cam].toRotationMatrix();
+	      rot = sr02.getPtrGlobalQuaternion()->at(cam).toRotationMatrix();
 	      rotation2angles_DetectZero( rot, angle_lin );
 	      
 	      // Angle error is just the the substraction
@@ -377,14 +376,14 @@ int main(int argc, char* argv[])
 	  
 	  // ============================================ Plot Data ============================================
 	  
-	  exportGRAPH( (char*)"synthetic_opt.graph", sr01.Qn_global, sr01.tr_global ); 
-	  exportGRAPH( (char*)"synthetic_lin.graph", sr02.Qn_global, sr02.tr_global );
+	  exportGRAPH( (char*)"synthetic_opt.graph", *sr01.getPtrGlobalQuaternion(), *sr01.getPtrGlobalTranslation() ); 
+	  exportGRAPH( (char*)"synthetic_lin.graph", *sr02.getPtrGlobalQuaternion(), *sr02.getPtrGlobalTranslation() );
 // 	  exportTXTQuaternionVector((char*)"syn_rot.txt", qu_synthetic);
 // 	  exportTXTTranslationVector((char*)"syn_tr.txt", cam_center);
-// 	  exportTXTQuaternionVector((char*)"syn_rot_opt.txt", sr01.Qn_global);
-// 	  exportTXTTranslationVector((char*)"syn_tr_opt.txt", sr01.tr_global);
-// 	  exportTXTQuaternionVector((char*)"syn_rot_lin.txt", sr02.Qn_global);
-// 	  exportTXTTranslationVector((char*)"syn_tr_lin.txt", sr02.tr_global);
+// 	  exportTXTQuaternionVector((char*)"syn_rot_opt.txt", *sr01.getPtrGlobalQuaternion());
+// 	  exportTXTTranslationVector((char*)"syn_tr_opt.txt", *sr01.getPtrGlobalTranslation());
+// 	  exportTXTQuaternionVector((char*)"syn_rot_lin.txt", *sr02.getPtrGlobalQuaternion());
+// 	  exportTXTTranslationVector((char*)"syn_tr_lin.txt", *sr02.getPtrGlobalTranslation());
 	  
 	  if ( !analysis)
 	  {
@@ -399,8 +398,8 @@ int main(int argc, char* argv[])
 	      boost::shared_ptr<pcl::visualization::PCLVisualizer> viewer;
 	      viewer = visualizeCloud(cloud);
 	      viewer->setBackgroundColor( 1.0 ,1.0 ,1.0 );
-	      visualizeCameras(viewer, sr01.Qn_global, sr01.tr_global, true); //true for black color text
-	      visualizeCameras(viewer, sr02.Qn_global, sr02.tr_global, true);
+	      visualizeCameras(viewer, *sr01.getPtrGlobalQuaternion(), *sr01.getPtrGlobalTranslation(), true); //true for black color text
+	      visualizeCameras(viewer, *sr02.getPtrGlobalQuaternion(), *sr02.getPtrGlobalTranslation(), true);
 	      
 	      while (!viewer->wasStopped ())
 	      {

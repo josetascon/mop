@@ -351,7 +351,8 @@ void MatchesMap::robustifyMatches(boost::shared_ptr< kpCV_vv > set_of_keypoints)
 // 	  keyPointstoPoints(kps1, pts1);
 // 	  keyPointstoPoints(kps2, pts2);
 	  cv::Mat F_est;
-	  int inlier = robustMatchesfromFundamental(pts1, pts2, globalMatch[it].matches, F_est, 5);
+	  int inlier = 0;
+	  if( globalMatch[it].matches.size() > 6 ) inlier = robustMatchesfromFundamental(pts1, pts2, globalMatch[it].matches, F_est, 5);
 	  DEBUG_1( printf("MATCH: %04i -> %04i:\t#matches = %i\n", cam1, cam2, inlier); )
 	  if( !((cam2 - cam1 == 1) && continuous) )
 	  {
@@ -381,7 +382,8 @@ void MatchesMap::robustifyMatches(boost::shared_ptr< kpGPU_vv > set_of_keypoints
 // 	  keyPointstoPoints(kps1, pts1);
 // 	  keyPointstoPoints(kps2, pts2);
 	  cv::Mat F_est;
-	  int inlier = robustMatchesfromFundamental(pts1, pts2, globalMatch[it].matches, F_est, 5);
+	  int inlier = 0;
+	  if( globalMatch[it].matches.size() > 6 ) inlier = robustMatchesfromFundamental(pts1, pts2, globalMatch[it].matches, F_est, 5);
 	  DEBUG_1( printf("MATCH: %04i -> %04i:\t#matches = %i\n", cam1, cam2, inlier); )
 	  if( !((cam2 - cam1 == 1) && continuous) )
 	  {

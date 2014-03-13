@@ -115,7 +115,7 @@ int main(int argc, char* argv[])
     
     std::string base_filename = basename((char*)inputFilename_rgb);
     base_filename = base_filename.substr(0, base_filename.rfind("."));
-    std::string file_out_rgb = "out_" + base_filename + "_rgb.xml";
+    std::string file_out_rgb = "out_" + base_filename + ".xml";
     std::string file_out_depth = "out_" + base_filename + "_depth.xml";
     
     FrameSelector fm01(imageList_rgb, 40, num_depth_filter);

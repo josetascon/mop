@@ -7,6 +7,34 @@ void GlobalPose3D::solve( boost::shared_ptr< MXb > visibility, boost::shared_ptr
 		     Eigen::Matrix3d *Calibration,
 		     boost::shared_ptr< Qd_vector > Qn_global, boost::shared_ptr< V3d_vector > tr_global)
 {
+    initializeStructure(visibility, coordinates, Calibration, Qn_global, tr_global);
+    
+    DEBUG_3( std::cout << "Structure:\n" << Structure << "\n"; )
+    
+    // Form hera, a global pose+structure to be optimized
+    OptimizerG3D gopt;
+    gopt.setParameters( &Structure, &Covariance, visibility.get(), coordinates.get(), Qn_global.get(), tr_global.get() );
+    gopt.pose_Covariance();
+}
+
+void GlobalPose3D::solve_LSQ( boost::shared_ptr< MXb > visibility, boost::shared_ptr< MX_V4d > coordinates,
+		     Eigen::Matrix3d *Calibration,
+		     boost::shared_ptr< Qd_vector > Qn_global, boost::shared_ptr< V3d_vector > tr_global)
+{
+    initializeStructure(visibility, coordinates, Calibration, Qn_global, tr_global);
+    
+    DEBUG_3( std::cout << "Structure:\n" << Structure << "\n"; )
+    
+    // Form hera, a global pose+structure to be optimized
+    OptimizerG3D gopt;
+    gopt.setParameters( &Structure, &Covariance, visibility.get(), coordinates.get(), Qn_global.get(), tr_global.get() );
+    gopt.pose_LSQ();
+}
+
+void GlobalPose3D::initializeStructure(boost::shared_ptr< MXb > visibility, boost::shared_ptr< MX_V4d > coordinates,
+		     Eigen::Matrix3d *Calibration,
+		     boost::shared_ptr< Qd_vector > Qn_global, boost::shared_ptr< V3d_vector > tr_global)
+{
     //TODO CHANGE coordinates3d to vector3d to save memory, is ba style (projective geometry) and unnecesary here
     num_cameras = visibility->rows();
     num_features = visibility->cols();
@@ -43,12 +71,4 @@ void GlobalPose3D::solve( boost::shared_ptr< MXb > visibility, boost::shared_ptr
 	  }
         }
     }
-    
-    DEBUG_3( std::cout << "Structure:\n" << Structure << "\n"; )
-    
-    // Form hera, a global pose+structure to be optimized
-    OptimizeG3D gopt;
-    gopt.setParameters( &Structure, &Covariance, visibility.get(), coordinates.get(), Qn_global.get(), tr_global.get() );
-    gopt.pose_Covariance();
-    
 }

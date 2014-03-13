@@ -795,6 +795,7 @@ struct RE_Scalev2
 // Use quaternion as rotation component
 // Total parameters adjusted 7: Motion:7
 // 4 quaternion (rotation) variables, 3 translation variables , 
+// TWO VIEW ALGORITHM
 struct RE3D
 {   
     RE3D(double *pt1, double *pt2) //pt2 = q*pt1*~q + t ; ~q*(p2 - t1)*q = pt1
@@ -851,6 +852,7 @@ struct RE3D
 
 };
 
+// TWO VIEW ALGORITHM
 struct RE3D_Covariance
 {   
     RE3D_Covariance(double *pt1, double *pt2, double *variance1, double *variance2) //pt2 = q*pt1*~q + t ; ~q*(p2 - t1)*q = pt1
@@ -908,6 +910,7 @@ struct RE3D_Covariance
 
 };
 
+// GLOBAL ALGORITHM
 struct RE3D_constS_QT_Cov
 {
     RE3D_constS_QT_Cov(double *pt_global, double *pt_local, double *variance)
@@ -945,6 +948,7 @@ struct RE3D_constS_QT_Cov
     double *variance;
 };
 
+// GLOBAL ALGORITHM
 struct RE3D_QTS_Cov
 {
     RE3D_QTS_Cov(double *pt_local, double *variance)
@@ -981,6 +985,93 @@ struct RE3D_QTS_Cov
     double *variance;
 };
 
+// GLOBAL ALGORITHM
+struct RE3D_QTS
+{
+    RE3D_QTS(double *pt_local)
+    : pt_local(pt_local) {}
+
+    template <typename T>
+    bool operator()(const T* const quaternion, const T* const translation, const T* const structure, T* residuals) const 
+    {
+        const T observed_x = T(structure[0]);
+        const T observed_y = T(structure[1]);
+        const T observed_z = T(structure[2]);
+        
+        T point[3] = { T(pt_local[0]), T(pt_local[1]), T(pt_local[2])};
+        T p2r[3];
+        T qconj[4] = {T(quaternion[0]), T(-quaternion[1]), T(-quaternion[2]), T(-quaternion[3]) };
+        point[0] -= translation[0];
+        point[1] -= translation[1];
+        point[2] -= translation[2];
+        ceres::QuaternionRotatePoint(qconj, point, p2r);
+        
+        // final projected point position.
+        T predicted_x = p2r[0];
+        T predicted_y = p2r[1];
+        T predicted_z = p2r[2];
+        
+        // The error is the difference between the predicted and observed position.
+        residuals[0] = (predicted_x - observed_x);
+        residuals[1] = (predicted_y - observed_y);
+        residuals[2] = (predicted_z - observed_z);
+        return true;
+    }
+    
+    double *pt_local;
+};
+
+struct RE_Camera
+{   
+    RE_Camera(double observed_x, double observed_y, double *intrinsics, double *point)
+    : observed_x(observed_x), observed_y(observed_y), intrinsics(intrinsics), point(point) {}
+    
+    template <typename T>  // Allow optimization of parameters
+    bool operator()(const T* const quaternion, const T* const translation, T* residuals) const 
+    {
+        const T fx = T(intrinsics[0]);
+        const T fy = T(intrinsics[1]);
+        const T cx = T(intrinsics[2]);
+        const T cy = T(intrinsics[3]);
+        
+        T p[3];
+        T pts[3] = {T(point[0]),T(point[1]),T(point[2])};
+        
+        ceres::QuaternionRotatePoint(quaternion, pts, p);
+        
+        p[0] += translation[0];//*point[3];
+        p[1] += translation[1];//*point[3];
+        p[2] += translation[2];//*point[3];
+        
+        // Compute the center of distortion. The sign change comes from
+        // the camera model that Noah Snavely's Bundler assumes, whereby
+        // the camera coordinate system has a negative z axis.
+        T xp = p[0] / p[2]; // - p[0] / p[2];
+        T yp = p[1] / p[2]; // - p[1] / p[2];
+        
+        // Apply second and fourth order radial distortion.
+        //     T r2 = xp*xp + yp*yp;
+        //     T distortion = T(1.0) + r2  * (l1 + l2  * r2);
+        
+        // Compute final projected point position.
+        T predicted_x = fx * xp + cx;
+        T predicted_y = fy * yp + cy;
+        
+        T norm = quaternion[0]*quaternion[0] + quaternion[1]*quaternion[1] + quaternion[2]*quaternion[2] + quaternion[3]*quaternion[3];
+        
+        // The error is the difference between the predicted and observed position.
+        residuals[0] = predicted_x - T(observed_x);
+        residuals[1] = predicted_y - T(observed_y);
+        residuals[2] = norm - T(1.0); // Normalize quaternion
+        
+        return true;
+    }
+    
+    double observed_x;
+    double observed_y;
+    double *intrinsics;
+    double *point;
+};
 
 // Templated pinhole camera model for used with Ceres.  The camera is
 // parameterized using 9 parameters: 3 for rotation, 3 for translation, 1 for

@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 2.8 FATAL_ERROR)
 
 project(Range3D)
+# set(CMAKE_PREFIX_PATH "/usr/")
+# set(CMAKE_LIBRARY_PATH "/usr/lib")
 
 ## ***** Find Main Packages *****
 # OpenCV
@@ -23,6 +25,9 @@ include(${VTK_USE_FILE})
 # Ceres
 find_package( Ceres REQUIRED )
 include_directories(${CERES_INCLUDES})
+
+# Threads (pthread)
+set(TBB_LIB "/usr/lib/libtbb.so")
 
 # Threads (pthread)
 set(THREAD_LIBRARIES "pthread")
@@ -49,7 +54,7 @@ file(GLOB_RECURSE SRCS "core/*.cpp")
 
 # Comprising all targets to link
 set(LINK_TARGETS ${PCL_LIBRARIES} ${VTK_LIBRARIES} ${OpenCV_LIBS} ${Eigen_LIBS} ${CERES_LIBRARIES} ${OPENGL_USED_LIBRARIES} 
-	        ${Boost_LIBRARIES} ${SiftGPU_LIBRARIES} ${THREAD_LIBRARIES} ${SQLITE3_LIBRARIES})
+	        ${Boost_LIBRARIES} ${SiftGPU_LIBRARIES} ${THREAD_LIBRARIES} ${SQLITE3_LIBRARIES} ${TBB_LIB})
 
 # Compilation flags
 add_definitions(-std=c++11)
@@ -62,21 +67,21 @@ target_link_libraries ( mop ${LINK_TARGETS} )
 
 # add_executable (capture_pcd capture_pcd.cpp)
 # target_link_libraries (capture_pcd ${PCL_LIBRARIES})
-#  
+ 
 # add_executable (sparse2dense sparse2dense.cpp)
 # target_link_libraries (sparse2dense ${PCL_LIBRARIES})
-#  
+ 
 # add_executable( test_cloud test_cloud.cpp )
-# target_link_libraries( test_cloud "mop" ${LINK_TARGETS} )
+# target_link_libraries( test_cloud "mop" )
 
 add_executable ( range_model range_model.cpp )
 target_link_libraries ( range_model "mop" ${LINK_TARGETS} )
 
 # add_executable (synthetic_range synthetic_range.cpp)
 # target_link_libraries ( synthetic_range "mop" ${LINK_TARGETS} )
-# 
-# add_executable (frame frame.cpp)
-# target_link_libraries ( frame "mop" ${LINK_TARGETS} )
-# 
+
+add_executable (frame frame.cpp)
+target_link_libraries ( frame "mop" ${LINK_TARGETS} )
+
 # add_executable ( image2pcd image2pcd.cpp )
 # target_link_libraries ( image2pcd "mop" ${LINK_TARGETS} )

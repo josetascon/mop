@@ -37,6 +37,18 @@ bool importXMLImageList(const char *file_xml, std::vector< std::string > &files_
     return true;
 }
 
+void importXMLMultipleImageList( std::vector< std::string > &files_input, std::vector< std::string > &image_list, std::vector<int> &boundaries )
+{
+    DEBUG_2( std::cout << "Reading\n"; )
+    std::string ext = "xml";
+    for(int k = 0; k < files_input.size(); k++)
+    {
+        verifyFileExtension( files_input[k].c_str(), ext, true );
+        importXMLImageList( files_input[k].c_str(), image_list, false); // false for unclear the vector
+        boundaries.push_back(image_list.size());
+        DEBUG_2( std::cout << "Number: " << image_list.size() << "\n"; )
+    }
+}
 
 void exportPMVS(const char *output_path, std::vector<std::string> &nameImages, 
 	     std::vector< Eigen::MatrixXd > &Cameras, Eigen::Matrix3d Calibration, std::vector< double > distortion)

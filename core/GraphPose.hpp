@@ -116,16 +116,19 @@ public:
 	    std::vector<bool> *reliableMatch, std::vector< MatchQuery > *globalMatch,
 	    std::vector< std::vector< SiftGPU::SiftKeypoint > > *set_of_keypoints, bool optimal = true );
     
+    // Solve pairwise the poses defined in globalMatch
     void solveLocalPoseAllNodes( std::vector< std::string > *list_depth,
 		    std::vector<bool> *reliableMatch, std::vector< MatchQuery > *globalMatch,
 		    std::vector< std::vector< SiftGPU::SiftKeypoint > > *set_of_keypoints, bool optimal = true );
     
     void solveEdgesAllNodes(); // Use after solveLocalPoseAllNodes
-    void solveGlobalPoseAllNodes();
-    void solveGlobalPoseContinuous();
+    void solveGlobalPoseAllNodes(); // Use after solveEdgesAllNodes
+    void solveGlobalPoseContinuous(); // Use after solveEdgesAllNodes
     
+    // Graph based solution with Breath First Search algorithm
     void solveGraph( int initbfs = -1 );
     
+    // Solution without pairwise local poses, only calculate in solveGlobalPose necessary poses defined after solveGraph.
     void solveEdges(std::vector<bool> *reliableMatch, std::vector< MatchQuery > *globalMatch);
     void solveGlobalPose( std::vector< std::string > *list_depth, std::vector< MatchQuery > *globalMatch, 
 		        std::vector< std::vector< SiftGPU::SiftKeypoint > > *set_of_keypoints, bool optimal = true );

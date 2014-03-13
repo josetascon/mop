@@ -31,8 +31,10 @@
 // #include "DepthProjection.hpp"
 
 #include "Pose3D.hpp"
+#include "PoseICP.hpp"
 #include "GlobalPose3D.hpp"
 #include "SimpleRegistration.hpp"
+#include "SimpleRegistrationSfM.hpp"
 #include "GraphPose.hpp"
 #include "GraphBFS.hpp"
 
