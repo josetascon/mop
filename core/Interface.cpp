@@ -37,6 +37,20 @@ bool importXMLImageList(const char *file_xml, std::vector< std::string > &files_
     return true;
 }
 
+void importXMLMultipleImageList( std::vector< std::string > &files_input, std::vector< std::vector< std::string > > &image_lists )
+{
+    DEBUG_2( std::cout << "Reading\n"; )
+    std::string ext = "xml";
+    for(int k = 0; k < files_input.size(); k++)
+    {
+        verifyFileExtension( files_input[k].c_str(), ext, true );
+        std::vector< std::string > subgroup_list;
+        importXMLImageList( files_input[k].c_str(), subgroup_list);
+        image_lists.push_back(subgroup_list);
+        DEBUG_2( std::cout << "Number: " << subgroup_list.size() << "\n"; )
+    }
+}
+
 void importXMLMultipleImageList( std::vector< std::string > &files_input, std::vector< std::string > &image_list, std::vector<int> &boundaries )
 {
     DEBUG_2( std::cout << "Reading\n"; )

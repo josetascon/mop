@@ -83,10 +83,15 @@ public:
     void solveMatchesOneElement_subgroupDown( boost::shared_ptr< float_vv > descriptorsGPU, int init_image, int element );
     void solveMatchesOneElement_subgroup( boost::shared_ptr< float_vv > descriptorsGPU, int element, int init_image, int final_image );
     void solveMatchesOneElement( boost::shared_ptr< float_vv > descriptorsGPU, int element );
+    int findBestMatchID();
     
+    // Pairwise Matching strategy, consider solving time due to #images*(#images - 1)/2
     void solveMatches( boost::shared_ptr< float_vv > descriptorsGPU );
+    // Matching strategy for continuous registration. The last image descriptors are matched against the entire group for loop closure
     void solveMatchesContinuous( boost::shared_ptr< float_vv > descriptorsGPU );
+    // Matching strategy using a fixed subgroup size defined with groupsize
     void solveMatchesGroups( boost::shared_ptr< float_vv > descriptorsGPU, int groupsize );
+    // Matching strategy using a vector defining the subgroups (each vector entry of cluster defines the last image in the subgroup)
     void solveMatchesGroups( boost::shared_ptr< float_vv > descriptorsGPU, std::vector<int> *cluster );
     
     void robustifyMatches( boost::shared_ptr< kpCV_vv > set_of_keypoints );

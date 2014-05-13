@@ -30,9 +30,9 @@
 * ******************************************************************
 * @function help
 */
-void help()
+void help(char* arg0)
 { 
-	std::cout << "\033[1;33m Usage: ./frame -i <rgb_list.xml> -d <depth_list.xml> -o <output.txt>\033[0m\n"
+	std::cout << "\033[1;33m Usage: " << arg0 << " -i <rgb_list.xml> -d <depth_list.xml> -o <output.txt>\033[0m\n"
 				"\tOptions:\n" 
 				"\t[-i]\t XML input file name with rgb images\n" 
 				"\t[-d]\t XML input file name with depth images\n" 
@@ -62,7 +62,7 @@ int main(int argc, char* argv[])
     // ========================================== Check parameters ==========================================
     if( argc < 2 )
     {
-        help();
+        help(argv[0]);
         return 0;
     }
     else
@@ -98,7 +98,7 @@ int main(int argc, char* argv[])
 	  }
 	  else
 	  {
-	      help();
+	      help(argv[0]);
 	      return fprintf( stderr, "Unknown option %s\n", s ), -1;
 	  }
         }

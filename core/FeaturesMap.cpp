@@ -32,6 +32,7 @@ void FeaturesMap::solveVisibility( HandleDB *mydb )
         }
     }
     vis_available = true;
+    DEBUG_1( printf("Visibility Matrix [%d x %d]\n",num_cameras,num_features); )
 }
 
 void FeaturesMap::solveVisibility3D( HandleDB *mydb )
@@ -60,6 +61,8 @@ void FeaturesMap::solveVisibility3D( HandleDB *mydb )
         }
     }
     vis3d_available = true;
+    
+    DEBUG_1( printf("Visibility Matrix [%d x %d]\n",num_cameras,num_features); )
 }
 
 void FeaturesMap::exportTXT(const char *file_txt)

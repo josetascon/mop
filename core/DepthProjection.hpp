@@ -92,7 +92,7 @@ template < typename Tp>
 bool boundarykinect( Tp &measurez, Tp factor = 5000.0 )
 {
     // Detects if a Z value (measurez) is inside Kinect boundary
-    if (measurez == 0 || measurez < 0.45*factor || measurez > 3.0*factor) 
+    if (measurez == 0 || measurez < 0.6*factor || measurez > 2.5*factor) 
         return false;
     else return true;
 }

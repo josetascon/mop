@@ -35,6 +35,8 @@
 class GlobalPose3D
 {
 private:
+    bool export_txt;
+    char *filename;
     int num_cameras;
     int num_features;
     
@@ -49,7 +51,7 @@ public:
     
     
     // Constructor
-    GlobalPose3D() { ; };
+    GlobalPose3D() { export_txt = false; };
     // Destructor
     ~GlobalPose3D() { ; };
     
@@ -68,6 +70,14 @@ public:
 		     Eigen::Matrix3d *Calibration,
 		     boost::shared_ptr< Qd_vector > Qn_global, boost::shared_ptr< V3d_vector > tr_global);
     
+    void setExportFileReport(char* filename_txt)
+    {
+        filename = filename_txt;
+        export_txt = true;
+    }
+    
 };
+
+/// CREATE reprojectionfunction similar to GlobalOptimizerSfM.hpp
 
 #endif

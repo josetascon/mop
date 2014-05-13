@@ -25,9 +25,9 @@
 // using namespace std;
 // using namespace Eigen;
 
-void help()
+void help(char* arg0)
 { 
-	std::cout << " Usage: ./synthetic_range -f <#features> -c <#cameras>\n"
+	std::cout << " Usage: " << arg0 << " -f <#features> -c <#cameras>\n"
 				"\tOptions:\n" 
 				"\t[-f]\t Number of features per image to generate (default = 50)\n" 
 				"\t[-c]\t Number of cameras to generate (default = 36)\n"
@@ -60,7 +60,7 @@ int main(int argc, char* argv[])
     // ================ Check input ==============
     if( argc < 2 )
     {
-        help();
+        help(argv[0]);
         return 0;
     }
     else
@@ -110,12 +110,12 @@ int main(int argc, char* argv[])
 	  }
 	  else if( strcmp( s, "-h" ) == 0 )
 	  {
-	      help();
+	      help(argv[0]);
 	      return 0;
 	  }
 	  else
 	  {
-	      help();
+	      help(argv[0]);
 	      return fprintf( stderr, "Unknown option %s\n", s ), -1;
 	  }
         }

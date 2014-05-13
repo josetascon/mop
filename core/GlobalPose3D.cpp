@@ -14,6 +14,7 @@ void GlobalPose3D::solve( boost::shared_ptr< MXb > visibility, boost::shared_ptr
     // Form hera, a global pose+structure to be optimized
     OptimizerG3D gopt;
     gopt.setParameters( &Structure, &Covariance, visibility.get(), coordinates.get(), Qn_global.get(), tr_global.get() );
+    if( export_txt ) gopt.setExportFileReport( filename );
     gopt.pose_Covariance();
 }
 
@@ -28,6 +29,7 @@ void GlobalPose3D::solve_LSQ( boost::shared_ptr< MXb > visibility, boost::shared
     // Form hera, a global pose+structure to be optimized
     OptimizerG3D gopt;
     gopt.setParameters( &Structure, &Covariance, visibility.get(), coordinates.get(), Qn_global.get(), tr_global.get() );
+    if( export_txt ) gopt.setExportFileReport( filename );
     gopt.pose_LSQ();
 }
 

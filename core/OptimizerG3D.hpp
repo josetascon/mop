@@ -19,6 +19,8 @@
 
 // Std Libraries
 #include <iostream>
+#include <fstream>		// ofstream and/or ifstream
+#include <string>
 
 // Local Libraries
 #include "Debug.hpp"
@@ -31,6 +33,7 @@ using ceres::CauchyLoss;
 using ceres::Problem;
 using ceres::Solve;
 using ceres::Solver;
+using ceres::IterationSummary;
 
 // ================================================================================================
 // ==================================== CLASS OptimizerG3D ========================================
@@ -38,6 +41,12 @@ using ceres::Solver;
 class OptimizerG3D
 {
 private:
+    bool export_txt;
+    char *filename;
+    int num_cams;
+    int num_features;
+    int num_observations;
+    
     Eigen::MatrixXd *Pts;
     Eigen::MatrixXd *Variance;
     std::vector< Eigen::Quaternion<double> > *Qns; 
@@ -50,7 +59,7 @@ private:
     
 public:
     // Constructor
-    OptimizerG3D() { ; };
+    OptimizerG3D() { export_txt = false; };
     // Destructor
     ~OptimizerG3D() { ; };
 
@@ -81,6 +90,14 @@ public:
         quaternion_vector2vector_vector( *Qn_global, qv_internal ); // QUATERNION to Vector
     }
     
+    void setExportFileReport(char* filename_txt)
+    {
+        filename = filename_txt;
+        export_txt = true;
+    }
+    
+    void exportFileReport(std::vector< IterationSummary > &it_summary);
+    
     void updateQuaternion()
     {
         vector_vector2quaternion_vector( qv_internal, *Qns );
@@ -90,6 +107,9 @@ public:
         }
     }
     
+    double reprojectionError(Problem &problem);
+    double euclideanReprojectionError();
+    double mahalanobisReprojectionError();
     void pose_LSQ();
     void pose_Covariance();
 

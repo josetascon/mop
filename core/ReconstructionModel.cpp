@@ -19,23 +19,21 @@ void ReconstructionModel::solveFeatures()
         exit(-1);
     }
     
-    boost::shared_ptr< SiftED > features( new SiftED(image_list) );
+    // Extract and Descript Features with SIFT
     features->solveSift();
     
-    boost::shared_ptr< MatchesMap > matchMap( new MatchesMap(500,35) );
+    // Matches
     matchMap->setAllContinousOn(); // ENABLE CONTINOUS MATCHES ALWAYS TO ALLOW ICP WORK
-    matchMap->solveMatches(features->getDescriptorsGPU());
-//     matchMap->solveMatchesContinuous(features->getDescriptorsGPU());
-//     matchMap->solveMatchesGroups(features->getDescriptorsGPU(), 10);
+    if (subgroups) matchMap->solveMatchesGroups(features->getDescriptorsGPU(), subgroup_boundaries);
+    else matchMap->solveMatches(features->getDescriptorsGPU());
     matchMap->robustifyMatches(features->getKeypointsGPU());
     matchMap->depthFilter(features->getKeypointsGPU(), depth_list, num_depth_filter);
     timer1.start();
     matchMap->solveDB3D( &mydb, features->getKeypointsGPU(), depth_list, Calibration );
     DEBUG_1( std::cout << "Elapsed time to solve DB: " << timer1.elapsed_s() << " [s]\n"; )
     
-    boost::shared_ptr< FeaturesMap > featMap (new FeaturesMap());
+    // Visibility with FeaturesMap
     featMap->solveVisibility3D( &mydb );
-    DEBUG_1( printf("Visibility Matrix [%d x %d]\n",featMap->getVisibility()->rows(),featMap->getVisibility()->cols()); )
     num_cameras = featMap->getNumberCameras();
     num_features = featMap->getNumberFeatures();
     mydb.closeDB();
@@ -79,16 +77,17 @@ void ReconstructionModel::globalOptimization()
     setCoordinatestoOrigin(*Qn_global, *tr_global);
 }
 
-void ReconstructionModel::visualizeModel_NonUnified()
+void ReconstructionModel::visualizeNonUnifiedModel()
 {
-    
-    std::vector< pcl::PointCloud<pcl::PointXYZRGBA>::Ptr > set_cloud;
-    std::vector< boost::shared_ptr< Eigen::MatrixXd > > set_covariance;
-    cv2PointCloudSet(*image_list, *depth_list, Calibration, *Qn_global, *tr_global, set_cloud, set_covariance);
+    if(!non_unified_model)
+    {
+        DEBUG_E( ("Unable to find Non-Unified model. Execute solveNonUnifiedModel() first\n") ); 
+        exit(-1);
+    }
        
     // ============================================ Visualization ============================================
     boost::shared_ptr<pcl::visualization::PCLVisualizer> viewer;
-    viewer = visualizeCloudSet( set_cloud );
+    viewer = visualizeCloudSet( set_model );
     visualizeCameras( viewer, *Qn_global, *tr_global );
     
     while (!viewer->wasStopped ())
@@ -96,6 +95,39 @@ void ReconstructionModel::visualizeModel_NonUnified()
         viewer->spinOnce (100);
         boost::this_thread::sleep (boost::posix_time::microseconds (100000));
     }
+}
+
+void ReconstructionModel::solveUnifiedModel()
+{
+    MergeClouds mrg( image_list, depth_list, Calibration );
+    mrg.mergeSet( *Qn_global, *tr_global );
+    Xmodel = mrg.getCloud();
+    Variance = mrg.getCovariance();
+    unified_model = true;
+}
+
+void ReconstructionModel::solveNonUnifiedModel()
+{
+    cv2PointCloudSet(*image_list, *depth_list, Calibration, *Qn_global, *tr_global, set_model, set_variance);
+    non_unified_model = true;
+}
+
+void ReconstructionModel::visualizeUnifiedModel()
+{
+    if(!unified_model)
+    {
+        DEBUG_E( ("Unable to find Unified model. Execute solveUnifiedModel() first\n") ); 
+        exit(-1);
+    }
+       
+    // ============================================ Visualization ============================================
+    boost::shared_ptr<pcl::visualization::PCLVisualizer> viewer;
+    viewer = visualizeCloud(Xmodel);
+    visualizeCameras( viewer, *Qn_global, *tr_global );
     
-    
+    while (!viewer->wasStopped ())
+    {
+        viewer->spinOnce (100);
+        boost::this_thread::sleep (boost::posix_time::microseconds (100000));
+    }
 }

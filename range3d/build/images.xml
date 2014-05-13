@@ -1,14 +1,14 @@
 <?xml version="1.0"?>
 <opencv_storage>
 <images>
-../../bundle_adjustment/build/images/studio_library2_bgr_36.png
-../../bundle_adjustment/build/images/studio_library2_bgr_71.png
-../../bundle_adjustment/build/images/studio_library2_bgr_107.png
-../../bundle_adjustment/build/images/studio_library2_bgr_139.png
-../../bundle_adjustment/build/images/studio_library2_bgr_194.png
-../../bundle_adjustment/build/images/studio_library2_bgr_220.png
-../../bundle_adjustment/build/images/studio_library2_bgr_284.png
-../../bundle_adjustment/build/images/studio_library2_bgr_349.png
-../../bundle_adjustment/build/images/studio_library2_bgr_390.png
+./images/rgb/studio_library2_bgr_36.png
+./images/rgb/studio_library2_bgr_71.png
+./images/rgb/studio_library2_bgr_107.png
+./images/rgb/studio_library2_bgr_139.png
+./images/rgb/studio_library2_bgr_194.png
+./images/rgb/studio_library2_bgr_220.png
+./images/rgb/studio_library2_bgr_284.png
+./images/rgb/studio_library2_bgr_349.png
+./images/rgb/studio_library2_bgr_390.png
 </images>
 </opencv_storage>

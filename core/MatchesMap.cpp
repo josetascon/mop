@@ -20,8 +20,8 @@ void MatchesMap::solveMatchesContinuous_subgroup(boost::shared_ptr< float_vv > d
     
     if(matcher.VerifyContextGL() == 0)
     {
-        fprintf(stderr, "Can't open OpenGL context for Matcher in SiftGPU\n");
-        return;
+        DEBUG_E( ("Can't open OpenGL context for Matcher in SiftGPU\n") ); 
+        exit(-1);
     }
         
     num_images = final_image - init_image;
@@ -71,8 +71,8 @@ void MatchesMap::solveMatchesPairs_subgroup(boost::shared_ptr< float_vv > descri
     
     if(matcher.VerifyContextGL() == 0)
     {
-        fprintf(stderr, "Can't open OpenGL context for Matcher in SiftGPU\n");
-        return;
+        DEBUG_E( ("Can't open OpenGL context for Matcher in SiftGPU\n") );
+        exit(-1);
     }
         
     num_images = final_image - init_image;
@@ -129,8 +129,8 @@ void MatchesMap::solveMatchesOneElement_subgroupUp(boost::shared_ptr< float_vv >
     
     if(matcher.VerifyContextGL() == 0)
     {
-        fprintf(stderr, "Can't open OpenGL context for Matcher in SiftGPU\n");
-        return;
+        DEBUG_E( ("Can't open OpenGL context for Matcher in SiftGPU\n") );
+        exit(-1);
     }
         
     num_images = final_image - element;
@@ -182,8 +182,8 @@ void MatchesMap::solveMatchesOneElement_subgroupDown(boost::shared_ptr< float_vv
     
     if(matcher.VerifyContextGL() == 0)
     {
-        fprintf(stderr, "Can't open OpenGL context for Matcher in SiftGPU\n");
-        return;
+        DEBUG_E( ("Can't open OpenGL context for Matcher in SiftGPU\n") );
+        exit(-1);
     }
         
     num_images = element - init_image;
@@ -239,6 +239,25 @@ void MatchesMap::solveMatchesOneElement(boost::shared_ptr< float_vv > descriptor
     int start = 0;
     int end = descriptorsGPU->size();
     if ( element < end ) solveMatchesOneElement_subgroup( descriptorsGPU, element, start, end ); //verify boundary
+}
+
+int MatchesMap::findBestMatchID()
+{
+    int max = 0;
+    int id = 0;
+    for(register int it = 0; it < reliableMatch.size(); ++it)
+    {
+        if (reliableMatch[it])
+        {
+	  int size = globalMatch[it].matches.size();
+	  if (size > max) 
+	  {
+	      max = size;
+	      id = it;
+	  }
+        }
+    }
+    return id;
 }
 
 void MatchesMap::solveMatchesContinuous(boost::shared_ptr< float_vv > descriptorsGPU)
@@ -323,8 +342,9 @@ void MatchesMap::solveMatchesGroups(boost::shared_ptr< float_vv > descriptorsGPU
 	  final_image = total_images;
 	  element = final_image - 1;
         }
-        solveMatchesPairs_subgroup( descriptorsGPU, previous_image, final_image );
-        solveMatchesOneElement( descriptorsGPU, element );
+        solveMatchesPairs_subgroup( descriptorsGPU, previous_image, final_image ); // Match a subgroup pairwise
+        solveMatchesOneElement( descriptorsGPU, previous_image ); 	// Match the fisrt image descriptors of a subgroup against all the group
+        solveMatchesOneElement( descriptorsGPU, element );		// Match the last image descriptors of a subgroup against all the group
         previous_image = final_image - 1;
     }
 }

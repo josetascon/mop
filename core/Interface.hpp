@@ -164,6 +164,8 @@ bool importXMLImageList(const char *file_xml, std::vector< std::string > &files_
 
 void exportXMLImageList(const char *file_xml, std::vector< std::string > &files_names);
 
+void importXMLMultipleImageList( std::vector< std::string > &files_input, std::vector< std::vector< std::string > > &image_lists );
+
 void importXMLMultipleImageList( std::vector< std::string > &files_input, std::vector< std::string > &image_list, std::vector<int> &boundaries );
 
 void exportPMVS(const char *output_path, std::vector<std::string> &nameImages, 

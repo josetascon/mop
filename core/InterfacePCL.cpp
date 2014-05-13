@@ -217,10 +217,10 @@ void cv2PointCloudSet(std::vector<std::string> &image_list, std::vector<std::str
         cv::Mat image = cv::imread(image_list[k], 1);
         cv::Mat depth = cv::imread(depth_list[k], -1);
         cv2PointCloud_Pose( image, depth, calibration, Qn[k], tr[k], set_cloud[k], set_covariance[k] );
-        DEBUG_1( std::string str = "Cloud size = %i, \tImage: ";
+        DEBUG_1( std::string str = "Cloud size = %i, \tImage %i : ";
 	  str.append( basename(strdup(image_list[k].c_str())) );
 	  str.append("\n");
-	  printf(str.c_str(),set_cloud[k]->width*set_cloud[k]->height);
+	  printf(str.c_str(),set_cloud[k]->width*set_cloud[k]->height, k);
         )
     }
 }

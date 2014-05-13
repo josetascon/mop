@@ -2,9 +2,14 @@ cmake_minimum_required(VERSION 2.8 FATAL_ERROR)
 
 project(Range3D)
 # set(CMAKE_PREFIX_PATH "/usr/")
-# set(CMAKE_LIBRARY_PATH "/usr/lib")
+set(CMAKE_LIBRARY_PATH "/usr/lib")
+
+
 
 ## ***** Find Main Packages *****
+# qt4
+find_package(Qt4 REQUIRED)
+
 # OpenCV
 find_package( OpenCV REQUIRED )
 
@@ -77,11 +82,17 @@ target_link_libraries ( mop ${LINK_TARGETS} )
 add_executable ( range_model range_model.cpp )
 target_link_libraries ( range_model "mop" ${LINK_TARGETS} )
 
+add_executable ( range_model_debug range_model_debug.cpp )
+target_link_libraries ( range_model_debug "mop" ${LINK_TARGETS} )
+
+add_executable ( multiple_model multiple_model.cpp )
+target_link_libraries ( multiple_model "mop" ${LINK_TARGETS} )
+
 # add_executable (synthetic_range synthetic_range.cpp)
 # target_link_libraries ( synthetic_range "mop" ${LINK_TARGETS} )
 
-add_executable (frame frame.cpp)
-target_link_libraries ( frame "mop" ${LINK_TARGETS} )
+# add_executable (frame frame.cpp)
+# target_link_libraries ( frame "mop" ${LINK_TARGETS} )
 
 # add_executable ( image2pcd image2pcd.cpp )
 # target_link_libraries ( image2pcd "mop" ${LINK_TARGETS} )
